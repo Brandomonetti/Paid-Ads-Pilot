@@ -1,0 +1,78 @@
+🧠 Replit Prompt: AI Creative Strategist SaaS MVP
+
+Build a full-stack SaaS web application called Creative Strategist AI. This app functions as a centralized AI-powered platform for eCommerce brands to generate ad ideas, scripts, and performance analysis using autonomous “Agents.”
+
+The design should be sleek, luxury-style, dark-themed, minimalistic, and mobile responsive. Think Notion dark mode x Apple design system. Use React (with Tailwind CSS) for frontend, Node.js + Express for backend, and create modular folders for each agent. Store agent data and user feedback in PostgreSQL or a simple file-based mock DB for MVP.
+
+📦 Core Features to Build (MVP)
+✅ 1. Auth & Projects
+
+Simple email/password login (or magic link)
+
+User can create and access brand “Projects”
+
+Each project contains a campaign dashboard
+
+✅ 2. Agents UI (modular cards)
+
+Research Agent
+
+User clicks “Generate Angles”
+
+Output: Angle cards with avatar, pain point, 3 hooks, format
+
+Script Agent
+
+Takes a selected angle, returns 2–3 UGC scripts + overlays
+
+Performance Agent
+
+For now, simulate data (ROAS, CTR, Hook Rate)
+
+Output: Suggested A/B tests, summary of winners/losers
+
+Asset Agent
+
+Suggests relevant templates, B-roll ideas, and landing page inspiration
+
+✅ 3. Agent Flow (Logic)
+
+When an angle performs poorly (e.g. user flags it or fake performance data is bad), Research Agent is triggered to suggest new avatars/angles instead of small tweaks
+
+If performance is good, system suggests variations for scaling
+
+✅ 4. Feedback Loop
+
+User can approve, reject, or comment on any angle or script
+
+Save feedback to mock DB and use it to adjust agent outputs over time
+
+✅ 5. UI/UX Components
+
+Dark mode theme with deep gray background and soft white text
+
+Agent cards with animations and icons
+
+CTA button: “Run Agent” with loading animation
+
+Visual flow: “Research → Script → Launch → Analyze → Refine”
+
+🔌 Tech Stack
+
+Frontend: React + Tailwind CSS
+
+Backend: Node.js + Express
+
+Database: PostgreSQL (or JSON for MVP)
+
+AI Integration: Use mock GPT-4 responses first, then integrate OpenAI API
+
+Deployment: Replit-hosted backend with frontend on same project
+
+🧠 Notes
+
+Start by mocking agent outputs using static JSON/GPT-style templates
+
+Focus on getting the loop working: angle → script → feedback → performance → new ideas
+
+Later, swap mock logic with real AI calls and ad platform integrations (Meta, TikTok)
