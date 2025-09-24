@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { CSSProperties } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,7 +11,7 @@ import { Dashboard } from "@/components/dashboard";
 import { ResearchAgentDashboard } from "@/components/research-agent-dashboard";
 import { ScriptAgentDashboard } from "@/components/script-agent-dashboard";
 import { PerformanceAgentDashboard } from "@/components/performance-agent-dashboard";
-import { AssetAgentDashboard } from "@/components/asset-agent-dashboard";
+import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-dashboard";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import NotFound from "@/pages/not-found";
@@ -22,7 +23,7 @@ function Router() {
       <Route path="/research" component={ResearchAgentDashboard} />
       <Route path="/script" component={ScriptAgentDashboard} />
       <Route path="/performance" component={PerformanceAgentDashboard} />
-      <Route path="/assets" component={AssetAgentDashboard} />
+      <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
       <Route path="/settings" component={() => <div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">Configure your AI agents and integrations.</p></div>} />
       <Route component={NotFound} />
     </Switch>
@@ -40,7 +41,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <SidebarProvider style={style as React.CSSProperties}>
+          <SidebarProvider style={style as CSSProperties}>
             <div className="flex h-screen w-full">
               <AppSidebar />
               <div className="flex flex-col flex-1">

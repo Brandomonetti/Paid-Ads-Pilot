@@ -1,4 +1,4 @@
-import { Brain, BarChart3, FileText, Image, Settings, Plus, Zap } from "lucide-react"
+import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import {
   Sidebar,
@@ -35,10 +35,10 @@ const agents = [
     description: "Analyze ad performance"
   },
   {
-    title: "Asset Agent",
-    url: "/assets",
-    icon: Image,
-    description: "Find templates & B-roll"
+    title: "Creative Brief Agent",
+    url: "/creative-brief", 
+    icon: Lightbulb,
+    description: "Generate creative briefs"
   },
 ]
 
