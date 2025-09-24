@@ -3,8 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Brain, ThumbsUp, ThumbsDown, Users, Target, Zap, RefreshCw, TrendingUp, Play, Eye, ExternalLink } from "lucide-react"
+import { 
+  Brain, 
+  ThumbsUp, 
+  ThumbsDown, 
+  Users, 
+  Target, 
+  Zap, 
+  RefreshCw, 
+  TrendingUp, 
+  ExternalLink,
+  Link,
+  ArrowRight,
+  CheckCircle
+} from "lucide-react"
 
 interface CustomerAvatar {
   id: string
@@ -33,9 +45,19 @@ interface CreativeConcept {
   status: "pending" | "approved" | "rejected"
   feedback?: string
   referenceUrl?: string
+  relevanceScore?: number
+}
+
+interface ConceptWithRelevance extends CreativeConcept {
+  relevanceScore: number
 }
 
 export function ResearchAgentDashboard() {
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const [linkedConcepts, setLinkedConcepts] = useState<Record<string, string[]>>({})
+
   //todo: remove mock functionality - replace with real OpenAI integration
   const [avatars, setAvatars] = useState<CustomerAvatar[]>([
     {
@@ -161,10 +183,6 @@ export function ResearchAgentDashboard() {
     }
   ])
 
-  const [feedback, setFeedback] = useState<Record<string, string>>({})
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [activeTab, setActiveTab] = useState("avatars")
-
   const handleAvatarApproval = (id: string, status: "approved" | "rejected") => {
     setAvatars(prev => prev.map(avatar => 
       avatar.id === id 
@@ -206,6 +224,8 @@ export function ResearchAgentDashboard() {
   }
 
   const generateNewConcepts = () => {
+    if (!selectedAvatar) return
+    
     setIsGenerating(true)
     //todo: remove mock functionality - integrate with social media APIs
     setTimeout(() => {
@@ -240,10 +260,86 @@ export function ResearchAgentDashboard() {
     }, 2000)
   }
 
-  const pendingAvatars = avatars.filter(a => a.status === "pending").length
-  const approvedAvatars = avatars.filter(a => a.status === "approved").length
-  const pendingConcepts = creativeConcepts.filter(c => c.status === "pending").length
-  const approvedConcepts = creativeConcepts.filter(c => c.status === "approved").length
+  const linkConcept = (avatarId: string, conceptId: string) => {
+    setLinkedConcepts(prev => ({
+      ...prev,
+      [avatarId]: [...(prev[avatarId] || []), conceptId]
+    }))
+  }
+
+  const unlinkConcept = (avatarId: string, conceptId: string) => {
+    setLinkedConcepts(prev => ({
+      ...prev,
+      [avatarId]: (prev[avatarId] || []).filter(id => id !== conceptId)
+    }))
+  }
+
+  const isConceptLinked = (avatarId: string, conceptId: string) => {
+    return linkedConcepts[avatarId]?.includes(conceptId) || false
+  }
+
+  const computeRelevanceScore = (avatar: CustomerAvatar, concept: CreativeConcept): number => {
+    // Simple relevance scoring based on industry match and hook similarity
+    let score = 0.5 // base score
+    
+    // Industry/demographic relevance
+    if (concept.industry.toLowerCase().includes('health') && 
+        (avatar.demographics.toLowerCase().includes('health') || 
+         avatar.painPoint.toLowerCase().includes('health'))) {
+      score += 0.3
+    }
+    
+    // Hook matching (simplified semantic similarity)
+    const conceptKeywords = [...concept.keyElements, ...concept.insights].join(' ').toLowerCase()
+    const avatarKeywords = avatar.hooks.join(' ').toLowerCase()
+    const commonWords = conceptKeywords.split(' ').filter(word => 
+      avatarKeywords.includes(word) && word.length > 3
+    )
+    
+    score += Math.min(commonWords.length * 0.1, 0.2)
+    
+    // Boost score for certain combinations
+    if (avatar.name.includes('Parent') && concept.keyElements.some(el => 
+        el.toLowerCase().includes('kitchen') || el.toLowerCase().includes('meal'))) {
+      score += 0.15
+    }
+    
+    return Math.min(score, 1.0)
+  }
+
+  const getMatchedElements = (avatar: CustomerAvatar, concept: CreativeConcept) => {
+    const avatarKeywords = avatar.hooks.join(' ').toLowerCase()
+    const painKeywords = avatar.painPoint.toLowerCase()
+    
+    const matchedHooks = avatar.hooks.filter(hook => 
+      concept.keyElements.some(element => 
+        element.toLowerCase().includes(hook.toLowerCase().split(' ')[0]) ||
+        hook.toLowerCase().includes(element.toLowerCase().split(' ')[0])
+      )
+    )
+    
+    const matchedElements = concept.keyElements.filter(element =>
+      avatarKeywords.includes(element.toLowerCase()) ||
+      painKeywords.includes(element.toLowerCase()) ||
+      element.toLowerCase().includes('health') || element.toLowerCase().includes('meal')
+    )
+    
+    return { matchedHooks, matchedElements }
+  }
+
+  const getFilteredConcepts = (): ConceptWithRelevance[] => {
+    if (!selectedAvatar) return []
+    
+    const avatar = avatars.find(a => a.id === selectedAvatar)
+    if (!avatar) return []
+    
+    return creativeConcepts
+      .map(concept => ({
+        ...concept,
+        relevanceScore: computeRelevanceScore(avatar, concept)
+      }))
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+  }
 
   const getFormatColor = (format: string) => {
     switch (format.toLowerCase()) {
@@ -265,111 +361,92 @@ export function ResearchAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Research Agent</h1>
-            <p className="text-muted-foreground">Customer research & viral creative concept analysis</p>
+            <p className="text-muted-foreground">Integrated customer research & viral creative concept analysis</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="avatars" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Customer Avatars
-          </TabsTrigger>
-          <TabsTrigger value="concepts" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Creative Concepts
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="avatars" className="space-y-6">
-          {/* Avatar Stats */}
+      {/* Integrated Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Avatar Selection */}
+        <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Total Avatars</CardDescription>
-                  <CardTitle className="text-2xl font-bold">{avatars.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Pending Review</CardDescription>
-                  <CardTitle className="text-2xl font-bold text-orange-600">{pendingAvatars}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Approved</CardDescription>
-                  <CardTitle className="text-2xl font-bold text-green-600">{approvedAvatars}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Success Rate</CardDescription>
-                  <CardTitle className="text-2xl font-bold">
-                    {avatars.length > 0 ? Math.round((approvedAvatars / avatars.length) * 100) : 0}%
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Customer Avatars
+            </h2>
             <Button 
               onClick={generateNewAvatars}
               disabled={isGenerating}
+              size="sm"
               data-testid="button-generate-avatars"
-              className="ml-4"
             >
               {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-              {isGenerating ? "Generating..." : "Generate Avatars"}
+              {isGenerating ? "Generating..." : "Generate"}
             </Button>
           </div>
 
-          {/* Avatar Cards */}
-          <div className="space-y-4">
+          {/* Avatar List */}
+          <div className="space-y-3">
             {avatars.map((avatar) => (
-              <Card key={avatar.id} className="hover-elevate" data-testid={`card-avatar-${avatar.id}`}>
-                <CardHeader>
+              <Card 
+                key={avatar.id} 
+                className={`cursor-pointer transition-all ${
+                  selectedAvatar === avatar.id 
+                    ? 'ring-2 ring-primary bg-primary/5' 
+                    : 'hover-elevate'
+                }`}
+                onClick={() => setSelectedAvatar(avatar.id)}
+                data-testid={`card-avatar-${avatar.id}`}
+              >
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CardTitle className="text-lg">{avatar.name}</CardTitle>
-                      <Badge 
-                        variant={
-                          avatar.status === "approved" ? "default" : 
-                          avatar.status === "rejected" ? "destructive" : "secondary"
-                        }
-                      >
-                        {avatar.status}
-                      </Badge>
+                    <div>
+                      <CardTitle className="text-sm font-medium">{avatar.name}</CardTitle>
+                      <CardDescription className="text-xs">{avatar.demographics}</CardDescription>
                     </div>
-                    <div className="text-sm text-muted-foreground">Age: {avatar.age}</div>
+                    <Badge 
+                      variant={
+                        avatar.status === "approved" ? "default" : 
+                        avatar.status === "rejected" ? "destructive" : "secondary"
+                      }
+                    >
+                      {avatar.status}
+                    </Badge>
                   </div>
-                  <CardDescription>{avatar.demographics}</CardDescription>
                 </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Pain Point */}
-                  <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="h-4 w-4 text-red-600" />
-                      <span className="font-medium text-red-600">Pain Point</span>
+                
+                <CardContent className="pt-0">
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target className="h-3 w-3 text-red-600" />
+                      <span className="font-medium text-red-600 text-xs">Pain Point</span>
                     </div>
-                    <p className="text-sm">{avatar.painPoint}</p>
+                    <p className="text-xs text-muted-foreground">{avatar.painPoint}</p>
                   </div>
-
-                  {/* Hooks */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Ad Hooks</h4>
-                    {avatar.hooks.map((hook, index) => (
-                      <div key={index} className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-sm">"{hook}"</p>
+                  
+                  {/* Linked Concepts Preview */}
+                  {selectedAvatar === avatar.id && linkedConcepts[avatar.id] && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {linkedConcepts[avatar.id].length} Linked Concepts
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Feedback Section */}
-                  {avatar.status === "pending" && (
-                    <div className="space-y-3 pt-4 border-t">
+                      <div className="flex gap-1 flex-wrap">
+                        {linkedConcepts[avatar.id].slice(0, 3).map(conceptId => {
+                          const concept = creativeConcepts.find(c => c.id === conceptId)
+                          return concept ? (
+                            <Badge key={conceptId} variant="outline" className="text-xs">
+                              {concept.title.slice(0, 20)}...
+                            </Badge>
+                          ) : null
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Approval Section */}
+                  {selectedAvatar === avatar.id && avatar.status === "pending" && (
+                    <div className="mt-3 pt-3 border-t space-y-3">
                       <Textarea
                         placeholder="Add feedback or comments..."
                         value={feedback[avatar.id] || ""}
@@ -383,7 +460,7 @@ export function ResearchAgentDashboard() {
                           onClick={() => handleAvatarApproval(avatar.id, "approved")}
                           data-testid={`button-approve-${avatar.id}`}
                         >
-                          <ThumbsUp className="mr-2 h-4 w-4" />
+                          <ThumbsUp className="mr-2 h-3 w-3" />
                           Approve
                         </Button>
                         <Button
@@ -392,182 +469,283 @@ export function ResearchAgentDashboard() {
                           onClick={() => handleAvatarApproval(avatar.id, "rejected")}
                           data-testid={`button-reject-${avatar.id}`}
                         >
-                          <ThumbsDown className="mr-2 h-4 w-4" />
+                          <ThumbsDown className="mr-2 h-3 w-3" />
                           Reject
                         </Button>
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Show feedback if already reviewed */}
-                  {avatar.status !== "pending" && avatar.feedback && (
-                    <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
-                      <p className="text-sm"><strong>Feedback:</strong> {avatar.feedback}</p>
+                  {selectedAvatar === avatar.id && avatar.status !== "pending" && avatar.feedback && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
+                        <p className="text-xs"><strong>Feedback:</strong> {avatar.feedback}</p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="concepts" className="space-y-6">
-          {/* Concept Stats */}
+        {/* Right: Filtered Concepts */}
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Total Concepts</CardDescription>
-                  <CardTitle className="text-2xl font-bold">{creativeConcepts.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Pending Review</CardDescription>
-                  <CardTitle className="text-2xl font-bold text-orange-600">{pendingConcepts}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Approved</CardDescription>
-                  <CardTitle className="text-2xl font-bold text-green-600">{approvedConcepts}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Avg Views</CardDescription>
-                  <CardTitle className="text-2xl font-bold">1.7M</CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Creative Concepts
+              {selectedAvatar && (
+                <Badge variant="outline" className="ml-2">
+                  Filtered for {avatars.find(a => a.id === selectedAvatar)?.name}
+                </Badge>
+              )}
+            </h2>
             <Button 
               onClick={generateNewConcepts}
-              disabled={isGenerating}
+              disabled={isGenerating || !selectedAvatar}
+              size="sm"
               data-testid="button-generate-concepts"
-              className="ml-4"
             >
               {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
               {isGenerating ? "Analyzing..." : "Find Concepts"}
             </Button>
           </div>
-
-          {/* Creative Concept Cards */}
-          <div className="space-y-4">
-            {creativeConcepts.map((concept) => (
-              <Card key={concept.id} className="hover-elevate" data-testid={`card-concept-${concept.id}`}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CardTitle className="text-lg">{concept.title}</CardTitle>
-                      <Badge className={getFormatColor(concept.format)}>
-                        {concept.format}
-                      </Badge>
-                      <Badge 
-                        variant={
-                          concept.status === "approved" ? "default" : 
-                          concept.status === "rejected" ? "destructive" : "secondary"
-                        }
-                      >
-                        {concept.status}
-                      </Badge>
-                    </div>
-                    {concept.referenceUrl && (
-                      <Button size="sm" variant="ghost" asChild>
-                        <a href={concept.referenceUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-                  <CardDescription>{concept.platform} • {concept.industry}</CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Performance Metrics */}
-                  <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-muted/30 border">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{concept.performance.views}</p>
-                      <p className="text-xs text-muted-foreground">Views</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{concept.performance.engagement}</p>
-                      <p className="text-xs text-muted-foreground">Engagement</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{concept.performance.conversionRate}</p>
-                      <p className="text-xs text-muted-foreground">Conversion</p>
-                    </div>
-                  </div>
-
-                  {/* Insights */}
-                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-2">Key Insights</h4>
-                    <ul className="space-y-1">
-                      {concept.insights.map((insight, index) => (
-                        <li key={index} className="text-sm flex items-start gap-2">
-                          <span className="text-blue-600 mt-1">•</span>
-                          <span>{insight}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Key Elements */}
-                  <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                    <h4 className="font-medium text-sm text-green-700 dark:text-green-300 mb-2">Key Creative Elements</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {concept.keyElements.map((element, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {element}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Feedback Section */}
-                  {concept.status === "pending" && (
-                    <div className="space-y-3 pt-4 border-t">
-                      <Textarea
-                        placeholder="Add feedback or usage notes..."
-                        value={feedback[concept.id] || ""}
-                        onChange={(e) => setFeedback(prev => ({ ...prev, [concept.id]: e.target.value }))}
-                        rows={2}
-                        data-testid={`textarea-feedback-${concept.id}`}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleConceptApproval(concept.id, "approved")}
-                          data-testid={`button-approve-${concept.id}`}
-                        >
-                          <ThumbsUp className="mr-2 h-4 w-4" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleConceptApproval(concept.id, "rejected")}
-                          data-testid={`button-reject-${concept.id}`}
-                        >
-                          <ThumbsDown className="mr-2 h-4 w-4" />
-                          Not Suitable
-                        </Button>
+          
+          {!selectedAvatar ? (
+            <Card className="p-8 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <Users className="h-12 w-12 text-muted-foreground" />
+                <div>
+                  <h3 className="font-medium mb-2">Select an Avatar to View Concepts</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a customer avatar from the left to see relevant creative concepts ranked by fit.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {getFilteredConcepts().map((concept) => {
+                const isLinked = selectedAvatar ? isConceptLinked(selectedAvatar, concept.id) : false
+                return (
+                  <Card key={concept.id} className="hover-elevate" data-testid={`card-concept-${concept.id}`}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <CardTitle className="text-lg">{concept.title}</CardTitle>
+                          <Badge 
+                            variant="outline"
+                            className={`${
+                              concept.relevanceScore >= 0.8 ? 'bg-green-100 text-green-800 border-green-300' :
+                              concept.relevanceScore >= 0.6 ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                              'bg-gray-100 text-gray-800 border-gray-300'
+                            }`}
+                          >
+                            {Math.round(concept.relevanceScore * 100)}% fit
+                          </Badge>
+                          <Badge className={getFormatColor(concept.format)}>
+                            {concept.format}
+                          </Badge>
+                          {isLinked && (
+                            <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Linked
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedAvatar && (
+                            <Button
+                              size="sm"
+                              variant={isLinked ? "destructive" : "default"}
+                              onClick={() => isLinked 
+                                ? unlinkConcept(selectedAvatar, concept.id)
+                                : linkConcept(selectedAvatar, concept.id)
+                              }
+                              data-testid={`button-link-${concept.id}`}
+                            >
+                              {isLinked ? (
+                                "Unlink"
+                              ) : (
+                                <>
+                                  <Link className="mr-2 h-4 w-4" />
+                                  Link
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {concept.referenceUrl && (
+                            <Button size="sm" variant="ghost" asChild>
+                              <a href={concept.referenceUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                      <CardDescription>{concept.platform} • {concept.industry}</CardDescription>
+                    </CardHeader>
 
-                  {/* Show feedback if already reviewed */}
-                  {concept.status !== "pending" && concept.feedback && (
-                    <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
-                      <p className="text-sm"><strong>Notes:</strong> {concept.feedback}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+                    <CardContent className="space-y-4">
+                      {/* Performance Metrics */}
+                      <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-muted/30 border">
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-blue-600">{concept.performance.views}</p>
+                          <p className="text-xs text-muted-foreground">Views</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-green-600">{concept.performance.engagement}</p>
+                          <p className="text-xs text-muted-foreground">Engagement</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-purple-600">{concept.performance.conversionRate}</p>
+                          <p className="text-xs text-muted-foreground">Conversion</p>
+                        </div>
+                      </div>
+
+                      {/* Key Elements with Match Highlighting */}
+                      <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                        <h4 className="font-medium text-sm text-green-700 dark:text-green-300 mb-2">Key Creative Elements</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {concept.keyElements.map((element, index) => {
+                            const avatar = selectedAvatar ? avatars.find(a => a.id === selectedAvatar) : null
+                            const { matchedElements } = avatar ? getMatchedElements(avatar, concept) : { matchedElements: [] }
+                            const isMatched = matchedElements.includes(element)
+                            return (
+                              <Badge 
+                                key={index} 
+                                variant={isMatched ? "default" : "outline"} 
+                                className={`text-xs ${
+                                  isMatched 
+                                    ? 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200' 
+                                    : ''
+                                }`}
+                              >
+                                {element}
+                                {isMatched && <span className="ml-1">✓</span>}
+                              </Badge>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Evidence Section - Why This Matches */}
+                      {(() => {
+                        const avatar = selectedAvatar ? avatars.find(a => a.id === selectedAvatar) : null
+                        const { matchedHooks, matchedElements } = avatar ? getMatchedElements(avatar, concept) : { matchedHooks: [], matchedElements: [] }
+                        
+                        if (!avatar || (matchedHooks.length === 0 && matchedElements.length === 0)) return null
+                        
+                        return (
+                          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                            <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-2">Why This Matches {avatar.name}</h4>
+                            
+                            {matchedHooks.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs text-muted-foreground mb-1">Matched Hooks:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {matchedHooks.map((hook, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                      "{hook.slice(0, 30)}..."
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {matchedElements.length > 0 && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Matched Elements:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {matchedElements.map((element, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                                      {element}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
+
+                      {/* Generate Script CTA for linked concepts */}
+                      {isLinked && (
+                        <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-sm text-primary mb-1">Ready for Script Generation</h4>
+                              <p className="text-xs text-muted-foreground">
+                                This concept is linked to your avatar. Generate a script using their combined insights.
+                              </p>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              asChild
+                              data-testid={`button-generate-script-${concept.id}`}
+                            >
+                              <a 
+                                href={`/script?avatarId=${selectedAvatar}&conceptId=${concept.id}`} 
+                                className="flex items-center gap-2"
+                              >
+                                Generate Script
+                                <ArrowRight className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Concept Approval Section */}
+                      {concept.status === "pending" && (
+                        <div className="space-y-3 pt-4 border-t">
+                          <Textarea
+                            placeholder="Add feedback or usage notes..."
+                            value={feedback[concept.id] || ""}
+                            onChange={(e) => setFeedback(prev => ({ ...prev, [concept.id]: e.target.value }))}
+                            rows={2}
+                            data-testid={`textarea-feedback-${concept.id}`}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleConceptApproval(concept.id, "approved")}
+                              data-testid={`button-approve-${concept.id}`}
+                            >
+                              <ThumbsUp className="mr-2 h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleConceptApproval(concept.id, "rejected")}
+                              data-testid={`button-reject-${concept.id}`}
+                            >
+                              <ThumbsDown className="mr-2 h-4 w-4" />
+                              Not Suitable
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show feedback if already reviewed */}
+                      {concept.status !== "pending" && concept.feedback && (
+                        <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
+                          <p className="text-sm"><strong>Notes:</strong> {concept.feedback}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
+
+export default ResearchAgentDashboard
