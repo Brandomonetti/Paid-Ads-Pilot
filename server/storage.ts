@@ -101,14 +101,22 @@ export class MemStorage implements IStorage {
     
     if (!avatarId) return allConcepts;
     
-    // If avatarId provided, return concepts linked to that avatar, sorted by relevance score
+    // If avatarId provided, return ALL concepts but sorted by relevance for that avatar
+    // Concepts with existing links should be sorted by their stored relevance score
+    // Concepts without links should appear after linked ones
     const avatarConceptLinks = Array.from(this.avatarConcepts.values())
-      .filter(link => link.avatarId === avatarId)
-      .sort((a, b) => parseFloat(b.relevanceScore) - parseFloat(a.relevanceScore));
+      .filter(link => link.avatarId === avatarId && link.status === "linked");
     
-    return avatarConceptLinks
+    const linkedConceptIds = new Set(avatarConceptLinks.map(link => link.conceptId));
+    const linkedConcepts = avatarConceptLinks
+      .sort((a, b) => parseFloat(b.relevanceScore) - parseFloat(a.relevanceScore))
       .map(link => this.concepts.get(link.conceptId))
       .filter((concept): concept is Concept => concept !== undefined);
+    
+    const unlinkedConcepts = allConcepts.filter(concept => !linkedConceptIds.has(concept.id));
+    
+    // Return linked concepts first (sorted by relevance), then unlinked concepts
+    return [...linkedConcepts, ...unlinkedConcepts];
   }
 
   async getConcept(id: string): Promise<Concept | undefined> {

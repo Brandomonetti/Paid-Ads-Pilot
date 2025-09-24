@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,198 +18,256 @@ import {
   ArrowRight,
   CheckCircle
 } from "lucide-react"
+import { Avatar, Concept, AvatarConcept, insertAvatarSchema, insertConceptSchema, insertAvatarConceptSchema } from "@shared/schema"
+import type { z } from "zod"
+import { apiRequest, queryClient } from "@/lib/queryClient"
 
-interface CustomerAvatar {
-  id: string
-  name: string
-  age: string
-  demographics: string
-  painPoint: string
-  hooks: string[]
-  status: "pending" | "approved" | "rejected"
-  feedback?: string
-}
+type AvatarInsert = z.infer<typeof insertAvatarSchema>
+type ConceptInsert = z.infer<typeof insertConceptSchema>
+type AvatarConceptInsert = z.infer<typeof insertAvatarConceptSchema>
 
-interface CreativeConcept {
-  id: string
-  title: string
-  format: string
-  platform: string
-  industry: string
-  performance: {
-    views: string
-    engagement: string
-    conversionRate: string
-  }
-  insights: string[]
-  keyElements: string[]
-  status: "pending" | "approved" | "rejected"
-  feedback?: string
-  referenceUrl?: string
-  relevanceScore?: number
-}
-
-interface ConceptWithRelevance extends CreativeConcept {
+interface ConceptWithRelevance extends Concept {
   relevanceScore: number
+  matchedHooks?: string[]
+  matchedElements?: string[]
 }
 
 export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
-  const [linkedConcepts, setLinkedConcepts] = useState<Record<string, string[]>>({})
+  const [hasSeeded, setHasSeeded] = useState(false)
 
-  //todo: remove mock functionality - replace with real OpenAI integration
-  const [avatars, setAvatars] = useState<CustomerAvatar[]>([
-    {
-      id: "1",
-      name: "Busy Working Parent",
-      age: "28-45",
-      demographics: "Working parents with young children, household income $50k-$100k",
-      painPoint: "No time to cook healthy meals for family, constantly stressed about nutrition",
-      hooks: [
-        "What if dinner could be ready in 10 minutes every night?",
-        "Stop feeling guilty about another takeout order",
-        "Your kids deserve better than processed food"
-      ],
-      status: "pending"
-    },
-    {
-      id: "2", 
-      name: "Health-Conscious Millennial",
-      age: "25-35",
-      demographics: "Urban professionals, health-focused lifestyle, disposable income",
-      painPoint: "Uncertain about food quality and ingredient sourcing",
-      hooks: [
-        "Finally, know exactly what's in your food",
-        "Organic doesn't have to break the bank", 
-        "Your body will thank you for this switch"
-      ],
-      status: "approved"
-    },
-    {
-      id: "3",
-      name: "Time-Pressed Entrepreneur", 
-      age: "30-50",
-      demographics: "Small business owners, high stress, value efficiency",
-      painPoint: "Too busy building business to focus on personal health",
-      hooks: [
-        "Success shouldn't cost you your health",
-        "Fuel your hustle with real nutrition",
-        "The meal prep solution for busy CEOs"
-      ],
-      status: "pending"
-    }
-  ])
+  // Fetch avatars from backend
+  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery({
+    queryKey: ['/api/avatars'],
+  })
 
-  //todo: remove mock functionality - replace with social media analysis APIs
-  const [creativeConcepts, setCreativeConcepts] = useState<CreativeConcept[]>([
-    {
-      id: "1",
-      title: "Raw UGC with Male Speaker - Weight Loss Transformation",
-      format: "Raw UGC Video",
-      platform: "TikTok/Instagram Reels",
-      industry: "Health & Wellness",
-      performance: {
-        views: "2.3M",
-        engagement: "8.7%",
-        conversionRate: "4.2%"
-      },
-      insights: [
-        "Male speakers convert 40% better in weight loss niche",
-        "Raw, unpolished aesthetic increases authenticity perception",
-        "Before/after reveals drive 85% completion rates"
-      ],
-      keyElements: [
-        "Male creator (25-35 years old)",
-        "Bathroom/bedroom setting (authentic)",
-        "Raw lighting (natural/phone)",
-        "Direct camera address",
-        "Before/after comparison"
-      ],
-      status: "approved",
-      referenceUrl: "#"
+  // Fetch concepts filtered by selected avatar 
+  const { data: concepts = [], isLoading: isLoadingConcepts } = useQuery({
+    queryKey: ['/api/concepts', selectedAvatar ? { avatarId: selectedAvatar } : {}],
+    enabled: !!selectedAvatar,
+  })
+
+  // Fetch avatar-concept links
+  const { data: avatarConcepts = [] } = useQuery({
+    queryKey: ['/api/avatar-concepts'],
+  })
+
+  // Create avatar mutation
+  const createAvatarMutation = useMutation({
+    mutationFn: (avatar: AvatarInsert) => apiRequest('POST', '/api/avatars', avatar),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] })
     },
-    {
-      id: "2",
-      title: "POV Hook Format - Trendjacking Success",
-      format: "POV Storytelling",
-      platform: "TikTok",
-      industry: "Health & Wellness", 
-      performance: {
-        views: "1.8M",
-        engagement: "12.3%",
-        conversionRate: "3.8%"
-      },
-      insights: [
-        "'POV: You're a...' hooks average 2.3M+ views",
-        "Storytelling format increases emotional connection",
-        "Trendjacking current events boosts organic reach"
-      ],
-      keyElements: [
-        "POV hook opener",
-        "Relatable character setup",
-        "Problem-solution narrative",
-        "Trending audio/music",
-        "Text overlay guidance"
-      ],
-      status: "pending",
-      referenceUrl: "#"
+  })
+
+  // Create concept mutation
+  const createConceptMutation = useMutation({
+    mutationFn: (concept: ConceptInsert) => apiRequest('POST', '/api/concepts', concept),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
     },
-    {
-      id: "3",
-      title: "Kitchen Transformation - Quick Recipe Demo",
-      format: "Sped-up Process Video",
-      platform: "Instagram Reels",
-      industry: "Food & Nutrition",
-      performance: {
-        views: "950K",
-        engagement: "6.2%", 
-        conversionRate: "2.9%"
-      },
-      insights: [
-        "Kitchen content performs well in food/health niches",
-        "Sped-up transformations hold attention",
-        "Ingredient reveals create curiosity gap"
-      ],
-      keyElements: [
-        "Clean, well-lit kitchen",
-        "Ingredient mystery/reveal",
-        "Time-lapse cooking process",
-        "Final product showcase",
-        "Recipe/link in bio CTA"
-      ],
-      status: "pending",
-      referenceUrl: "#"
+  })
+
+  // Avatar approval mutation
+  const updateAvatarMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Avatar> }) =>
+      apiRequest('PATCH', `/api/avatars/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] })
+    },
+  })
+
+  // Concept approval mutation  
+  const updateConceptMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Concept> }) =>
+      apiRequest('PATCH', `/api/concepts/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
+    },
+  })
+
+  // Avatar-concept linking mutation
+  const linkAvatarConceptMutation = useMutation({
+    mutationFn: (link: AvatarConceptInsert) => apiRequest('POST', '/api/avatar-concepts', link),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/avatar-concepts'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
+    },
+  })
+
+  // Avatar-concept update mutation
+  const updateAvatarConceptMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<AvatarConcept> }) =>
+      apiRequest('PATCH', `/api/avatar-concepts/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/avatar-concepts'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
+    },
+  })
+
+  // Seed database with initial data if avatars array is empty
+  const seedInitialData = async () => {
+    if (avatars.length === 0) {
+      const mockAvatars: AvatarInsert[] = [
+        {
+          name: "Busy Working Parent",
+          ageRange: "28-45",
+          demographics: "Working parents with young children, household income $50k-$100k",
+          painPoint: "No time to cook healthy meals for family, constantly stressed about nutrition",
+          hooks: [
+            "What if dinner could be ready in 10 minutes every night?",
+            "Stop feeling guilty about another takeout order",
+            "Your kids deserve better than processed food"
+          ],
+          status: "pending"
+        },
+        {
+          name: "Health-Conscious Millennial",
+          ageRange: "25-35",
+          demographics: "Urban professionals, health-focused lifestyle, disposable income",
+          painPoint: "Uncertain about food quality and ingredient sourcing",
+          hooks: [
+            "Finally, know exactly what's in your food",
+            "Organic doesn't have to break the bank", 
+            "Your body will thank you for this switch"
+          ],
+          status: "approved"
+        },
+        {
+          name: "Time-Pressed Entrepreneur", 
+          ageRange: "30-50",
+          demographics: "Small business owners, high stress, value efficiency",
+          painPoint: "Too busy building business to focus on personal health",
+          hooks: [
+            "Success shouldn't cost you your health",
+            "Fuel your hustle with real nutrition",
+            "The meal prep solution for busy CEOs"
+          ],
+          status: "pending"
+        }
+      ]
+
+      for (const avatar of mockAvatars) {
+        await createAvatarMutation.mutateAsync(avatar)
+      }
     }
-  ])
+
+    if (concepts.length === 0) {
+      const mockConcepts: ConceptInsert[] = [
+        {
+          title: "Raw UGC with Male Speaker - Weight Loss Transformation",
+          format: "Raw UGC Video",
+          platform: "TikTok/Instagram Reels",
+          industry: "Health & Wellness",
+          performance: {
+            views: "2.3M",
+            engagement: "8.7%",
+            conversion: "4.2%"
+          },
+          insights: [
+            "Male speakers convert 40% better in weight loss niche",
+            "Raw, unpolished aesthetic increases authenticity perception",
+            "Before/after reveals drive 85% completion rates"
+          ],
+          keyElements: [
+            "Male creator (25-35 years old)",
+            "Bathroom/bedroom setting (authentic)",
+            "Raw lighting (natural/phone)",
+            "Direct camera address",
+            "Before/after comparison"
+          ],
+          status: "approved",
+          referenceUrl: "#"
+        },
+        {
+          title: "POV Hook Format - Trendjacking Success",
+          format: "POV Storytelling",
+          platform: "TikTok",
+          industry: "Health & Wellness", 
+          performance: {
+            views: "1.8M",
+            engagement: "12.3%",
+            conversion: "3.8%"
+          },
+          insights: [
+            "'POV: You're a...' hooks average 2.3M+ views",
+            "Storytelling format increases emotional connection",
+            "Trendjacking current events boosts organic reach"
+          ],
+          keyElements: [
+            "POV hook opener",
+            "Relatable character setup",
+            "Problem-solution narrative",
+            "Trending audio/music",
+            "Text overlay guidance"
+          ],
+          status: "pending",
+          referenceUrl: "#"
+        },
+        {
+          title: "Kitchen Transformation - Quick Recipe Demo",
+          format: "Sped-up Process Video",
+          platform: "Instagram Reels",
+          industry: "Food & Nutrition",
+          performance: {
+            views: "950K",
+            engagement: "6.2%", 
+            conversion: "2.9%"
+          },
+          insights: [
+            "Kitchen content performs well in food/health niches",
+            "Sped-up transformations hold attention",
+            "Ingredient reveals create curiosity gap"
+          ],
+          keyElements: [
+            "Clean, well-lit kitchen",
+            "Ingredient mystery/reveal",
+            "Time-lapse cooking process",
+            "Final product showcase",
+            "Recipe/link in bio CTA"
+          ],
+          status: "pending",
+          referenceUrl: "#"
+        }
+      ]
+
+      for (const concept of mockConcepts) {
+        await createConceptMutation.mutateAsync(concept)
+      }
+    }
+  }
 
   const handleAvatarApproval = (id: string, status: "approved" | "rejected") => {
-    setAvatars(prev => prev.map(avatar => 
-      avatar.id === id 
-        ? { ...avatar, status, feedback: feedback[id] }
-        : avatar
-    ))
+    updateAvatarMutation.mutate({
+      id,
+      updates: { 
+        status, 
+        feedback: feedback[id] || undefined 
+      }
+    })
     console.log(`Avatar ${id} ${status}:`, feedback[id])
   }
 
   const handleConceptApproval = (id: string, status: "approved" | "rejected") => {
-    setCreativeConcepts(prev => prev.map(concept => 
-      concept.id === id 
-        ? { ...concept, status, feedback: feedback[id] }
-        : concept
-    ))
+    updateConceptMutation.mutate({
+      id,
+      updates: { 
+        status, 
+        feedback: feedback[id] || undefined 
+      }
+    })
     console.log(`Concept ${id} ${status}:`, feedback[id])
   }
 
   const generateNewAvatars = () => {
     setIsGenerating(true)
     //todo: remove mock functionality - integrate with OpenAI API
-    setTimeout(() => {
-      const newAvatar: CustomerAvatar = {
-        id: Date.now().toString(),
+    setTimeout(async () => {
+      const newAvatar: AvatarInsert = {
         name: "Fitness Enthusiast",
-        age: "22-40", 
+        ageRange: "22-40", 
         demographics: "Gym members, active lifestyle, supplement users",
         painPoint: "Struggling to meet protein goals with whole foods",
         hooks: [
@@ -218,7 +277,11 @@ export function ResearchAgentDashboard() {
         ],
         status: "pending"
       }
-      setAvatars(prev => [newAvatar, ...prev])
+      try {
+        await createAvatarMutation.mutateAsync(newAvatar)
+      } catch (error) {
+        console.error('Failed to create avatar:', error)
+      }
       setIsGenerating(false)
     }, 2000)
   }
@@ -228,9 +291,8 @@ export function ResearchAgentDashboard() {
     
     setIsGenerating(true)
     //todo: remove mock functionality - integrate with social media APIs
-    setTimeout(() => {
-      const newConcept: CreativeConcept = {
-        id: Date.now().toString(),
+    setTimeout(async () => {
+      const newConcept: ConceptInsert = {
         title: "Day in My Life - Healthy Eating Edition",
         format: "DIML Storytelling",
         platform: "TikTok/Instagram Stories",
@@ -238,7 +300,7 @@ export function ResearchAgentDashboard() {
         performance: {
           views: "1.2M",
           engagement: "9.4%",
-          conversionRate: "3.1%"
+          conversion: "3.1%"
         },
         insights: [
           "DIML content creates parasocial connection",
@@ -255,30 +317,80 @@ export function ResearchAgentDashboard() {
         status: "pending",
         referenceUrl: "#"
       }
-      setCreativeConcepts(prev => [newConcept, ...prev])
+      try {
+        await createConceptMutation.mutateAsync(newConcept)
+      } catch (error) {
+        console.error('Failed to create concept:', error)
+      }
       setIsGenerating(false)
     }, 2000)
   }
 
-  const linkConcept = (avatarId: string, conceptId: string) => {
-    setLinkedConcepts(prev => ({
-      ...prev,
-      [avatarId]: [...(prev[avatarId] || []), conceptId]
-    }))
+  const linkConcept = async (avatarId: string, conceptId: string) => {
+    const avatar = avatars.find(a => a.id === avatarId)
+    const concept = concepts.find(c => c.id === conceptId)
+    
+    if (!avatar || !concept) return
+    
+    const { matchedHooks, matchedElements } = getMatchedElements(avatar, concept)
+    const relevanceScore = computeRelevanceScore(avatar, concept)
+    
+    const linkData: AvatarConceptInsert = {
+      avatarId,
+      conceptId,
+      relevanceScore: relevanceScore.toString(),
+      matchedHooks,
+      matchedElements,
+      rationale: `This concept matches ${avatar.name} with ${Math.round(relevanceScore * 100)}% relevance based on matching hooks and creative elements.`,
+      status: "linked"
+    }
+    
+    try {
+      await linkAvatarConceptMutation.mutateAsync(linkData)
+    } catch (error) {
+      console.error('Failed to link avatar and concept:', error)
+    }
   }
 
-  const unlinkConcept = (avatarId: string, conceptId: string) => {
-    setLinkedConcepts(prev => ({
-      ...prev,
-      [avatarId]: (prev[avatarId] || []).filter(id => id !== conceptId)
-    }))
+  const unlinkConcept = async (avatarId: string, conceptId: string) => {
+    // Find the link to update
+    const link = avatarConcepts.find(ac => ac.avatarId === avatarId && ac.conceptId === conceptId)
+    if (!link) return
+    
+    try {
+      // Update the link status to "unlinked" using the proper PATCH mutation
+      await updateAvatarConceptMutation.mutateAsync({
+        id: link.id,
+        updates: { status: "unlinked" }
+      })
+    } catch (error) {
+      console.error('Failed to unlink avatar and concept:', error)
+    }
   }
+
+  // Safe one-time seeding to prevent empty state issues
+  useEffect(() => {
+    const shouldSeed = !hasSeeded && 
+                     avatars.length === 0 && 
+                     !isLoadingAvatars && 
+                     !createAvatarMutation.isPending &&
+                     !createConceptMutation.isPending
+
+    if (shouldSeed) {
+      setHasSeeded(true) // Set flag immediately to prevent re-entry
+      seedInitialData()
+    }
+  }, [hasSeeded, avatars.length, isLoadingAvatars, createAvatarMutation.isPending, createConceptMutation.isPending])
 
   const isConceptLinked = (avatarId: string, conceptId: string) => {
-    return linkedConcepts[avatarId]?.includes(conceptId) || false
+    return avatarConcepts.some(link => 
+      link.avatarId === avatarId && 
+      link.conceptId === conceptId && 
+      link.status === "linked"
+    )
   }
 
-  const computeRelevanceScore = (avatar: CustomerAvatar, concept: CreativeConcept): number => {
+  const computeRelevanceScore = (avatar: Avatar, concept: Concept): number => {
     // Simple relevance scoring based on industry match and hook similarity
     let score = 0.5 // base score
     
@@ -307,7 +419,7 @@ export function ResearchAgentDashboard() {
     return Math.min(score, 1.0)
   }
 
-  const getMatchedElements = (avatar: CustomerAvatar, concept: CreativeConcept) => {
+  const getMatchedElements = (avatar: Avatar, concept: Concept) => {
     const avatarKeywords = avatar.hooks.join(' ').toLowerCase()
     const painKeywords = avatar.painPoint.toLowerCase()
     
@@ -333,7 +445,7 @@ export function ResearchAgentDashboard() {
     const avatar = avatars.find(a => a.id === selectedAvatar)
     if (!avatar) return []
     
-    return creativeConcepts
+    return concepts
       .map(concept => ({
         ...concept,
         relevanceScore: computeRelevanceScore(avatar, concept)
