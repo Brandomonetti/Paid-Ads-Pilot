@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, ThumbsUp, ThumbsDown, Play, Copy, RefreshCw, Video, Clock } from "lucide-react"
+import { FileText, ThumbsUp, ThumbsDown, Play, Copy, RefreshCw, Video, Clock, CheckCircle, Users, TrendingUp, ArrowLeft } from "lucide-react"
 
 interface Script {
   id: string
@@ -17,6 +17,11 @@ interface Script {
     solution: string
     cta: string
     overlays?: string[]
+  }
+  sourceResearch: {
+    avatarName: string
+    conceptTitle: string
+    relevanceScore: number
   }
   status: "pending" | "approved" | "rejected"
   feedback?: string
@@ -46,6 +51,11 @@ export function ScriptAgentDashboard() {
           "Text: 'Happy kids = happy mom'"
         ]
       },
+      sourceResearch: {
+        avatarName: "Busy Working Parent",
+        conceptTitle: "Kitchen Transformation - Quick Recipe Ideas",
+        relevanceScore: 92
+      },
       status: "pending",
       performance: {
         hookRate: 85,
@@ -69,6 +79,11 @@ export function ScriptAgentDashboard() {
           "Text: 'The difference? Real nutrition'"
         ]
       },
+      sourceResearch: {
+        avatarName: "Health-Conscious Millennial",
+        conceptTitle: "Raw UGC with Male Speaker - Weight Loss Transformation",
+        relevanceScore: 88
+      },
       status: "approved"
     },
     {
@@ -86,6 +101,11 @@ export function ScriptAgentDashboard() {
           "Text: 'Ingredient 2: The secret'", 
           "Text: 'Ingredient 3: Game changer'"
         ]
+      },
+      sourceResearch: {
+        avatarName: "Time-Pressed Entrepreneur",
+        conceptTitle: "POV Hook Format - Trendjacking Success Stories",
+        relevanceScore: 85
       },
       status: "pending"
     }
@@ -118,6 +138,11 @@ export function ScriptAgentDashboard() {
           problem: "Working 80-hour weeks, living on coffee and regret",
           solution: "This one change helped me reclaim my energy and focus",
           cta: "Ready to fuel your success? Start here.",
+        },
+        sourceResearch: {
+          avatarName: "Time-Pressed Entrepreneur",
+          conceptTitle: "Productivity Hacks for Business Owners",
+          relevanceScore: 91
         },
         status: "pending"
       }
@@ -155,7 +180,19 @@ export function ScriptAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Script Agent</h1>
-            <p className="text-muted-foreground">Create high-converting UGC video scripts</p>
+            <p className="text-muted-foreground">Create high-converting UGC video scripts from approved research insights</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-300">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Based on Research Agent approvals
+              </Badge>
+              <Button variant="ghost" size="sm" asChild className="text-xs h-6">
+                <a href="/research" className="flex items-center gap-1">
+                  <ArrowLeft className="h-3 w-3" />
+                  View Research
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -249,6 +286,32 @@ export function ScriptAgentDashboard() {
             </CardHeader>
 
             <CardContent className="space-y-4">
+              {/* Source Research Section */}
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-1 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Source Research (Approved)
+                    </h4>
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3 text-blue-600" />
+                        <span className="font-medium">{script.sourceResearch.avatarName}</span>
+                      </div>
+                      <span className="text-muted-foreground">+</span>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                        <span className="font-medium">{script.sourceResearch.conceptTitle}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-300">
+                    {script.sourceResearch.relevanceScore}% fit
+                  </Badge>
+                </div>
+              </div>
+
               {/* Script Content */}
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
