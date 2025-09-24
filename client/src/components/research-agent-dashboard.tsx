@@ -453,6 +453,29 @@ export function ResearchAgentDashboard() {
     return { matchedHooks, matchedElements }
   }
 
+  const getEmbedUrl = (url: string): string => {
+    // Convert regular social media URLs to embeddable format
+    if (url.includes('youtube.com/watch')) {
+      const videoId = url.split('v=')[1]?.split('&')[0]
+      return `https://www.youtube.com/embed/${videoId}`
+    }
+    if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0]
+      return `https://www.youtube.com/embed/${videoId}`
+    }
+    if (url.includes('tiktok.com')) {
+      // TikTok embed - extract video ID and use embed format
+      const videoId = url.split('/video/')[1]?.split('?')[0]
+      return `https://www.tiktok.com/embed/${videoId}`
+    }
+    if (url.includes('instagram.com/p/')) {
+      // Instagram post embed
+      return `${url}embed/`
+    }
+    // Fallback to original URL
+    return url
+  }
+
   const getFilteredConcepts = (): ConceptWithRelevance[] => {
     if (!selectedAvatar) return []
     
@@ -716,6 +739,54 @@ export function ResearchAgentDashboard() {
                     </CardHeader>
 
                     <CardContent className="space-y-4">
+                      {/* Visual Preview Section */}
+                      {concept.referenceUrl && (
+                        <div className="relative rounded-lg overflow-hidden bg-muted/20 border">
+                          <div className="aspect-video w-full">
+                            {/* Video Embed for TikTok, YouTube, Instagram */}
+                            {(concept.referenceUrl.includes('tiktok.com') || 
+                              concept.referenceUrl.includes('youtube.com') || 
+                              concept.referenceUrl.includes('youtu.be') ||
+                              concept.referenceUrl.includes('instagram.com')) ? (
+                              <iframe
+                                src={getEmbedUrl(concept.referenceUrl)}
+                                className="w-full h-full"
+                                frameBorder="0"
+                                allowFullScreen
+                                title={concept.title}
+                              />
+                            ) : (
+                              /* Fallback for other URLs - show as clickable preview */
+                              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                                <div className="text-center p-6">
+                                  <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <TrendingUp className="h-8 w-8 text-primary" />
+                                  </div>
+                                  <h4 className="font-medium text-sm mb-2">{concept.title}</h4>
+                                  <p className="text-xs text-muted-foreground mb-3">{concept.format}</p>
+                                  <Button size="sm" variant="outline" asChild>
+                                    <a href={concept.referenceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                                      <ExternalLink className="h-3 w-3" />
+                                      View Content
+                                    </a>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Overlay with engagement metrics */}
+                          <div className="absolute top-2 right-2 bg-black/80 text-white px-2 py-1 rounded-md text-xs flex items-center gap-2">
+                            <span className="flex items-center gap-1">
+                              👁 {concept.performance.views}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              ❤️ {concept.performance.engagement}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Performance Metrics */}
                       <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-muted/30 border">
                         <div className="text-center">
