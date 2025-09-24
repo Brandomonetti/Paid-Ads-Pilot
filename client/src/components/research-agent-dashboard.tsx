@@ -26,10 +26,18 @@ type AvatarInsert = z.infer<typeof insertAvatarSchema>
 type ConceptInsert = z.infer<typeof insertConceptSchema>
 type AvatarConceptInsert = z.infer<typeof insertAvatarConceptSchema>
 
+// Define the performance interface for better typing
+interface PerformanceMetrics {
+  views: string
+  engagement: string
+  conversionRate?: string
+}
+
 interface ConceptWithRelevance extends Concept {
   relevanceScore: number
   matchedHooks?: string[]
   matchedElements?: string[]
+  performance: PerformanceMetrics
 }
 
 export function ResearchAgentDashboard() {
@@ -39,18 +47,18 @@ export function ResearchAgentDashboard() {
   const [hasSeeded, setHasSeeded] = useState(false)
 
   // Fetch avatars from backend
-  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery({
+  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery<Avatar[]>({
     queryKey: ['/api/avatars'],
   })
 
   // Fetch concepts filtered by selected avatar 
-  const { data: concepts = [], isLoading: isLoadingConcepts } = useQuery({
-    queryKey: ['/api/concepts', selectedAvatar ? { avatarId: selectedAvatar } : {}],
+  const { data: concepts = [], isLoading: isLoadingConcepts } = useQuery<Concept[]>({
+    queryKey: ['/api/concepts', selectedAvatar],
     enabled: !!selectedAvatar,
   })
 
   // Fetch avatar-concept links
-  const { data: avatarConcepts = [] } = useQuery({
+  const { data: avatarConcepts = [] } = useQuery<AvatarConcept[]>({
     queryKey: ['/api/avatar-concepts'],
   })
 
@@ -425,7 +433,7 @@ export function ResearchAgentDashboard() {
     return Math.min(score, 1.0)
   }
 
-  const getMatchedElements = (avatar: Avatar, concept: Concept) => {
+  const getMatchedElements = (avatar: Avatar, concept: Concept): { matchedHooks: string[]; matchedElements: string[] } => {
     const avatarKeywords = avatar.hooks.join(' ').toLowerCase()
     const painKeywords = avatar.painPoint.toLowerCase()
     
@@ -454,6 +462,7 @@ export function ResearchAgentDashboard() {
     return concepts
       .map(concept => ({
         ...concept,
+        performance: concept.performance as PerformanceMetrics,
         relevanceScore: computeRelevanceScore(avatar, concept)
       }))
       .sort((a, b) => b.relevanceScore - a.relevanceScore)

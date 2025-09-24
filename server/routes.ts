@@ -48,10 +48,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Concept routes
-  app.get("/api/concepts", async (req, res) => {
+  app.get("/api/concepts/:avatarId", async (req, res) => {
     try {
-      const { avatarId } = req.query;
-      const concepts = await storage.getConcepts(avatarId as string);
+      const { avatarId } = req.params;
+      const concepts = await storage.getConcepts(avatarId);
       res.json(concepts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch concepts" });
