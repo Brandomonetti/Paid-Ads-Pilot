@@ -390,6 +390,12 @@ export function ResearchAgentDashboard() {
     )
   }
 
+  const getLinkedConcepts = (avatarId: string) => {
+    return avatarConcepts
+      .filter(link => link.avatarId === avatarId && link.status === "linked")
+      .map(link => link.conceptId)
+  }
+
   const computeRelevanceScore = (avatar: Avatar, concept: Concept): number => {
     // Simple relevance scoring based on industry match and hook similarity
     let score = 0.5 // base score
@@ -538,14 +544,14 @@ export function ResearchAgentDashboard() {
                   </div>
                   
                   {/* Linked Concepts Preview */}
-                  {selectedAvatar === avatar.id && linkedConcepts[avatar.id] && (
+                  {selectedAvatar === avatar.id && getLinkedConcepts(avatar.id).length > 0 && (
                     <div className="mt-3 pt-3 border-t">
                       <div className="text-xs text-muted-foreground mb-2">
-                        {linkedConcepts[avatar.id].length} Linked Concepts
+                        {getLinkedConcepts(avatar.id).length} Linked Concepts
                       </div>
                       <div className="flex gap-1 flex-wrap">
-                        {linkedConcepts[avatar.id].slice(0, 3).map(conceptId => {
-                          const concept = creativeConcepts.find(c => c.id === conceptId)
+                        {getLinkedConcepts(avatar.id).slice(0, 3).map(conceptId => {
+                          const concept = concepts.find(c => c.id === conceptId)
                           return concept ? (
                             <Badge key={conceptId} variant="outline" className="text-xs">
                               {concept.title.slice(0, 20)}...
