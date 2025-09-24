@@ -29,40 +29,30 @@ interface CreativeBrief {
   id: string
   title: string
   brand: string
-  objective: string
-  format: "UGC Video" | "Static Image" | "Carousel" | "Story Series" | "Long Form"
-  platform: "TikTok" | "Instagram" | "Facebook" | "YouTube" | "Multi-Platform"
-  targetAudience: string
-  keyMessage: string
-  visualDirection: {
-    mood: string
-    colorScheme: string
-    lighting: string
-    setting: string
-  }
-  creatorRequirements: {
-    demographics: string
-    persona: string
-    experience: string
-    equipment: string
-  }
-  scriptElements: {
-    hook: string
-    problemAgitation: string
-    solution: string
-    cta: string
-  }
-  brandGuidelines: {
-    dosList: string[]
-    dontsList: string[]
-    brandVoice: string
-  }
-  deliverables: string[]
-  timeline: string
-  budget: string
+  // Header Information
+  avatar: string
+  angle: string
+  desire: string
+  funnelStage: string
+  reference: string
+  // Production Details
+  rawFiles: string
+  duration: string
+  aiVo: boolean
+  subtitles: boolean
+  // Content Blocks
+  blocks: ContentBlock[]
   status: "pending" | "approved" | "rejected" | "in_review"
   feedback?: string
   createdAt: string
+}
+
+interface ContentBlock {
+  id: string
+  name: string
+  voiceOver: string
+  textOverlay: string
+  notes: string
 }
 
 interface ChatMessage {
@@ -77,107 +67,100 @@ export function CreativeBriefAgentDashboard() {
   const [briefs, setBriefs] = useState<CreativeBrief[]>([
     {
       id: "1",
-      title: "Weight Loss Transformation UGC Campaign",
-      brand: "FitLife Supplements",
-      objective: "Drive supplement sales through authentic transformation stories",
-      format: "UGC Video",
-      platform: "TikTok",
-      targetAudience: "Health-conscious millennials (25-35) seeking weight loss solutions",
-      keyMessage: "Real people, real results with FitLife's proven supplements",
-      visualDirection: {
-        mood: "Authentic, motivational, raw",
-        colorScheme: "Natural lighting, warm tones",
-        lighting: "Natural lighting preferred, bathroom/bedroom settings",
-        setting: "Home environment - bathroom mirror, bedroom, kitchen"
-      },
-      creatorRequirements: {
-        demographics: "Male, 25-35 years old, fitness journey documented",
-        persona: "Relatable guy-next-door who struggled with weight",
-        experience: "Previous weight loss content, genuine transformation story",
-        equipment: "Smartphone camera, ring light optional"
-      },
-      scriptElements: {
-        hook: "POV: You've tried every diet and nothing worked... until this",
-        problemAgitation: "Show before photos, discuss failed attempts, frustration",
-        solution: "Introduce FitLife supplements, show current physique",
-        cta: "Link in bio for 30% off your first order - transform like I did"
-      },
-      brandGuidelines: {
-        dosList: [
-          "Emphasize real transformation journey",
-          "Show product naturally in routine",
-          "Maintain authentic, unpolished feel",
-          "Include disclaimer about individual results"
-        ],
-        dontsList: [
-          "Make unrealistic claims",
-          "Over-produce or over-edit content", 
-          "Hide sponsored content disclosure",
-          "Compare to competitors directly"
-        ],
-        brandVoice: "Encouraging, authentic, results-focused but realistic"
-      },
-      deliverables: [
-        "60-second TikTok video",
-        "3 Instagram Reels variations",
-        "Behind-the-scenes content",
-        "Progress photo carousel"
+      title: "Smooth Skin UGC Campaign",
+      brand: "The Peach Please",
+      avatar: "The Waxer", 
+      angle: "Boyfriend obsession",
+      desire: "Compliment-worthy smoothness without the pain or hassle",
+      funnelStage: "TOF (Top of Funnel)",
+      reference: "https://app.tryatria.com/ad/m691332663653007",
+      rawFiles: "please use shots from here",
+      duration: "Approx. 30s",
+      aiVo: true,
+      subtitles: true,
+      blocks: [
+        {
+          id: "1",
+          name: "Hook",
+          voiceOver: "H1: 'My cooch is SO soft, that literally my guy kept commenting on it..' H2: The moment my guy saw my cooch.. H3: 'I thought my guy was already obsessed with my cooch, but when he saw it today",
+          textOverlay: "How to get you 🤭 bald ASF without waxing",
+          notes: "Visual of woman applying product"
+        },
+        {
+          id: "2", 
+          name: "Debunking Alternatives",
+          voiceOver: "He was like, 'Damn, it's perfectly smooth. Did you get it done with lasers? Boy, no, I did not. And no, I did not wax it either.'",
+          textOverlay: "",
+          notes: ""
+        },
+        {
+          id: "3",
+          name: "Benefit",
+          voiceOver: "I literally found this, the Peach Please trimmer. I used it in the shower and it was just so smooth. I honestly was just flabbergasted...",
+          textOverlay: "",
+          notes: ""
+        },
+        {
+          id: "4",
+          name: "Features", 
+          voiceOver: "...because it was just from this one thing right here. Dry shaving, using conditioner... all that can be done with this thing right here.",
+          textOverlay: "",
+          notes: ""
+        }
       ],
-      timeline: "7 days",
-      budget: "$2,500 + product",
       status: "approved",
       createdAt: "2024-09-24"
     },
     {
       id: "2",
-      title: "Organic Food Family Meal Campaign",
-      brand: "FreshHarvest Organic",
-      objective: "Increase brand awareness among busy parents",
-      format: "Carousel",
-      platform: "Instagram",
-      targetAudience: "Working parents (28-45) concerned about family nutrition",
-      keyMessage: "Healthy family meals made simple with organic ingredients",
-      visualDirection: {
-        mood: "Warm, family-oriented, clean",
-        colorScheme: "Fresh greens, warm whites, natural wood tones",
-        lighting: "Bright natural kitchen lighting",
-        setting: "Clean, modern family kitchen"
-      },
-      creatorRequirements: {
-        demographics: "Parent (any gender), 28-45, with young children",
-        persona: "Busy but health-conscious parent who loves cooking",
-        experience: "Family cooking content, meal prep expertise",
-        equipment: "DSLR or high-quality smartphone, tripod"
-      },
-      scriptElements: {
-        hook: "Dinner time stress? Not anymore. Here's how I feed my family organic for under $50/week",
-        problemAgitation: "Show typical evening chaos, expensive grocery bills",
-        solution: "Introduce FreshHarvest meal planning system",
-        cta: "Save 20% on your first organic meal plan - link in stories"
-      },
-      brandGuidelines: {
-        dosList: [
-          "Show real family interactions",
-          "Highlight cost savings", 
-          "Feature diverse meal options",
-          "Show kids enjoying the food"
-        ],
-        dontsList: [
-          "Make it look too perfect or staged",
-          "Ignore dietary restrictions/allergies",
-          "Focus only on appearance over nutrition",
-          "Overwhelming prep complexity"
-        ],
-        brandVoice: "Supportive, practical, family-first"
-      },
-      deliverables: [
-        "10-slide recipe carousel",
-        "Shopping list template",
-        "Meal prep video",
-        "Customer testimonial story"
+      title: "Weight Loss Transformation Campaign",
+      brand: "FitLife Supplements",
+      avatar: "The Transformer",
+      angle: "Shocking before/after results",
+      desire: "Rapid visible weight loss that gets people asking 'how?'",
+      funnelStage: "MOF (Middle of Funnel)", 
+      reference: "https://example.com/reference-ad",
+      rawFiles: "Use before/after photos provided",
+      duration: "45s",
+      aiVo: false,
+      subtitles: true,
+      blocks: [
+        {
+          id: "1",
+          name: "Hook",
+          voiceOver: "People keep asking me how I lost 30 pounds in 3 months...",
+          textOverlay: "Lost 30lbs in 90 days 🤯",
+          notes: "Show dramatic before photo"
+        },
+        {
+          id: "2",
+          name: "Problem Agitation",
+          voiceOver: "I tried everything - keto, intermittent fasting, even those crazy detox teas...",
+          textOverlay: "Nothing worked until...",
+          notes: "Show failed diet attempts"
+        },
+        {
+          id: "3", 
+          name: "Solution Reveal",
+          voiceOver: "Then I discovered FitLife's metabolism booster and everything changed.",
+          textOverlay: "This changed everything ⬇️",
+          notes: "Product reveal with current physique"
+        },
+        {
+          id: "4",
+          name: "Social Proof",
+          voiceOver: "My trainer couldn't believe the results. Even my doctor was impressed.",
+          textOverlay: "Even my doctor was shocked 😱",
+          notes: "Show testimonials/reactions"
+        },
+        {
+          id: "5",
+          name: "Call to Action",
+          voiceOver: "Link in bio for 30% off - this deal ends tonight!",
+          textOverlay: "30% OFF expires tonight! 🔗",
+          notes: "Urgency with clear CTA"
+        }
       ],
-      timeline: "5 days",
-      budget: "$1,800 + product",
       status: "pending",
       createdAt: "2024-09-24"
     }
@@ -217,37 +200,45 @@ export function CreativeBriefAgentDashboard() {
         id: Date.now().toString(),
         title: "AI-Generated Campaign Brief",
         brand: "Sample Brand",
-        objective: "Generated based on research insights and campaign requirements",
-        format: "UGC Video",
-        platform: "Multi-Platform", 
-        targetAudience: "Generated target audience based on research data",
-        keyMessage: "Compelling message derived from customer avatars",
-        visualDirection: {
-          mood: "Authentic and engaging",
-          colorScheme: "Brand-aligned colors",
-          lighting: "Natural and appealing",
-          setting: "Contextually relevant"
-        },
-        creatorRequirements: {
-          demographics: "Optimized creator profile",
-          persona: "Audience-matched personality",
-          experience: "Required content expertise",
-          equipment: "Professional quality setup"
-        },
-        scriptElements: {
-          hook: "Attention-grabbing opening",
-          problemAgitation: "Pain point amplification",
-          solution: "Product positioning",
-          cta: "Conversion-optimized call to action"
-        },
-        brandGuidelines: {
-          dosList: ["Key brand requirements", "Content best practices"],
-          dontsList: ["Brand violations to avoid", "Content restrictions"],
-          brandVoice: "Consistent brand personality"
-        },
-        deliverables: ["Primary content piece", "Supporting materials"],
-        timeline: "Optimal delivery timeline",
-        budget: "Market-appropriate budget",
+        avatar: "AI-Generated Avatar",
+        angle: "Compelling brand positioning",
+        desire: "Drive engagement and conversions",
+        funnelStage: "MOF (Middle of Funnel)",
+        reference: "https://example.com/reference",
+        rawFiles: "Use provided brand assets",
+        duration: "30-45s",
+        aiVo: true,
+        subtitles: true,
+        blocks: [
+          {
+            id: "1",
+            name: "Hook",
+            voiceOver: "Attention-grabbing opening that stops the scroll",
+            textOverlay: "Problem solved! 🎯",
+            notes: "Strong visual hook"
+          },
+          {
+            id: "2", 
+            name: "Problem Agitation",
+            voiceOver: "Paint the pain point clearly and relatable",
+            textOverlay: "Struggling with...",
+            notes: "Show problem visually"
+          },
+          {
+            id: "3",
+            name: "Solution",
+            voiceOver: "Introduce the product as the perfect solution",
+            textOverlay: "Here's how I fixed it",
+            notes: "Product reveal"
+          },
+          {
+            id: "4",
+            name: "Call to Action",
+            voiceOver: "Clear next step with urgency",
+            textOverlay: "Link in bio! ⬆️",
+            notes: "Strong CTA with urgency"
+          }
+        ],
         status: "pending",
         createdAt: new Date().toISOString().split('T')[0]
       }
@@ -472,7 +463,7 @@ export function CreativeBriefAgentDashboard() {
                   <div className="flex items-center gap-3">
                     <div>
                       <CardTitle className="text-lg">{brief.title}</CardTitle>
-                      <CardDescription>{brief.brand} • {brief.platform} • {brief.format}</CardDescription>
+                      <CardDescription>{brief.brand} • {brief.funnelStage} • {brief.duration}</CardDescription>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -492,141 +483,92 @@ export function CreativeBriefAgentDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
-                <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid grid-cols-4 w-full">
-                    <TabsTrigger value="overview" className="flex items-center gap-1">
-                      <Target className="h-3 w-3" />
-                      Overview
-                    </TabsTrigger>
-                    <TabsTrigger value="visual" className="flex items-center gap-1">
-                      <Palette className="h-3 w-3" />
-                      Visual
-                    </TabsTrigger>
-                    <TabsTrigger value="creator" className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      Creator
-                    </TabsTrigger>
-                    <TabsTrigger value="script" className="flex items-center gap-1">
-                      <Megaphone className="h-3 w-3" />
-                      Script
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="overview" className="space-y-3 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">OBJECTIVE</p>
-                        <p className="text-sm mt-1">{brief.objective}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">TARGET AUDIENCE</p>
-                        <p className="text-sm mt-1">{brief.targetAudience}</p>
-                      </div>
+              <CardContent className="space-y-6">
+                {/* Header Information */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-semibold">Avatar: </span>
+                      <span className="text-sm">{brief.avatar}</span>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <p className="text-xs font-medium text-muted-foreground">KEY MESSAGE</p>
-                      <p className="text-sm mt-1">{brief.keyMessage}</p>
+                    <div>
+                      <span className="text-sm font-semibold">Angle: </span>
+                      <span className="text-sm">{brief.angle}</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-2 rounded border bg-card">
-                        <p className="text-xs text-muted-foreground">Timeline</p>
-                        <p className="font-medium">{brief.timeline}</p>
-                      </div>
-                      <div className="text-center p-2 rounded border bg-card">
-                        <p className="text-xs text-muted-foreground">Budget</p>
-                        <p className="font-medium">{brief.budget}</p>
-                      </div>
-                      <div className="text-center p-2 rounded border bg-card">
-                        <p className="text-xs text-muted-foreground">Deliverables</p>
-                        <p className="font-medium">{brief.deliverables.length}</p>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="visual" className="space-y-3 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">MOOD & TONE</p>
-                        <p className="text-sm mt-1">{brief.visualDirection.mood}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">COLOR SCHEME</p>
-                        <p className="text-sm mt-1">{brief.visualDirection.colorScheme}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">LIGHTING</p>
-                        <p className="text-sm mt-1">{brief.visualDirection.lighting}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">SETTING</p>
-                        <p className="text-sm mt-1">{brief.visualDirection.setting}</p>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="creator" className="space-y-3 mt-4">
-                    <div className="space-y-3">
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">DEMOGRAPHICS</p>
-                        <p className="text-sm mt-1">{brief.creatorRequirements.demographics}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">PERSONA</p>
-                        <p className="text-sm mt-1">{brief.creatorRequirements.persona}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground">EXPERIENCE</p>
-                          <p className="text-sm mt-1">{brief.creatorRequirements.experience}</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground">EQUIPMENT</p>
-                          <p className="text-sm mt-1">{brief.creatorRequirements.equipment}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="script" className="space-y-3 mt-4">
-                    <div className="space-y-3">
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">HOOK</p>
-                        <p className="text-sm mt-1">{brief.scriptElements.hook}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">PROBLEM AGITATION</p>
-                        <p className="text-sm mt-1">{brief.scriptElements.problemAgitation}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">SOLUTION</p>
-                        <p className="text-sm mt-1">{brief.scriptElements.solution}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted/50 border">
-                        <p className="text-xs font-medium text-muted-foreground">CALL TO ACTION</p>
-                        <p className="text-sm mt-1">{brief.scriptElements.cta}</p>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-
-                {/* Brand Guidelines */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
-                    <p className="text-xs font-medium text-green-800 dark:text-green-200">DO'S</p>
-                    <ul className="text-xs mt-2 space-y-1">
-                      {brief.brandGuidelines.dosList.slice(0, 2).map((item, index) => (
-                        <li key={index} className="text-green-700 dark:text-green-300">• {item}</li>
-                      ))}
-                    </ul>
                   </div>
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
-                    <p className="text-xs font-medium text-red-800 dark:text-red-200">DON'TS</p>
-                    <ul className="text-xs mt-2 space-y-1">
-                      {brief.brandGuidelines.dontsList.slice(0, 2).map((item, index) => (
-                        <li key={index} className="text-red-700 dark:text-red-300">• {item}</li>
-                      ))}
-                    </ul>
+                  
+                  <div>
+                    <span className="text-sm font-semibold">Desire: </span>
+                    <span className="text-sm">{brief.desire}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-semibold">Funnel Stage: </span>
+                      <span className="text-sm">{brief.funnelStage}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold">Reference: </span>
+                      <a href={brief.reference} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:text-blue-600 underline">
+                        {brief.reference}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Production Details */}
+                <div className="border-t pt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-semibold">RAW files: </span>
+                      <span className="text-sm">{brief.rawFiles}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold">Duration: </span>
+                      <span className="text-sm">{brief.duration}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-semibold">AI VO: </span>
+                      <span className="text-sm">{brief.aiVo ? "Yes" : "No"}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold">Subtitles: </span>
+                      <span className="text-sm">{brief.subtitles ? "Yes" : "No"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content Blocks Table */}
+                <div className="border-t pt-4">
+                  <div className="border rounded-lg overflow-hidden">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-4 bg-muted/50 border-b">
+                      <div className="p-3 font-medium text-sm border-r">Block</div>
+                      <div className="p-3 font-medium text-sm border-r">VO</div>
+                      <div className="p-3 font-medium text-sm border-r">Text Overlay</div>
+                      <div className="p-3 font-medium text-sm">Notes</div>
+                    </div>
+                    
+                    {/* Table Rows */}
+                    {brief.blocks.map((block, index) => (
+                      <div key={block.id} className={`grid grid-cols-4 ${index !== brief.blocks.length - 1 ? 'border-b' : ''}`}>
+                        <div className="p-3 border-r">
+                          <span className="text-sm font-medium">{index + 1}. {block.name}</span>
+                        </div>
+                        <div className="p-3 border-r">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{block.voiceOver}</p>
+                        </div>
+                        <div className="p-3 border-r">
+                          <p className="text-sm">{block.textOverlay}</p>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm text-muted-foreground">{block.notes}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
