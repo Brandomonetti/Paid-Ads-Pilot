@@ -11,10 +11,14 @@ interface Script {
   title: string
   duration: string
   scriptType: "ugc" | "testimonial" | "demo" | "story"
+  summary: string // One-liner explaining target, problem, and angle
   content: {
-    hook: string
+    avatar: string // Who we're targeting
+    marketingAngle: string // The approach/hook we're using
+    awarenessStage: "cold" | "warm" | "hot" // Audience awareness level
     problem: string
     solution: string
+    fullScript: string // Complete script text
     cta: string
     overlays?: string[]
   }
@@ -40,10 +44,14 @@ export function ScriptAgentDashboard() {
       title: "Busy Parent Morning Routine",
       duration: "30s",
       scriptType: "ugc",
+      summary: "Targeting busy working parents struggling with chaotic mornings using meal prep transformation angle for warm audience",
       content: {
-        hook: "POV: You're a working mom and breakfast just became your superpower",
+        avatar: "Working mothers, ages 28-40, juggling career and family responsibilities",
+        marketingAngle: "POV transformation - become the organized parent who has it all figured out",
+        awarenessStage: "warm",
         problem: "Every morning feels like chaos - kids refusing to eat, you're late for work, everyone's hangry",
         solution: "This simple meal prep trick changed everything. 5 minutes Sunday night = stress-free mornings all week",
+        fullScript: "POV: You're a working mom and breakfast just became your superpower. [Shows chaotic morning scene] Every morning feels like chaos - kids refusing to eat, you're late for work, everyone's hangry. [Transition] But this simple meal prep trick changed everything. [Shows organized prep] 5 minutes Sunday night = stress-free mornings all week. [Shows smooth morning] Try it for yourself - link in bio for the full guide.",
         cta: "Try it for yourself - link in bio for the full guide",
         overlays: [
           "Text: 'Sunday night prep'",
@@ -68,10 +76,14 @@ export function ScriptAgentDashboard() {
       title: "Health Transformation Story",
       duration: "45s", 
       scriptType: "testimonial",
+      summary: "Targeting health-conscious millennials who've tried everything using authentic transformation story for cold audience",
       content: {
-        hook: "I tried every diet for 10 years. This one thing finally worked.",
+        avatar: "Health-conscious millennials, ages 25-35, frustrated with failed attempts at sustainable wellness",
+        marketingAngle: "Personal transformation story - relatable struggle to breakthrough moment",
+        awarenessStage: "cold",
         problem: "Spent thousands on supplements, meal plans, gym memberships. Nothing stuck.",
         solution: "Then I discovered this isn't about restriction - it's about nourishment. Real food, real results.",
+        fullScript: "I tried every diet for 10 years. This one thing finally worked. [Shows before photos] Spent thousands on supplements, meal plans, gym memberships. Nothing stuck. [Transition moment] Then I discovered this isn't about restriction - it's about nourishment. [Shows transformation] Real food, real results. [Shows current lifestyle] Ready for your transformation? Get started today.",
         cta: "Ready for your transformation? Get started today.",
         overlays: [
           "Text: 'Before: Exhausted & bloated'",
@@ -91,10 +103,14 @@ export function ScriptAgentDashboard() {
       title: "Quick Product Demo",
       duration: "20s",
       scriptType: "demo", 
+      summary: "Targeting time-pressed entrepreneurs seeking quick nutrition using fast meal demo for hot audience",
       content: {
-        hook: "Watch me make a restaurant-quality meal in 10 minutes",
+        avatar: "Busy entrepreneurs, ages 30-45, prioritizing efficiency and health in their demanding schedules",
+        marketingAngle: "Speed and quality demonstration - prove it's possible to eat well without time investment",
+        awarenessStage: "hot",
         problem: "Who says healthy can't be fast and delicious?",
         solution: "Three simple ingredients, one amazing result",
+        fullScript: "Watch me make a restaurant-quality meal in 10 minutes. [Timer starts] Who says healthy can't be fast and delicious? [Shows ingredients] Three simple ingredients, one amazing result. [Demo cooking process with timer] [Final reveal] Get the recipe and ingredients delivered to your door.",
         cta: "Get the recipe and ingredients delivered to your door",
         overlays: [
           "Text: 'Ingredient 1: Revealed'",
@@ -133,10 +149,14 @@ export function ScriptAgentDashboard() {
         title: "Entrepreneur Success Story",
         duration: "35s",
         scriptType: "story",
+        summary: "Targeting burned-out entrepreneurs seeking sustainable success using personal breakthrough story for warm audience",
         content: {
-          hook: "From burnout to breakthrough in 30 days",
+          avatar: "Ambitious entrepreneurs, ages 30-50, experiencing burnout from overwork and seeking sustainable growth",
+          marketingAngle: "Personal breakthrough story - from struggle to systematic success",
+          awarenessStage: "warm",
           problem: "Working 80-hour weeks, living on coffee and regret",
           solution: "This one change helped me reclaim my energy and focus",
+          fullScript: "From burnout to breakthrough in 30 days. [Shows exhausted state] Working 80-hour weeks, living on coffee and regret. [Transition moment] This one change helped me reclaim my energy and focus. [Shows transformation] Ready to fuel your success? Start here.",
           cta: "Ready to fuel your success? Start here.",
         },
         sourceResearch: {
@@ -152,7 +172,7 @@ export function ScriptAgentDashboard() {
   }
 
   const copyScript = (script: Script) => {
-    const fullScript = `HOOK: ${script.content.hook}\n\nPROBLEM: ${script.content.problem}\n\nSOLUTION: ${script.content.solution}\n\nCTA: ${script.content.cta}`
+    const fullScript = `AVATAR: ${script.content.avatar}\n\nMARKETING ANGLE: ${script.content.marketingAngle}\n\nAWARENESS STAGE: ${script.content.awarenessStage.toUpperCase()}\n\nPROBLEM: ${script.content.problem}\n\nSOLUTION: ${script.content.solution}\n\nFULL SCRIPT:\n${script.content.fullScript}\n\nCTA: ${script.content.cta}`
     navigator.clipboard.writeText(fullScript)
     console.log("Script copied to clipboard")
   }
@@ -312,11 +332,51 @@ export function ScriptAgentDashboard() {
                 </div>
               </div>
 
-              {/* Script Content */}
+              {/* Summary One-Liner */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800">
+                <h4 className="font-medium text-sm text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Script Summary
+                </h4>
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100">{script.summary}</p>
+              </div>
+
+              {/* Strategic Framework */}
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                  <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-1">HOOK</h4>
-                  <p className="text-sm">{script.content.hook}</p>
+                  <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300 mb-1 flex items-center gap-2">
+                    <Users className="h-3 w-3" />
+                    AVATAR
+                  </h4>
+                  <p className="text-sm">{script.content.avatar}</p>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                  <h4 className="font-medium text-sm text-orange-700 dark:text-orange-300 mb-1 flex items-center gap-2">
+                    <TrendingUp className="h-3 w-3" />
+                    MARKETING ANGLE
+                  </h4>
+                  <p className="text-sm">{script.content.marketingAngle}</p>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                  <h4 className="font-medium text-sm text-indigo-700 dark:text-indigo-300 mb-1 flex items-center gap-2">
+                    <Clock className="h-3 w-3" />
+                    AWARENESS STAGE
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      className={
+                        script.content.awarenessStage === "cold" 
+                          ? "bg-blue-100 text-blue-800 border-blue-300"
+                          : script.content.awarenessStage === "warm"
+                          ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                          : "bg-red-100 text-red-800 border-red-300"
+                      }
+                    >
+                      {script.content.awarenessStage.toUpperCase()} AUDIENCE
+                    </Badge>
+                  </div>
                 </div>
                 
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
@@ -328,24 +388,36 @@ export function ScriptAgentDashboard() {
                   <h4 className="font-medium text-sm text-green-700 dark:text-green-300 mb-1">SOLUTION</h4>
                   <p className="text-sm">{script.content.solution}</p>
                 </div>
-                
-                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                  <h4 className="font-medium text-sm text-purple-700 dark:text-purple-300 mb-1">CALL TO ACTION</h4>
-                  <p className="text-sm">{script.content.cta}</p>
-                </div>
-
-                {/* Overlays */}
-                {script.content.overlays && (
-                  <div className="p-3 rounded-lg bg-muted/50 border">
-                    <h4 className="font-medium text-sm mb-2">Video Overlays</h4>
-                    <ul className="space-y-1">
-                      {script.content.overlays.map((overlay, index) => (
-                        <li key={index} className="text-sm text-muted-foreground">• {overlay}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
+
+              {/* Complete Script */}
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800">
+                <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  COMPLETE SCRIPT
+                </h4>
+                <div className="bg-white dark:bg-slate-800 p-3 rounded border">
+                  <p className="text-sm leading-relaxed whitespace-pre-line">{script.content.fullScript}</p>
+                </div>
+              </div>
+
+              {/* Call to Action */}
+              <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                <h4 className="font-medium text-sm text-purple-700 dark:text-purple-300 mb-1">CALL TO ACTION</h4>
+                <p className="text-sm">{script.content.cta}</p>
+              </div>
+
+              {/* Overlays */}
+              {script.content.overlays && (
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <h4 className="font-medium text-sm mb-2">Video Overlays</h4>
+                  <ul className="space-y-1">
+                    {script.content.overlays.map((overlay, index) => (
+                      <li key={index} className="text-sm text-muted-foreground">• {overlay}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Performance Metrics */}
               {script.performance && (
