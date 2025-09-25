@@ -473,26 +473,30 @@ export function KnowledgeBaseDashboard() {
                     </Badge>
                   ))}
                 </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add brand value (e.g., Sustainability, Innovation)"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("brandValues", e.currentTarget.value.trim())
-                        e.currentTarget.value = ''
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Type a brand value and press Enter or click + to add"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          addArrayItem("brandValues", e.currentTarget.value.trim())
+                          e.currentTarget.value = ''
+                        }
+                      }}
+                      data-testid="input-brand-value"
+                    />
+                    <Button size="sm" variant="default" data-testid="button-add-value" onClick={() => {
+                      const input = document.querySelector('[data-testid="input-brand-value"]') as HTMLInputElement
+                      if (input && input.value.trim()) {
+                        addArrayItem("brandValues", input.value.trim())
+                        input.value = ''
                       }
-                    }}
-                    data-testid="input-brand-value"
-                  />
-                  <Button size="sm" variant="outline" data-testid="button-add-value" onClick={() => {
-                    const input = document.querySelector('[data-testid="input-brand-value"]') as HTMLInputElement
-                    if (input && input.value.trim()) {
-                      addArrayItem("brandValues", input.value.trim())
-                      input.value = ''
-                    }
-                  }}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                    }}>
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Examples: Sustainability, Innovation, Quality, Trust</p>
                 </div>
               </div>
             </div>
@@ -519,26 +523,30 @@ export function KnowledgeBaseDashboard() {
                       </Button>
                     </div>
                   ))}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://yourbrand.com/product-name"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          addArrayItem("productLinks", e.currentTarget.value.trim())
-                          e.currentTarget.value = ''
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter product URL and press Enter or click + to add"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            addArrayItem("productLinks", e.currentTarget.value.trim())
+                            e.currentTarget.value = ''
+                          }
+                        }}
+                        data-testid="input-product-link"
+                      />
+                      <Button size="sm" variant="default" data-testid="button-add-product" onClick={() => {
+                        const input = document.querySelector('[data-testid="input-product-link"]') as HTMLInputElement
+                        if (input && input.value.trim()) {
+                          addArrayItem("productLinks", input.value.trim())
+                          input.value = ''
                         }
-                      }}
-                      data-testid="input-product-link"
-                    />
-                    <Button size="sm" variant="outline" data-testid="button-add-product" onClick={() => {
-                      const input = document.querySelector('[data-testid="input-product-link"]') as HTMLInputElement
-                      if (input && input.value.trim()) {
-                        addArrayItem("productLinks", input.value.trim())
-                        input.value = ''
-                      }
-                    }}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                      }}>
+                        <Plus className="h-4 w-4" />
+                        Add
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Add each product page URL separately (required for AI analysis)</p>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">AI will analyze product pages for features, benefits, and positioning</p>
@@ -575,26 +583,30 @@ export function KnowledgeBaseDashboard() {
                       </Badge>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Benefit (e.g., Saves time, Improves health)"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          addArrayItem("keyBenefits", e.currentTarget.value.trim())
-                          e.currentTarget.value = ''
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type a benefit and press Enter or click + to add"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            addArrayItem("keyBenefits", e.currentTarget.value.trim())
+                            e.currentTarget.value = ''
+                          }
+                        }}
+                        data-testid="input-key-benefit"
+                      />
+                      <Button size="sm" variant="default" data-testid="button-add-benefit" onClick={() => {
+                        const input = document.querySelector('[data-testid="input-key-benefit"]') as HTMLInputElement
+                        if (input && input.value.trim()) {
+                          addArrayItem("keyBenefits", input.value.trim())
+                          input.value = ''
                         }
-                      }}
-                      data-testid="input-key-benefit"
-                    />
-                    <Button size="sm" variant="outline" data-testid="button-add-benefit" onClick={() => {
-                      const input = document.querySelector('[data-testid="input-key-benefit"]') as HTMLInputElement
-                      if (input && input.value.trim()) {
-                        addArrayItem("keyBenefits", input.value.trim())
-                        input.value = ''
-                      }
-                    }}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                      }}>
+                        <Plus className="h-4 w-4" />
+                        Add
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Examples: Saves time, Improves health, Easy to use</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -611,26 +623,30 @@ export function KnowledgeBaseDashboard() {
                       </Badge>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="USP (e.g., Only organic ingredients, 30-day guarantee)"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          addArrayItem("usps", e.currentTarget.value.trim())
-                          e.currentTarget.value = ''
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type a unique selling point and press Enter or click + to add"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            addArrayItem("usps", e.currentTarget.value.trim())
+                            e.currentTarget.value = ''
+                          }
+                        }}
+                        data-testid="input-usp"
+                      />
+                      <Button size="sm" variant="default" data-testid="button-add-usp" onClick={() => {
+                        const input = document.querySelector('[data-testid="input-usp"]') as HTMLInputElement
+                        if (input && input.value.trim()) {
+                          addArrayItem("usps", input.value.trim())
+                          input.value = ''
                         }
-                      }}
-                      data-testid="input-usp"
-                    />
-                    <Button size="sm" variant="outline" data-testid="button-add-usp" onClick={() => {
-                      const input = document.querySelector('[data-testid="input-usp"]') as HTMLInputElement
-                      if (input && input.value.trim()) {
-                        addArrayItem("usps", input.value.trim())
-                        input.value = ''
-                      }
-                    }}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                      }}>
+                        <Plus className="h-4 w-4" />
+                        Add
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Examples: Only organic ingredients, 30-day guarantee, Free shipping</p>
                   </div>
                 </div>
               </div>
@@ -714,26 +730,30 @@ export function KnowledgeBaseDashboard() {
                     </Badge>
                   ))}
                 </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Competitor brand name"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("mainCompetitors", e.currentTarget.value.trim())
-                        e.currentTarget.value = ''
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Type competitor name and press Enter or click + to add"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          addArrayItem("mainCompetitors", e.currentTarget.value.trim())
+                          e.currentTarget.value = ''
+                        }
+                      }}
+                      data-testid="input-competitor"
+                    />
+                    <Button size="sm" variant="default" data-testid="button-add-competitor" onClick={() => {
+                      const input = document.querySelector('[data-testid="input-competitor"]') as HTMLInputElement
+                      if (input && input.value.trim()) {
+                        addArrayItem("mainCompetitors", input.value.trim())
+                        input.value = ''
                       }
-                    }}
-                    data-testid="input-competitor"
-                  />
-                  <Button size="sm" variant="outline" data-testid="button-add-competitor" onClick={() => {
-                    const input = document.querySelector('[data-testid="input-competitor"]') as HTMLInputElement
-                    if (input && input.value.trim()) {
-                      addArrayItem("mainCompetitors", input.value.trim())
-                      input.value = ''
-                    }
-                  }}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                    }}>
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Add your main direct competitors (brand names only)</p>
                 </div>
                 <p className="text-xs text-muted-foreground">AI will research these competitors for positioning insights</p>
               </div>
