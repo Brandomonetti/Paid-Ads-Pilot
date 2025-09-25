@@ -936,14 +936,28 @@ export function KnowledgeBaseDashboard() {
           <div className="flex justify-between pt-6 border-t">
             <Button 
               variant="outline" 
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              onClick={() => {
+                setCurrentStep(Math.max(0, currentStep - 1))
+                // Show brief autosave reminder when navigating
+                toast({
+                  description: "💾 Changes auto-saved",
+                  duration: 2000,
+                })
+              }}
               disabled={currentStep === 0}
               data-testid="button-previous"
             >
               Previous
             </Button>
             <Button 
-              onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+              onClick={() => {
+                setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+                // Show brief autosave reminder when navigating
+                toast({
+                  description: "💾 Changes auto-saved",
+                  duration: 2000,
+                })
+              }}
               disabled={currentStep === steps.length - 1}
               data-testid="button-next"
             >
@@ -995,21 +1009,6 @@ export function KnowledgeBaseDashboard() {
         </Card>
       )}
       
-      {/* Auto-save indicator */}
-      {saveKB.isPending && (
-        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-          <span className="text-sm">Saving...</span>
-        </div>
-      )}
-      
-      {/* Completion status indicator */}
-      {isCompleted && !saveKB.isPending && (
-        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <CheckCircle2 className="h-3 w-3" />
-          <span className="text-sm">All changes saved</span>
-        </div>
-      )}
     </div>
   )
 }
