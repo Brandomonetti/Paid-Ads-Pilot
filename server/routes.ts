@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateScript, generateAvatar } from "./openai-service";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import {
   insertAvatarSchema,
   insertConceptSchema,
@@ -9,13 +10,29 @@ import {
   insertPlatformSettingsSchema,
   updatePlatformSettingsSchema,
   insertKnowledgeBaseSchema,
-  updateKnowledgeBaseSchema
+  updateKnowledgeBaseSchema,
+  insertGeneratedScriptSchema,
+  updateGeneratedScriptSchema
 } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Avatar routes
-  app.get("/api/avatars", async (req, res) => {
+  // Setup Replit Authentication
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  // Avatar routes (protected)
+  app.get("/api/avatars", isAuthenticated, async (req, res) => {
     try {
       const avatars = await storage.getAvatars();
       res.json(avatars);
@@ -24,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/avatars", async (req, res) => {
+  app.post("/api/avatars", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertAvatarSchema.parse(req.body);
       const avatar = await storage.createAvatar(validatedData);
@@ -38,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/avatars/:id", async (req, res) => {
+  app.patch("/api/avatars/:id", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const avatar = await storage.updateAvatar(id, req.body);
@@ -52,8 +69,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Concept routes
-  app.get("/api/concepts/:avatarId", async (req, res) => {
+  // Concept routes (protected)
+  app.get("/api/concepts/:avatarId", isAuthenticated, async (req, res) => {
     try {
       const { avatarId } = req.params;
       const concepts = await storage.getConcepts(avatarId);
@@ -63,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/concepts", async (req, res) => {
+  app.post("/api/concepts", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertConceptSchema.parse(req.body);
       const concept = await storage.createConcept(validatedData);
@@ -77,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/concepts/:id", async (req, res) => {
+  app.patch("/api/concepts/:id", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const concept = await storage.updateConcept(id, req.body);
@@ -91,8 +108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Avatar-Concept linking routes
-  app.get("/api/avatar-concepts", async (req, res) => {
+  // Avatar-Concept linking routes (protected)
+  app.get("/api/avatar-concepts", isAuthenticated, async (req, res) => {
     try {
       const { avatarId, conceptId } = req.query;
       const avatarConcepts = await storage.getAvatarConcepts(
@@ -105,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/avatar-concepts", async (req, res) => {
+  app.post("/api/avatar-concepts", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertAvatarConceptSchema.parse(req.body);
       const avatarConcept = await storage.createAvatarConcept(validatedData);
@@ -119,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/avatar-concepts/:id", async (req, res) => {
+  app.patch("/api/avatar-concepts/:id", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const avatarConcept = await storage.updateAvatarConcept(id, req.body);
@@ -133,10 +150,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Platform Settings routes
-  app.get("/api/settings/:userId", async (req, res) => {
+  // Platform Settings routes (protected)
+  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       let settings = await storage.getPlatformSettings(userId);
       
       // Create default settings if they don't exist
@@ -155,9 +172,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings", async (req, res) => {
+  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedData = insertPlatformSettingsSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const validatedData = insertPlatformSettingsSchema.parse({
+        ...req.body,
+        userId
+      });
       const settings = await storage.createPlatformSettings(validatedData);
       res.status(201).json(settings);
     } catch (error) {
@@ -169,9 +190,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/settings/:userId", async (req, res) => {
+  app.patch("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       
       // Validate the update data
       const validatedData = updatePlatformSettingsSchema.parse(req.body);
@@ -211,10 +232,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Knowledge Base routes
-  app.get("/api/knowledge-base/:userId", async (req, res) => {
+  // Knowledge Base routes (protected)
+  app.get("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       const knowledgeBase = await storage.getKnowledgeBase(userId);
       
       if (!knowledgeBase) {
@@ -228,9 +249,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/knowledge-base", async (req, res) => {
+  app.post("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedData = insertKnowledgeBaseSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const validatedData = insertKnowledgeBaseSchema.parse({
+        ...req.body,
+        userId
+      });
       const knowledgeBase = await storage.createKnowledgeBase(validatedData);
       res.status(201).json(knowledgeBase);
     } catch (error) {
@@ -242,9 +267,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/knowledge-base/:userId", async (req, res) => {
+  app.patch("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       
       // Validate the update data
       const validatedData = updateKnowledgeBaseSchema.parse(req.body);
@@ -264,13 +289,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Script generation routes
-  app.post("/api/generate-script", async (req, res) => {
+  // Script generation routes (protected with persistence)
+  app.post("/api/generate-script", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId, scriptRequest } = req.body;
+      const userId = req.user.claims.sub;
+      const { scriptRequest } = req.body;
       
-      if (!userId || !scriptRequest) {
-        res.status(400).json({ error: "Missing userId or scriptRequest" });
+      if (!scriptRequest) {
+        res.status(400).json({ error: "Missing scriptRequest" });
         return;
       }
 
@@ -293,7 +319,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate script using OpenAI
       const generatedScript = await generateScript(validatedRequest, knowledgeBase);
       
-      res.json(generatedScript);
+      // Save generated script to database for self-learning system
+      const savedScript = await storage.createGeneratedScript({
+        userId,
+        title: generatedScript.title,
+        duration: validatedRequest.duration,
+        scriptType: validatedRequest.scriptType,
+        summary: generatedScript.summary,
+        content: generatedScript,
+        sourceResearch: {
+          avatarName: validatedRequest.targetAvatar || "General",
+          marketingAngle: validatedRequest.marketingAngle || "Default",
+          awarenessStage: validatedRequest.awarenessStage || "unaware"
+        },
+        generationContext: {
+          knowledgeBaseSnapshot: knowledgeBase,
+          requestParameters: validatedRequest,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+      res.json({ ...generatedScript, scriptId: savedScript.id });
     } catch (error) {
       console.error("Script generation error:", error);
       if (error instanceof z.ZodError) {
@@ -307,15 +353,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Avatar generation route
-  app.post("/api/generate-avatar", async (req, res) => {
+  // Get generated scripts for self-learning analysis
+  app.get("/api/scripts", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.body;
+      const userId = req.user.claims.sub;
+      const scripts = await storage.getGeneratedScripts(userId);
+      res.json(scripts);
+    } catch (error) {
+      console.error("Error fetching scripts:", error);
+      res.status(500).json({ error: "Failed to fetch scripts" });
+    }
+  });
+
+  // Update script with performance data for self-learning
+  app.patch("/api/scripts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = updateGeneratedScriptSchema.parse(req.body);
       
-      if (!userId) {
-        res.status(400).json({ error: "Missing userId" });
+      const updatedScript = await storage.updateGeneratedScript(id, validatedData);
+      if (!updatedScript) {
+        res.status(404).json({ error: "Script not found" });
         return;
       }
+      
+      res.json(updatedScript);
+    } catch (error) {
+      console.error("Error updating script:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid script data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update script" });
+      }
+    }
+  });
+
+  // Avatar generation route (protected)
+  app.post("/api/generate-avatar", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
 
       // Fetch the user's knowledge base
       const knowledgeBase = await storage.getKnowledgeBase(userId);

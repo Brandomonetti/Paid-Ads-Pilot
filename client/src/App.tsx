@@ -15,19 +15,29 @@ import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-d
 import { KnowledgeBaseDashboard } from "@/components/knowledge-base-dashboard";
 import { SettingsDashboard } from "@/components/settings-dashboard";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
+import { LandingPage } from "@/components/landing-page";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
-      <Route path="/research" component={ResearchAgentDashboard} />
-      <Route path="/script" component={ScriptAgentDashboard} />
-      <Route path="/performance" component={PerformanceAgentDashboard} />
-      <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
-      <Route path="/settings" component={SettingsDashboard} />
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={LandingPage} />
+      ) : (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
+          <Route path="/research" component={ResearchAgentDashboard} />
+          <Route path="/script" component={ScriptAgentDashboard} />
+          <Route path="/performance" component={PerformanceAgentDashboard} />
+          <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
+          <Route path="/settings" component={SettingsDashboard} />
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
@@ -64,19 +74,38 @@ function App() {
 
 function Header() {
   const [location, setLocation] = useLocation();
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) return null;
   
   return (
     <header className="flex items-center justify-between p-4 border-b border-border bg-background">
       <SidebarTrigger data-testid="button-sidebar-toggle" />
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={() => setLocation("/settings")}
-        data-testid="button-header-settings"
-      >
-        <Settings className="h-4 w-4 mr-2" />
-        Settings
-      </Button>
+      <div className="flex items-center gap-2">
+        {user ? (
+          <span className="text-sm text-muted-foreground" data-testid="text-user-email">
+            {(user as any).email || `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || 'User'}
+          </span>
+        ) : null}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setLocation("/settings")}
+          data-testid="button-header-settings"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Settings
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => window.location.href = "/api/logout"}
+          data-testid="button-logout"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
+      </div>
     </header>
   );
 }

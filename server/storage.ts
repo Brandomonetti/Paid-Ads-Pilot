@@ -1,12 +1,14 @@
 import { 
-  type User, type InsertUser,
+  type User, type UpsertUser,
   type Avatar, type InsertAvatar,
   type Concept, type InsertConcept,
   type AvatarConcept, type InsertAvatarConcept,
   type PlatformSettings, type InsertPlatformSettings,
   type UpdatePlatformSettings,
   type KnowledgeBase, type InsertKnowledgeBase,
-  type UpdateKnowledgeBase
+  type UpdateKnowledgeBase,
+  type GeneratedScript, type InsertGeneratedScript,
+  type UpdateGeneratedScript
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -14,10 +16,9 @@ import { randomUUID } from "crypto";
 // you might need
 
 export interface IStorage {
-  // User methods
+  // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Avatar methods
   getAvatars(): Promise<Avatar[]>;
@@ -46,6 +47,12 @@ export interface IStorage {
   getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined>;
   createKnowledgeBase(knowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase>;
   updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined>;
+  
+  // Generated Scripts methods (for self-learning system)
+  getGeneratedScripts(userId: string): Promise<GeneratedScript[]>;
+  getGeneratedScript(id: string): Promise<GeneratedScript | undefined>;
+  createGeneratedScript(script: InsertGeneratedScript): Promise<GeneratedScript>;
+  updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -55,6 +62,7 @@ export class MemStorage implements IStorage {
   private avatarConcepts: Map<string, AvatarConcept>;
   private platformSettings: Map<string, PlatformSettings>;
   private knowledgeBase: Map<string, KnowledgeBase>;
+  private generatedScripts: Map<string, GeneratedScript>;
 
   constructor() {
     this.users = new Map();
@@ -63,23 +71,46 @@ export class MemStorage implements IStorage {
     this.avatarConcepts = new Map();
     this.platformSettings = new Map();
     this.knowledgeBase = new Map();
+    this.generatedScripts = new Map();
   }
 
+  // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    // Ensure id is provided for upsert operations
+    if (!userData.id) {
+      throw new Error("User ID is required for upsert operation");
+    }
+    
+    const existingUser = this.users.get(userData.id);
+    
+    if (existingUser) {
+      // Update existing user
+      const updatedUser: User = {
+        ...existingUser,
+        ...userData,
+        id: userData.id, // Ensure id is always string
+        updatedAt: new Date(),
+      };
+      this.users.set(userData.id, updatedUser);
+      return updatedUser;
+    } else {
+      // Create new user
+      const newUser: User = {
+        id: userData.id,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.users.set(userData.id, newUser);
+      return newUser;
+    }
   }
 
   // Avatar methods
@@ -289,6 +320,47 @@ export class MemStorage implements IStorage {
     };
     this.knowledgeBase.set(userId, updated);
     return updated;
+  }
+
+  // Generated Scripts methods (for self-learning system)
+  async getGeneratedScripts(userId: string): Promise<GeneratedScript[]> {
+    return Array.from(this.generatedScripts.values()).filter(
+      script => script.userId === userId
+    );
+  }
+
+  async getGeneratedScript(id: string): Promise<GeneratedScript | undefined> {
+    return this.generatedScripts.get(id);
+  }
+
+  async createGeneratedScript(insertScript: InsertGeneratedScript): Promise<GeneratedScript> {
+    const id = randomUUID();
+    const script: GeneratedScript = {
+      ...insertScript,
+      id,
+      status: insertScript.status || "pending",
+      feedback: insertScript.feedback || null,
+      performance: insertScript.performance || null,
+      usedInCampaign: insertScript.usedInCampaign || false,
+      campaignResults: insertScript.campaignResults || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.generatedScripts.set(id, script);
+    return script;
+  }
+
+  async updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+    const script = this.generatedScripts.get(id);
+    if (!script) return undefined;
+    
+    const updatedScript: GeneratedScript = {
+      ...script,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.generatedScripts.set(id, updatedScript);
+    return updatedScript;
   }
 }
 

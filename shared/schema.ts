@@ -1,20 +1,33 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, jsonb, timestamp, index, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 // Customer Avatar schema
@@ -369,3 +382,56 @@ export const updateKnowledgeBaseSchema = insertKnowledgeBaseSchema.partial();
 export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
 export type UpdateKnowledgeBase = z.infer<typeof updateKnowledgeBaseSchema>;
 export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+
+// Generated Scripts schema for AI self-learning system
+export const generatedScripts = pgTable("generated_scripts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Script Details
+  title: text("title").notNull(),
+  duration: text("duration").notNull(), // "15s", "30s", "45s", "60s"
+  scriptType: text("script_type").notNull(), // "ugc", "testimonial", "demo", "story"
+  summary: text("summary").notNull(),
+  
+  // Script Content
+  content: jsonb("content").notNull(), // avatar, marketingAngle, awarenessStage, problem, solution, fullScript, cta
+  sourceResearch: jsonb("source_research").notNull(), // avatarName, conceptTitle, relevanceScore
+  
+  // Performance Tracking for Self-Learning
+  status: text("status").notNull().default("pending"), // pending, approved, rejected, tested
+  feedback: text("feedback"),
+  performance: jsonb("performance"), // hookRate, completionRate, ctr when tested
+  
+  // Self-Learning Analytics
+  usedInCampaign: boolean("used_in_campaign").notNull().default(false),
+  campaignResults: jsonb("campaign_results"), // actual performance data from ads
+  
+  // Generation Context for Learning
+  generationContext: jsonb("generation_context").notNull(), // Knowledge Base state, parameters used
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertGeneratedScriptSchema = createInsertSchema(generatedScripts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const updateGeneratedScriptSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "tested"]).optional(),
+  feedback: z.string().optional(),
+  performance: z.object({
+    hookRate: z.number().optional(),
+    completionRate: z.number().optional(),
+    ctr: z.number().optional()
+  }).optional(),
+  usedInCampaign: z.boolean().optional(),
+  campaignResults: z.any().optional() // Performance data from Meta/other platforms
+});
+
+export type InsertGeneratedScript = z.infer<typeof insertGeneratedScriptSchema>;
+export type UpdateGeneratedScript = z.infer<typeof updateGeneratedScriptSchema>;
+export type GeneratedScript = typeof generatedScripts.$inferSelect;
