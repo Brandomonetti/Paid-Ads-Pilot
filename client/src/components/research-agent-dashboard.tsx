@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
   Brain, 
   ThumbsUp, 
@@ -48,7 +49,6 @@ interface ConceptWithRelevance extends Concept {
 
 export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
-  const [expandedAvatar, setExpandedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [hasSeeded, setHasSeeded] = useState(false)
@@ -609,116 +609,107 @@ export function ResearchAgentDashboard() {
                   data-testid={`card-avatar-${avatar.id}`}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-sm">{avatar.name}</h3>
-                          <Badge 
-                            variant="outline"
-                            className={`text-xs ${
-                              avatar.priority === 'high' ? 'bg-red-50 text-red-700 border-red-300' :
-                              avatar.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-300' :
-                              'bg-gray-50 text-gray-700 border-gray-300'
-                            }`}
-                            data-testid={`badge-priority-${avatar.id}`}
-                          >
-                            {avatar.priority} priority
-                          </Badge>
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-blue-50 text-blue-700 border-blue-300"
-                            data-testid={`badge-source-${avatar.id}`}
-                          >
-                            {avatar.recommendationSource === 'performance_agent' ? (
-                              <>
-                                <BarChart3 className="h-3 w-3 mr-1" />
-                                Performance
-                              </>
-                            ) : (
-                              <>
-                                <Search className="h-3 w-3 mr-1" />
-                                Research
-                              </>
-                            )}
-                          </Badge>
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-green-50 text-green-700 border-green-300"
-                            data-testid={`badge-confidence-${avatar.id}`}
-                          >
-                            {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}%
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">{avatar.demographics}</p>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="flex items-center gap-1">
-                              <Database className="h-3 w-3 text-green-600" />
-                              {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}% confidence
-                            </span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{avatar.sources?.length || 0} sources</span>
-                            {avatar.recommendationSource === 'performance_agent' && (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                <BarChart3 className="h-3 w-3 mr-1" />
-                                Proven Performer
-                              </Badge>
-                            )}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-medium text-sm">{avatar.name}</h3>
+                            <Badge 
+                              variant="outline"
+                              className={`text-xs ${
+                                avatar.priority === 'high' ? 'bg-red-50 text-red-700 border-red-300' :
+                                avatar.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-300' :
+                                'bg-gray-50 text-gray-700 border-gray-300'
+                              }`}
+                              data-testid={`badge-priority-${avatar.id}`}
+                            >
+                              {avatar.priority} priority
+                            </Badge>
                           </div>
-                          <p className="text-xs text-blue-600 font-medium leading-tight">
-                            {avatar.recommendationSource === 'performance_agent' 
-                              ? `Highest converting avatar (${avatar.priority === 'high' ? '4.2% CVR' : '2.8% CVR'}) - Performance Agent confirmed`
-                              : avatar.priority === 'high' 
-                                ? `${Math.round(parseFloat(avatar.dataConfidence || '0') * 34)}% of target market - High-confidence research`
-                                : 'New segment opportunity - Research-backed potential'
-                            }
-                          </p>
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-blue-50 text-blue-700 border-blue-300"
+                              data-testid={`badge-source-${avatar.id}`}
+                            >
+                              {avatar.recommendationSource === 'performance_agent' ? (
+                                <>
+                                  <BarChart3 className="h-3 w-3 mr-1" />
+                                  Performance
+                                </>
+                              ) : (
+                                <>
+                                  <Search className="h-3 w-3 mr-1" />
+                                  Research
+                                </>
+                              )}
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-green-50 text-green-700 border-green-300"
+                              data-testid={`badge-confidence-${avatar.id}`}
+                            >
+                              {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}%
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">{avatar.demographics}</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="flex items-center gap-1">
+                                <Database className="h-3 w-3 text-green-600" />
+                                {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}% confidence
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span>{avatar.sources?.length || 0} sources</span>
+                              {avatar.recommendationSource === 'performance_agent' && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                  <BarChart3 className="h-3 w-3 mr-1" />
+                                  Proven Performer
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-blue-600 font-medium leading-tight">
+                              {avatar.recommendationSource === 'performance_agent' 
+                                ? `Highest converting avatar (${avatar.priority === 'high' ? '4.2% CVR' : '2.8% CVR'}) - Performance Agent confirmed`
+                                : avatar.priority === 'high' 
+                                  ? `${Math.round(parseFloat(avatar.dataConfidence || '0') * 34)}% of target market - High-confidence research`
+                                  : 'New segment opportunity - Research-backed potential'
+                              }
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setExpandedAvatar(expandedAvatar === avatar.id ? null : avatar.id)
-                          }}
-                          data-testid={`button-expand-${avatar.id}`}
-                        >
-                          {expandedAvatar === avatar.id ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                          Research
-                        </Button>
                         
                         <Badge 
                           variant={
                             avatar.status === "approved" ? "default" : 
                             avatar.status === "rejected" ? "destructive" : "secondary"
                           }
-                          className="text-xs"
+                          className="text-xs flex-shrink-0"
                         >
                           {avatar.status}
                         </Badge>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      
+                      <div className="flex justify-end">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`button-expand-${avatar.id}`}
+                            >
+                              <Search className="h-4 w-4 mr-2" />
+                              View Research
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Research Deep Dive: {avatar.name}</DialogTitle>
+                            </DialogHeader>
 
-                {/* Expanded Research Details */}
-                {expandedAvatar === avatar.id && (
-                  <Card className="ml-4 mt-2 border-l-4 border-l-primary bg-primary/2">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-2">
-                        <Search className="h-4 w-4 text-primary" />
-                        <CardTitle className="text-sm">Research Deep Dive: {avatar.name}</CardTitle>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-6" data-testid={`expanded-research-${avatar.id}`}>
+                            {/* Research Details Modal Content */}
+                            <div className="space-y-6" data-testid={`expanded-research-${avatar.id}`}>
                       {/* Why This Avatar Section */}
                       <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
                         <div className="flex items-center gap-2 mb-3">
@@ -890,11 +881,11 @@ export function ResearchAgentDashboard() {
                                 <div>
                                   <span className="font-medium text-green-600">Source Types:</span>
                                   <span className="ml-1 text-muted-foreground">
-                                    {[...new Set(avatar.sources?.map(source => 
+                                    {Array.from(new Set(avatar.sources?.map(source => 
                                       source.includes('Reddit:') ? 'Social' : 
                                       source.includes('Article:') ? 'Publication' :
                                       source.includes('Survey:') ? 'Survey' : 'Other'
-                                    ))].join(', ')}
+                                    ))).join(', ')}
                                   </span>
                                 </div>
                                 <div>
@@ -1068,9 +1059,13 @@ export function ResearchAgentDashboard() {
                           <p className="text-sm"><strong>Strategic Notes:</strong> {avatar.feedback}</p>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
