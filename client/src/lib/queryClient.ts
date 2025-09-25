@@ -1,5 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Store CSRF token in memory
+let csrfToken: string | null = null;
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -7,17 +10,70 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Fetch CSRF token from the server
+async function fetchCSRFToken(): Promise<string | null> {
+  try {
+    const res = await fetch('/api/csrf-token', {
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.csrfToken || null;
+    }
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+  }
+  return null;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // For state-changing requests, get CSRF token if needed
+  const needsCSRFToken = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(method.toUpperCase());
+  
+  if (needsCSRFToken && !csrfToken) {
+    csrfToken = await fetchCSRFToken();
+  }
+
+  const headers: Record<string, string> = {};
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (needsCSRFToken && csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // If CSRF token is invalid (403), refresh it and retry once
+  if (res.status === 403 && needsCSRFToken) {
+    const responseText = await res.text();
+    if (responseText.includes("CSRF token validation failed")) {
+      // Refresh token and retry
+      csrfToken = await fetchCSRFToken();
+      if (csrfToken) {
+        headers["X-CSRF-Token"] = csrfToken;
+        const retryRes = await fetch(url, {
+          method,
+          headers,
+          body: data ? JSON.stringify(data) : undefined,
+          credentials: "include",
+        });
+        await throwIfResNotOk(retryRes);
+        return retryRes;
+      }
+    }
+    // Re-throw the original 403 error if retry failed
+    throw new Error(`403: ${responseText}`);
+  }
 
   await throwIfResNotOk(res);
   return res;
