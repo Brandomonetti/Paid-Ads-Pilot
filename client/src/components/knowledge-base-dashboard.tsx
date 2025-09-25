@@ -484,7 +484,13 @@ export function KnowledgeBaseDashboard() {
                     }}
                     data-testid="input-brand-value"
                   />
-                  <Button size="sm" variant="outline" data-testid="button-add-value">
+                  <Button size="sm" variant="outline" data-testid="button-add-value" onClick={() => {
+                    const input = document.querySelector('[data-testid="input-brand-value"]') as HTMLInputElement
+                    if (input && input.value.trim()) {
+                      addArrayItem("brandValues", input.value.trim())
+                      input.value = ''
+                    }
+                  }}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -524,7 +530,13 @@ export function KnowledgeBaseDashboard() {
                       }}
                       data-testid="input-product-link"
                     />
-                    <Button size="sm" variant="outline" data-testid="button-add-product">
+                    <Button size="sm" variant="outline" data-testid="button-add-product" onClick={() => {
+                      const input = document.querySelector('[data-testid="input-product-link"]') as HTMLInputElement
+                      if (input && input.value.trim()) {
+                        addArrayItem("productLinks", input.value.trim())
+                        input.value = ''
+                      }
+                    }}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -563,16 +575,27 @@ export function KnowledgeBaseDashboard() {
                       </Badge>
                     ))}
                   </div>
-                  <Input
-                    placeholder="Benefit (e.g., Saves time, Improves health)"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("keyBenefits", e.currentTarget.value.trim())
-                        e.currentTarget.value = ''
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Benefit (e.g., Saves time, Improves health)"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          addArrayItem("keyBenefits", e.currentTarget.value.trim())
+                          e.currentTarget.value = ''
+                        }
+                      }}
+                      data-testid="input-key-benefit"
+                    />
+                    <Button size="sm" variant="outline" data-testid="button-add-benefit" onClick={() => {
+                      const input = document.querySelector('[data-testid="input-key-benefit"]') as HTMLInputElement
+                      if (input && input.value.trim()) {
+                        addArrayItem("keyBenefits", input.value.trim())
+                        input.value = ''
                       }
-                    }}
-                    data-testid="input-key-benefit"
-                  />
+                    }}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Unique Selling Points</Label>
@@ -588,16 +611,27 @@ export function KnowledgeBaseDashboard() {
                       </Badge>
                     ))}
                   </div>
-                  <Input
-                    placeholder="USP (e.g., Only organic ingredients, 30-day guarantee)"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("usps", e.currentTarget.value.trim())
-                        e.currentTarget.value = ''
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="USP (e.g., Only organic ingredients, 30-day guarantee)"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          addArrayItem("usps", e.currentTarget.value.trim())
+                          e.currentTarget.value = ''
+                        }
+                      }}
+                      data-testid="input-usp"
+                    />
+                    <Button size="sm" variant="outline" data-testid="button-add-usp" onClick={() => {
+                      const input = document.querySelector('[data-testid="input-usp"]') as HTMLInputElement
+                      if (input && input.value.trim()) {
+                        addArrayItem("usps", input.value.trim())
+                        input.value = ''
                       }
-                    }}
-                    data-testid="input-usp"
-                  />
+                    }}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -691,7 +725,13 @@ export function KnowledgeBaseDashboard() {
                     }}
                     data-testid="input-competitor"
                   />
-                  <Button size="sm" variant="outline" data-testid="button-add-competitor">
+                  <Button size="sm" variant="outline" data-testid="button-add-competitor" onClick={() => {
+                    const input = document.querySelector('[data-testid="input-competitor"]') as HTMLInputElement
+                    if (input && input.value.trim()) {
+                      addArrayItem("mainCompetitors", input.value.trim())
+                      input.value = ''
+                    }
+                  }}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
