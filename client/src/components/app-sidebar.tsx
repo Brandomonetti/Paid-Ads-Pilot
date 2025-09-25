@@ -94,7 +94,7 @@ export function AppSidebar() {
             </Button>
           </div>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-3">
               {agents.map((agent) => (
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
