@@ -45,7 +45,22 @@ export async function generateScript(
       messages: [
         {
           role: "system",
-          content: "You are an expert UGC (User Generated Content) script writer specializing in high-converting video scripts for eCommerce brands. You understand consumer psychology, marketing angles, and how to create authentic-feeling content that drives sales. Always respond with valid JSON in the exact format requested."
+          content: `You are an 8-figure creative strategist and direct response copywriter with deep expertise in eCommerce video marketing. You understand advanced consumer psychology, proven conversion frameworks, and the nuances of different creative approaches.
+
+Your expertise includes:
+- Advanced copywriting frameworks (AIDA, PAS, Before/After/Bridge, Hook-Story-Close, Problem-Agitation-Solution)
+- Psychological triggers and cognitive biases that drive purchasing decisions
+- Platform-specific content optimization and authentic UGC styling
+- Customer journey psychology and awareness stage mapping
+- High-performing creative patterns and conversion elements
+
+For each request, intelligently select and adapt the most effective creative approach based on:
+- Script type and intended platform usage
+- Audience awareness stage and psychological readiness
+- Brand positioning and competitive landscape
+- Specific conversion objectives
+
+Create scripts that feel authentic and native while incorporating sophisticated persuasion elements. Always respond with valid JSON in the exact format requested.`
         },
         {
           role: "user",
@@ -129,34 +144,61 @@ SCRIPT REQUIREMENTS:
 ${request.targetAvatar ? `- Specific Avatar: ${request.targetAvatar}` : ""}
 ${request.marketingAngle ? `- Marketing Angle: ${request.marketingAngle}` : ""}
 
-SCRIPT STRUCTURE:
-- Hook (first 3 seconds): Grab attention immediately
-- Problem: Agitate the pain point your audience feels
-- Solution: Present your product as the answer
-- Proof: Include specific benefits or social proof
-- CTA: Clear call-to-action that drives action
+EXPERT CREATIVE STRATEGY:
+As an 8-figure creative strategist, select and execute the optimal approach for this specific scenario. Consider:
+
+1. FRAMEWORK SELECTION: Choose the most effective creative framework based on the audience awareness stage and script type:
+   - Unaware → Attention-grabbing pattern interrupt + education
+   - Problem Aware → Problem agitation + unique solution positioning  
+   - Solution Aware → Unique mechanism + proof + differentiation
+   - Product Aware → Social proof + risk reversal + urgency
+   - Most Aware → Offer optimization + scarcity + immediate action
+
+2. PSYCHOLOGICAL TRIGGERS: Integrate relevant cognitive biases and persuasion elements:
+   - Social proof, authority, scarcity, reciprocity, commitment/consistency
+   - Loss aversion, bandwagon effect, fear of missing out
+   - Present bias, anchoring, and contrast principles
+
+3. CONVERSION OPTIMIZATION: Focus on elements that drive measurable results:
+   - Specific, visceral pain point articulation
+   - Unique mechanism or "secret" that creates intrigue
+   - Concrete proof elements and transformation promises
+   - Risk-free trial language and urgency creation
+   - Clear, action-oriented CTA with next step clarity
+
+4. AUTHENTICITY: Ensure the script feels natural and user-generated while maintaining persuasive power
 
 OUTPUT REQUIREMENTS:
 Return a JSON object with this exact structure:
 {
-  "title": "Catchy title for this script",
-  "summary": "One sentence explaining target, problem, and angle",
+  "title": "Compelling, benefit-driven title that creates intrigue",
+  "summary": "Strategic one-liner: [target audience] + [core problem] + [unique angle/mechanism]",
   "content": {
-    "avatar": "Detailed description of who this targets",
-    "marketingAngle": "The main hook/approach being used",
-    "problem": "The specific problem being addressed",
-    "solution": "How the product solves this problem", 
-    "fullScript": "Complete video script with [visual cues in brackets]",
-    "cta": "Specific call-to-action"
+    "avatar": "Detailed psychographic profile of the target customer",
+    "marketingAngle": "The strategic framework and psychological approach being used",
+    "problem": "Visceral, specific pain point that creates emotional resonance",
+    "solution": "Unique mechanism or approach that differentiates from competitors", 
+    "fullScript": "Complete video script with [visual cues] and (psychological trigger notes)",
+    "cta": "High-converting, risk-free call-to-action with clear next step"
   },
   "sourceResearch": {
-    "avatarName": "Name for the target avatar",
-    "conceptTitle": "Marketing concept being used",
+    "avatarName": "Memorable target avatar name",
+    "conceptTitle": "Creative framework/strategy implemented",
     "relevanceScore": 90
   }
 }
 
-Make the script feel authentic and conversational, matching the brand voice. Include specific details from the brand information to make it personalized and credible.
+SCRIPT EXCELLENCE STANDARDS:
+- Hook must create pattern interrupt within 2 seconds
+- Include specific brand details to establish credibility
+- Use conversational, authentic language that matches the brand voice
+- Incorporate proven psychological triggers without feeling salesy
+- Include concrete proof elements (numbers, specifics, social proof)
+- Create desire through transformation visualization
+- End with clear, low-friction next step
+- Maintain UGC authenticity while maximizing conversion potential
+
+Write scripts that an expert creative strategist would be proud to deploy at scale for an 8-figure brand.
 `;
 }
 
