@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { queryClient, apiRequest } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +40,7 @@ interface Script {
 }
 
 export function ScriptAgentDashboard() {
-  const userId = "user-1" // TODO: Get from auth context
+  const { user, isAuthenticated } = useAuth()
   const { toast } = useToast()
   
   // Form state for script generation
@@ -50,13 +51,18 @@ export function ScriptAgentDashboard() {
   const [marketingAngle, setMarketingAngle] = useState<string>("")
   
   // UI state
-  const [scripts, setScripts] = useState<Script[]>([])
   const [feedback, setFeedback] = useState<Record<string, string>>({})
 
-  // Check if Knowledge Base exists
+  // Check if Knowledge Base exists and fetch user's scripts
   const { data: knowledgeBase, isLoading: kbLoading, error: kbError } = useQuery({
-    queryKey: ['/api/knowledge-base', userId],
-    queryFn: () => apiRequest('GET', `/api/knowledge-base/${userId}`).then(res => res.json()),
+    queryKey: ['/api/knowledge-base'],
+    enabled: isAuthenticated,
+  })
+
+  // Fetch user's generated scripts
+  const { data: scripts = [], isLoading: scriptsLoading } = useQuery<Script[]>({
+    queryKey: ['/api/scripts'],
+    enabled: isAuthenticated,
   })
 
   // Script generation mutation
@@ -70,17 +76,12 @@ export function ScriptAgentDashboard() {
         awarenessStage: selectedAwarenessStage
       }
       
-      const response = await apiRequest('POST', '/api/generate-script', { userId, scriptRequest })
+      const response = await apiRequest('POST', '/api/generate-script', { scriptRequest })
       return response.json()
     },
-    onSuccess: (newScript: Script) => {
-      // Add UI-specific properties for local state management
-      const scriptWithUIProps = { 
-        ...newScript, 
-        id: Date.now().toString(), 
-        status: "pending" as const 
-      }
-      setScripts(prev => [scriptWithUIProps, ...prev])
+    onSuccess: () => {
+      // Invalidate scripts query to refetch from database
+      queryClient.invalidateQueries({ queryKey: ['/api/scripts'] })
       toast({
         title: "Script Generated!",
         description: "Your new UGC script has been created using your Knowledge Base data."
@@ -106,13 +107,37 @@ export function ScriptAgentDashboard() {
     }
   })
 
+  // Script approval mutation to persist feedback
+  const updateScriptMutation = useMutation({
+    mutationFn: async ({ id, status, feedbackText }: { id: string, status: "approved" | "rejected", feedbackText?: string }) => {
+      const response = await apiRequest('PATCH', `/api/scripts/${id}`, { 
+        status, 
+        feedback: feedbackText 
+      })
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scripts'] })
+      toast({
+        title: "Script Updated",
+        description: "Script status and feedback have been saved."
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update script status.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const handleApproval = (id: string, status: "approved" | "rejected") => {
-    setScripts(prev => prev.map(script => 
-      script.id === id 
-        ? { ...script, status, feedback: feedback[id] }
-        : script
-    ))
-    console.log(`Script ${id} ${status}:`, feedback[id])
+    updateScriptMutation.mutate({ 
+      id, 
+      status, 
+      feedbackText: feedback[id] 
+    })
   }
 
   const generateNewScript = () => {

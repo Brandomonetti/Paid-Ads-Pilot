@@ -3,6 +3,7 @@ import React from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { queryClient, apiRequest } from "@/lib/queryClient"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -76,39 +77,36 @@ export function KnowledgeBaseDashboard() {
   })
   
   const { toast } = useToast()
-  const userId = "user-1" // TODO: Get from auth context
+  const { user, isAuthenticated } = useAuth()
   
   // Load existing knowledge base
   const { data: existingKB } = useQuery({
-    queryKey: ["/api/knowledge-base", userId],
+    queryKey: ["/api/knowledge-base"],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/knowledge-base/${userId}`)
-        if (response.ok) {
-          return response.json() as Promise<KnowledgeBase>
-        }
-        return null
+        const response = await apiRequest('GET', '/api/knowledge-base')
+        return response.json() as Promise<KnowledgeBase>
       } catch {
         return null
       }
     },
-    enabled: !!userId
+    enabled: isAuthenticated
   })
   
   // Save knowledge base mutation
   const saveKB = useMutation({
     mutationFn: async (data: UpdateKnowledgeBase) => {
       if (existingKB) {
-        const response = await apiRequest("PATCH", `/api/knowledge-base/${userId}`, data)
+        const response = await apiRequest("PATCH", "/api/knowledge-base", data)
         return response.json()
       } else {
-        const response = await apiRequest("POST", "/api/knowledge-base", { ...data, userId })
+        const response = await apiRequest("POST", "/api/knowledge-base", data)
         return response.json()
       }
     },
     onSuccess: () => {
       // Always invalidate cache, but no toast - toast handled per call
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base", userId] })
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base"] })
     }
     // No global onError - errors handled per call to avoid toast spam
   })
@@ -261,7 +259,7 @@ export function KnowledgeBaseDashboard() {
   // Autosave functionality with debouncing and guards
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (userId && !saveKB.isPending && (existingKB || Object.values(knowledgeBase).some(field => 
+      if (isAuthenticated && !saveKB.isPending && (existingKB || Object.values(knowledgeBase).some(field => 
         typeof field === 'string' ? field.trim() : 
         Array.isArray(field) ? field.length > 0 : 
         false
@@ -283,12 +281,12 @@ export function KnowledgeBaseDashboard() {
     }, 2000) // Auto-save after 2 seconds of no changes
     
     return () => clearTimeout(timeoutId)
-  }, [knowledgeBase, userId, existingKB, overallProgress, saveKB])
+  }, [knowledgeBase, isAuthenticated, existingKB, overallProgress, saveKB])
   
   // Trigger one-time save when completion is achieved (silent)
   const prevCompleted = React.useRef(false)
   useEffect(() => {
-    if (isCompleted && !prevCompleted.current && userId) {
+    if (isCompleted && !prevCompleted.current && isAuthenticated) {
       prevCompleted.current = true
       // Silent save when completion is achieved
       const updatedData = {
@@ -303,7 +301,7 @@ export function KnowledgeBaseDashboard() {
     } else if (!isCompleted) {
       prevCompleted.current = false
     }
-  }, [isCompleted, userId, knowledgeBase, overallProgress, saveKB])
+  }, [isCompleted, isAuthenticated, knowledgeBase, overallProgress, saveKB])
 
   return (
     <div className="p-6 space-y-8">

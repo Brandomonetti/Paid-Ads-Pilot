@@ -8,9 +8,14 @@ import {
   type KnowledgeBase, type InsertKnowledgeBase,
   type UpdateKnowledgeBase,
   type GeneratedScript, type InsertGeneratedScript,
-  type UpdateGeneratedScript
+  type UpdateGeneratedScript,
+  users, avatars, concepts, avatarConcepts, platformSettings, 
+  knowledgeBase, generatedScripts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { eq, and } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -364,4 +369,273 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database-backed storage using Drizzle ORM
+export class PgStorage implements IStorage {
+  private db;
+
+  constructor() {
+    const sql = neon(process.env.DATABASE_URL!);
+    this.db = drizzle(sql);
+  }
+
+  // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    if (!userData.id) {
+      throw new Error("User ID is required for upsert operation");
+    }
+
+    const existing = await this.getUser(userData.id);
+    
+    if (existing) {
+      // Update existing user
+      const result = await this.db
+        .update(users)
+        .set({
+          ...userData,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userData.id))
+        .returning();
+      return result[0];
+    } else {
+      // Create new user
+      const result = await this.db
+        .insert(users)
+        .values({
+          id: userData.id,
+          email: userData.email || null,
+          firstName: userData.firstName || null,
+          lastName: userData.lastName || null,
+          profileImageUrl: userData.profileImageUrl || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+      return result[0];
+    }
+  }
+
+  // Avatar methods
+  async getAvatars(): Promise<Avatar[]> {
+    return await this.db.select().from(avatars);
+  }
+
+  async getAvatar(id: string): Promise<Avatar | undefined> {
+    const result = await this.db.select().from(avatars).where(eq(avatars.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
+    const result = await this.db.insert(avatars).values(insertAvatar).returning();
+    return result[0];
+  }
+
+  async updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
+    const result = await this.db
+      .update(avatars)
+      .set(updates)
+      .where(eq(avatars.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Concept methods
+  async getConcepts(avatarId?: string): Promise<Concept[]> {
+    if (!avatarId) {
+      return await this.db.select().from(concepts);
+    }
+    
+    // Get concepts sorted by relevance for the avatar
+    const conceptsWithRelevance = await this.db
+      .select({
+        id: concepts.id,
+        title: concepts.title,
+        format: concepts.format,
+        platform: concepts.platform,
+        industry: concepts.industry,
+        performance: concepts.performance,
+        insights: concepts.insights,
+        keyElements: concepts.keyElements,
+        status: concepts.status,
+        referenceUrl: concepts.referenceUrl,
+        feedback: concepts.feedback,
+        createdAt: concepts.createdAt,
+        relevanceScore: avatarConcepts.relevanceScore
+      })
+      .from(concepts)
+      .leftJoin(avatarConcepts, and(
+        eq(avatarConcepts.conceptId, concepts.id),
+        eq(avatarConcepts.avatarId, avatarId),
+        eq(avatarConcepts.status, "linked")
+      ))
+      .orderBy(avatarConcepts.relevanceScore);
+    
+    return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
+  }
+
+  async getConcept(id: string): Promise<Concept | undefined> {
+    const result = await this.db.select().from(concepts).where(eq(concepts.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
+    const result = await this.db.insert(concepts).values(insertConcept).returning();
+    return result[0];
+  }
+
+  async updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined> {
+    const result = await this.db
+      .update(concepts)
+      .set(updates)
+      .where(eq(concepts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Avatar-Concept linking methods
+  async getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]> {
+    let query = this.db.select().from(avatarConcepts);
+    
+    if (avatarId && conceptId) {
+      query = query.where(and(
+        eq(avatarConcepts.avatarId, avatarId),
+        eq(avatarConcepts.conceptId, conceptId)
+      ));
+    } else if (avatarId) {
+      query = query.where(eq(avatarConcepts.avatarId, avatarId));
+    } else if (conceptId) {
+      query = query.where(eq(avatarConcepts.conceptId, conceptId));
+    }
+    
+    return await query;
+  }
+
+  async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
+    const result = await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAvatarConcept(insertAvatarConcept: InsertAvatarConcept): Promise<AvatarConcept> {
+    const result = await this.db.insert(avatarConcepts).values(insertAvatarConcept).returning();
+    return result[0];
+  }
+
+  async updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined> {
+    const result = await this.db
+      .update(avatarConcepts)
+      .set(updates)
+      .where(eq(avatarConcepts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Platform Settings methods
+  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
+    const result = await this.db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.userId, userId))
+      .limit(1);
+    return result[0];
+  }
+
+  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
+    const result = await this.db.insert(platformSettings).values(insertSettings).returning();
+    return result[0];
+  }
+
+  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
+    const result = await this.db
+      .update(platformSettings)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(platformSettings.userId, userId))
+      .returning();
+    return result[0];
+  }
+
+  // Knowledge Base methods
+  async getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined> {
+    const result = await this.db
+      .select()
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.userId, userId))
+      .limit(1);
+    return result[0];
+  }
+
+  async createKnowledgeBase(insertKnowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const result = await this.db
+      .insert(knowledgeBase)
+      .values({
+        ...insertKnowledgeBase,
+        lastUpdated: new Date(),
+        createdAt: new Date()
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined> {
+    const result = await this.db
+      .update(knowledgeBase)
+      .set({
+        ...updates,
+        lastUpdated: new Date()
+      })
+      .where(eq(knowledgeBase.userId, userId))
+      .returning();
+    return result[0];
+  }
+
+  // Generated Scripts methods (for self-learning system)
+  async getGeneratedScripts(userId: string): Promise<GeneratedScript[]> {
+    return await this.db
+      .select()
+      .from(generatedScripts)
+      .where(eq(generatedScripts.userId, userId))
+      .orderBy(generatedScripts.createdAt);
+  }
+
+  async getGeneratedScript(id: string): Promise<GeneratedScript | undefined> {
+    const result = await this.db
+      .select()
+      .from(generatedScripts)
+      .where(eq(generatedScripts.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async createGeneratedScript(insertScript: InsertGeneratedScript): Promise<GeneratedScript> {
+    const result = await this.db
+      .insert(generatedScripts)
+      .values({
+        ...insertScript,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+    const result = await this.db
+      .update(generatedScripts)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(generatedScripts.id, id))
+      .returning();
+    return result[0];
+  }
+}
+
+export const storage = new PgStorage();
