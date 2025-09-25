@@ -61,15 +61,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-6">
-        <div className="flex items-center justify-start">
-          <img src={logoPath} alt="Logo" className="h-20 w-auto" />
+      <SidebarHeader className="p-6 pb-4">
+        <div className="flex items-center justify-center">
+          <img src={logoPath} alt="Creative Strategist AI" className="h-16 w-auto max-w-full object-contain" />
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+      <SidebarContent className="px-4 py-2">
+        <SidebarGroup className="mb-6">
+          <SidebarGroupLabel className="text-sm font-semibold text-foreground/80 mb-3">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => (
@@ -87,10 +87,10 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <div className="flex items-center justify-between">
-            <SidebarGroupLabel>AI Agents</SidebarGroupLabel>
-            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" data-testid="button-add-agent">
-              <Plus className="h-3 w-3" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <SidebarGroupLabel className="text-sm font-semibold text-foreground/80">AI Agents</SidebarGroupLabel>
+            <Button size="icon" variant="ghost" data-testid="button-add-agent">
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
           <SidebarGroupContent>
@@ -113,7 +113,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="px-4 py-3 border-t border-border/50">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src="" />
