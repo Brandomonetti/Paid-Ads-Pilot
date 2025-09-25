@@ -1,4 +1,5 @@
 import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb } from "lucide-react"
+import logoPath from "@assets/b52CH3jEBgKI03ajauLebDVQ3o_1758796736572.webp"
 import { Link, useLocation } from "wouter"
 import {
   Sidebar,
@@ -61,14 +62,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <Brain className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Creative Strategist</h2>
-            <p className="text-sm text-muted-foreground">AI Marketing Intelligence</p>
-          </div>
+        <div className="flex items-center justify-center">
+          <img src={logoPath} alt="Logo" className="h-10 w-auto" />
         </div>
       </SidebarHeader>
 
