@@ -62,8 +62,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-6">
-        <div className="flex items-center justify-center">
-          <img src={logoPath} alt="Logo" className="h-10 w-auto" />
+        <div className="flex items-center justify-start">
+          <img src={logoPath} alt="Logo" className="h-20 w-auto" />
         </div>
       </SidebarHeader>
 
