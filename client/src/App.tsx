@@ -21,50 +21,55 @@ import NotFound from "@/pages/not-found";
 import { LandingPage } from "@/components/landing-page";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={LandingPage} />
-      ) : (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
-          <Route path="/research" component={ResearchAgentDashboard} />
-          <Route path="/script" component={ScriptAgentDashboard} />
-          <Route path="/performance" component={PerformanceAgentDashboard} />
-          <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
-          <Route path="/settings" component={SettingsDashboard} />
-        </>
-      )}
+      <Route path="/" component={Dashboard} />
+      <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
+      <Route path="/research" component={ResearchAgentDashboard} />
+      <Route path="/script" component={ScriptAgentDashboard} />
+      <Route path="/performance" component={PerformanceAgentDashboard} />
+      <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
+      <Route path="/settings" component={SettingsDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+  
   // Custom sidebar width for the Creative Strategist AI
   const style = {
     "--sidebar-width": "20rem",
     "--sidebar-width-icon": "4rem",
   };
 
+  // Show LandingPage when not authenticated, full layout when authenticated
+  if (isLoading || !isAuthenticated) {
+    return <LandingPage />;
+  }
+
+  return (
+    <SidebarProvider style={style as CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-col flex-1">
+          <Header />
+          <main className="flex-1 overflow-auto bg-background">
+            <Router />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <SidebarProvider style={style as CSSProperties}>
-            <div className="flex h-screen w-full">
-              <AppSidebar />
-              <div className="flex flex-col flex-1">
-                <Header />
-                <main className="flex-1 overflow-auto bg-background">
-                  <Router />
-                </main>
-              </div>
-            </div>
-          </SidebarProvider>
+          <AppContent />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
