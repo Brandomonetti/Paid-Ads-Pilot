@@ -1,10 +1,13 @@
 import { useState } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { queryClient, apiRequest } from "@/lib/queryClient"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, ThumbsUp, ThumbsDown, Play, Copy, RefreshCw, Video, Clock, CheckCircle, Users, TrendingUp, ArrowLeft } from "lucide-react"
+import { FileText, ThumbsUp, ThumbsDown, Play, Copy, RefreshCw, Video, Clock, CheckCircle, Users, TrendingUp, ArrowLeft, AlertCircle } from "lucide-react"
 
 interface Script {
   id: string
@@ -36,84 +39,72 @@ interface Script {
 }
 
 export function ScriptAgentDashboard() {
-  //todo: remove mock functionality - replace with real OpenAI integration
-  const [scripts, setScripts] = useState<Script[]>([
-    {
-      id: "1",
-      title: "Busy Parent Morning Routine",
-      duration: "30s",
-      scriptType: "ugc",
-      summary: "Targeting busy working parents struggling with chaotic mornings using meal prep transformation angle for problem aware audience",
-      content: {
-        avatar: "Working mothers, ages 28-40, juggling career and family responsibilities",
-        marketingAngle: "POV transformation - become the organized parent who has it all figured out",
-        awarenessStage: "problem aware",
-        problem: "Every morning feels like chaos - kids refusing to eat, you're late for work, everyone's hangry",
-        solution: "This simple meal prep trick changed everything. 5 minutes Sunday night = stress-free mornings all week",
-        fullScript: "POV: You're a working mom and breakfast just became your superpower. [Shows chaotic morning scene] Every morning feels like chaos - kids refusing to eat, you're late for work, everyone's hangry. [Transition] But this simple meal prep trick changed everything. [Shows organized prep] 5 minutes Sunday night = stress-free mornings all week. [Shows smooth morning] Try it for yourself - link in bio for the full guide.",
-        cta: "Try it for yourself - link in bio for the full guide"
-      },
-      sourceResearch: {
-        avatarName: "Busy Working Parent",
-        conceptTitle: "Kitchen Transformation - Quick Recipe Ideas",
-        relevanceScore: 92
-      },
-      status: "pending",
-      performance: {
-        hookRate: 85,
-        completionRate: 72,
-        ctr: 3.2
-      }
-    },
-    {
-      id: "2",
-      title: "Health Transformation Story",
-      duration: "45s", 
-      scriptType: "testimonial",
-      summary: "Targeting health-conscious millennials who've tried everything using authentic transformation story for unaware audience",
-      content: {
-        avatar: "Health-conscious millennials, ages 25-35, frustrated with failed attempts at sustainable wellness",
-        marketingAngle: "Personal transformation story - relatable struggle to breakthrough moment",
-        awarenessStage: "unaware",
-        problem: "Spent thousands on supplements, meal plans, gym memberships. Nothing stuck.",
-        solution: "Then I discovered this isn't about restriction - it's about nourishment. Real food, real results.",
-        fullScript: "I tried every diet for 10 years. This one thing finally worked. [Shows before photos] Spent thousands on supplements, meal plans, gym memberships. Nothing stuck. [Transition moment] Then I discovered this isn't about restriction - it's about nourishment. [Shows transformation] Real food, real results. [Shows current lifestyle] Ready for your transformation? Get started today.",
-        cta: "Ready for your transformation? Get started today."
-      },
-      sourceResearch: {
-        avatarName: "Health-Conscious Millennial",
-        conceptTitle: "Raw UGC with Male Speaker - Weight Loss Transformation",
-        relevanceScore: 88
-      },
-      status: "approved"
-    },
-    {
-      id: "3",
-      title: "Quick Product Demo",
-      duration: "20s",
-      scriptType: "demo", 
-      summary: "Targeting time-pressed entrepreneurs seeking quick nutrition using fast meal demo for most aware audience",
-      content: {
-        avatar: "Busy entrepreneurs, ages 30-45, prioritizing efficiency and health in their demanding schedules",
-        marketingAngle: "Speed and quality demonstration - prove it's possible to eat well without time investment",
-        awarenessStage: "most aware",
-        problem: "Who says healthy can't be fast and delicious?",
-        solution: "Three simple ingredients, one amazing result",
-        fullScript: "Watch me make a restaurant-quality meal in 10 minutes. [Timer starts] Who says healthy can't be fast and delicious? [Shows ingredients] Three simple ingredients, one amazing result. [Demo cooking process with timer] [Final reveal] Get the recipe and ingredients delivered to your door.",
-        cta: "Get the recipe and ingredients delivered to your door"
-      },
-      sourceResearch: {
-        avatarName: "Time-Pressed Entrepreneur",
-        conceptTitle: "POV Hook Format - Trendjacking Success Stories",
-        relevanceScore: 85
-      },
-      status: "pending"
-    }
-  ])
-
-  const [feedback, setFeedback] = useState<Record<string, string>>({})
-  const [isGenerating, setIsGenerating] = useState(false)
+  const userId = "user-1" // TODO: Get from auth context
+  const { toast } = useToast()
+  
+  // Form state for script generation
   const [selectedAvatar, setSelectedAvatar] = useState<string>("")
+  const [selectedDuration, setSelectedDuration] = useState<"15s" | "30s" | "45s" | "60s">("30s")
+  const [selectedScriptType, setSelectedScriptType] = useState<"ugc" | "testimonial" | "demo" | "story">("ugc")
+  const [selectedAwarenessStage, setSelectedAwarenessStage] = useState<"unaware" | "problem aware" | "solution aware" | "product aware" | "most aware">("problem aware")
+  const [marketingAngle, setMarketingAngle] = useState<string>("")
+  
+  // UI state
+  const [scripts, setScripts] = useState<Script[]>([])
+  const [feedback, setFeedback] = useState<Record<string, string>>({})
+
+  // Check if Knowledge Base exists
+  const { data: knowledgeBase, isLoading: kbLoading, error: kbError } = useQuery({
+    queryKey: ['/api/knowledge-base', userId],
+    queryFn: () => apiRequest('GET', `/api/knowledge-base/${userId}`).then(res => res.json()),
+  })
+
+  // Script generation mutation
+  const generateScriptMutation = useMutation({
+    mutationFn: async (): Promise<Script> => {
+      const scriptRequest = {
+        scriptType: selectedScriptType,
+        duration: selectedDuration,
+        targetAvatar: selectedAvatar || undefined,
+        marketingAngle: marketingAngle || undefined,
+        awarenessStage: selectedAwarenessStage
+      }
+      
+      const response = await apiRequest('POST', '/api/generate-script', { userId, scriptRequest })
+      return response.json()
+    },
+    onSuccess: (newScript: Script) => {
+      // Add UI-specific properties for local state management
+      const scriptWithUIProps = { 
+        ...newScript, 
+        id: Date.now().toString(), 
+        status: "pending" as const 
+      }
+      setScripts(prev => [scriptWithUIProps, ...prev])
+      toast({
+        title: "Script Generated!",
+        description: "Your new UGC script has been created using your Knowledge Base data."
+      })
+    },
+    onError: (error: any) => {
+      // Parse server error response
+      let errorMessage = "Failed to generate script. Please try again."
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      } else if (error?.error) {
+        errorMessage = error.error
+      }
+      
+      toast({
+        title: "Generation Failed",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    }
+  })
 
   const handleApproval = (id: string, status: "approved" | "rejected") => {
     setScripts(prev => prev.map(script => 
@@ -125,34 +116,15 @@ export function ScriptAgentDashboard() {
   }
 
   const generateNewScript = () => {
-    setIsGenerating(true)
-    //todo: remove mock functionality - integrate with OpenAI API
-    setTimeout(() => {
-      const newScript: Script = {
-        id: Date.now().toString(),
-        title: "Entrepreneur Success Story",
-        duration: "35s",
-        scriptType: "story",
-        summary: "Targeting burned-out entrepreneurs seeking sustainable success using personal breakthrough story for solution aware audience",
-        content: {
-          avatar: "Ambitious entrepreneurs, ages 30-50, experiencing burnout from overwork and seeking sustainable growth",
-          marketingAngle: "Personal breakthrough story - from struggle to systematic success",
-          awarenessStage: "solution aware",
-          problem: "Working 80-hour weeks, living on coffee and regret",
-          solution: "This one change helped me reclaim my energy and focus",
-          fullScript: "From burnout to breakthrough in 30 days. [Shows exhausted state] Working 80-hour weeks, living on coffee and regret. [Transition moment] This one change helped me reclaim my energy and focus. [Shows transformation] Ready to fuel your success? Start here.",
-          cta: "Ready to fuel your success? Start here.",
-        },
-        sourceResearch: {
-          avatarName: "Time-Pressed Entrepreneur",
-          conceptTitle: "Productivity Hacks for Business Owners",
-          relevanceScore: 91
-        },
-        status: "pending"
-      }
-      setScripts(prev => [newScript, ...prev])
-      setIsGenerating(false)
-    }, 2000)
+    if (!knowledgeBase) {
+      toast({
+        title: "Knowledge Base Required",
+        description: "Please complete your Knowledge Base setup before generating scripts.",
+        variant: "destructive"
+      })
+      return
+    }
+    generateScriptMutation.mutate()
   }
 
   const copyScript = (script: Script) => {
@@ -199,27 +171,87 @@ export function ScriptAgentDashboard() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedAvatar} onValueChange={setSelectedAvatar}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select avatar" />
+        <div className="flex gap-2 flex-wrap">
+          <Select value={selectedScriptType} onValueChange={(value) => setSelectedScriptType(value as "ugc" | "testimonial" | "demo" | "story")}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="busy-parent">Busy Working Parent</SelectItem>
-              <SelectItem value="health-millennial">Health-Conscious Millennial</SelectItem>
-              <SelectItem value="entrepreneur">Time-Pressed Entrepreneur</SelectItem>
+              <SelectItem value="ugc">UGC</SelectItem>
+              <SelectItem value="testimonial">Testimonial</SelectItem>
+              <SelectItem value="demo">Demo</SelectItem>
+              <SelectItem value="story">Story</SelectItem>
             </SelectContent>
           </Select>
+          
+          <Select value={selectedDuration} onValueChange={(value) => setSelectedDuration(value as "15s" | "30s" | "45s" | "60s")}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="15s">15s</SelectItem>
+              <SelectItem value="30s">30s</SelectItem>
+              <SelectItem value="45s">45s</SelectItem>
+              <SelectItem value="60s">60s</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedAwarenessStage} onValueChange={(value) => setSelectedAwarenessStage(value as "unaware" | "problem aware" | "solution aware" | "product aware" | "most aware")}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unaware">Unaware</SelectItem>
+              <SelectItem value="problem aware">Problem Aware</SelectItem>
+              <SelectItem value="solution aware">Solution Aware</SelectItem>
+              <SelectItem value="product aware">Product Aware</SelectItem>
+              <SelectItem value="most aware">Most Aware</SelectItem>
+            </SelectContent>
+          </Select>
+          
           <Button 
             onClick={generateNewScript}
-            disabled={isGenerating}
+            disabled={generateScriptMutation.isPending || kbLoading || !knowledgeBase}
             data-testid="button-generate-script"
           >
-            {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
-            {isGenerating ? "Generating..." : "Generate Script"}
+            {generateScriptMutation.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+            {generateScriptMutation.isPending ? "Generating..." : "Generate Script"}
           </Button>
         </div>
       </div>
+
+      {/* Knowledge Base Status */}
+      {kbError && (
+        <Card className="border-destructive">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <p className="text-sm font-medium">
+                Knowledge Base required for script generation. Please set up your brand information first.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/knowledge-base">Setup Now</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!knowledgeBase && !kbError && !kbLoading && (
+        <Card className="border-yellow-300 dark:border-yellow-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+              <AlertCircle className="h-4 w-4" />
+              <p className="text-sm font-medium">
+                Complete your Knowledge Base to enable AI-powered script generation using your brand data.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/knowledge-base">Complete Setup</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -255,6 +287,102 @@ export function ScriptAgentDashboard() {
           <Video className="h-5 w-5" />
           UGC Video Scripts
         </h2>
+
+        {/* Loading State */}
+        {generateScriptMutation.isPending && (
+          <Card className="animate-pulse">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 bg-muted rounded w-48"></div>
+                  <div className="h-5 bg-muted rounded w-16"></div>
+                  <div className="h-5 bg-muted rounded w-12"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <div className="h-3 bg-muted rounded w-16 mb-1"></div>
+                  <div className="h-3 bg-muted rounded w-full"></div>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <div className="h-3 bg-muted rounded w-20 mb-1"></div>
+                  <div className="h-3 bg-muted rounded w-full"></div>
+                </div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="h-4 bg-muted rounded w-32 mb-3"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-muted rounded w-full"></div>
+                  <div className="h-3 bg-muted rounded w-full"></div>
+                  <div className="h-3 bg-muted rounded w-3/4"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty State */}
+        {!generateScriptMutation.isPending && scripts.length === 0 && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                <div className="rounded-full bg-muted p-4">
+                  <Video className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">No Scripts Generated Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Generate your first AI-powered UGC script using your Knowledge Base data.
+                  </p>
+                  {knowledgeBase ? (
+                    <Button onClick={generateNewScript} disabled={generateScriptMutation.isPending}>
+                      <Video className="mr-2 h-4 w-4" />
+                      Generate Your First Script
+                    </Button>
+                  ) : (
+                    <Button variant="outline" asChild>
+                      <a href="/knowledge-base">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Complete Knowledge Base First
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {generateScriptMutation.error && (
+          <Card className="border-destructive">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                <div>
+                  <p className="text-sm font-medium">Failed to generate script</p>
+                  <p className="text-xs opacity-90">
+                    {generateScriptMutation.error instanceof Error ? generateScriptMutation.error.message : "An unexpected error occurred"}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => generateScriptMutation.reset()}
+                  className="ml-auto"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {scripts.map((script) => (
           <Card key={script.id} className="hover-elevate" data-testid={`card-script-${script.id}`}>

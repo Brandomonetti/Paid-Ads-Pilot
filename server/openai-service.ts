@@ -111,16 +111,16 @@ function buildScriptPrompt(request: ScriptGenerationRequest, kb: KnowledgeBase):
 Generate a ${request.scriptType} video script for a ${durationInfo[request.duration]}.
 
 BRAND INFORMATION:
-- Brand: ${kb.websiteUrl}
-- Brand Voice: ${kb.brandVoice}
-- Mission: ${kb.missionStatement}
-- Key Benefits: ${kb.keyBenefits.join(", ")}
-- Unique Selling Points: ${kb.usps.join(", ")}
-- Brand Values: ${kb.brandValues.join(", ")}
-- Pricing Strategy: ${kb.pricingInfo}
-- Target Audience: ${kb.currentPersonas}
-- Demographics: ${kb.demographics}
-- Social Content Style: ${kb.contentStyle}
+- Brand: ${kb.websiteUrl || "Brand"}
+- Brand Voice: ${kb.brandVoice || "Professional and engaging"}
+- Mission: ${kb.missionStatement || "To provide value to our customers"}
+- Key Benefits: ${(kb.keyBenefits ?? []).join(", ") || "High quality, reliable, affordable"}
+- Unique Selling Points: ${(kb.usps ?? []).join(", ") || "Unique value proposition"}
+- Brand Values: ${(kb.brandValues ?? []).join(", ") || "Quality, trust, innovation"}
+- Pricing Strategy: ${kb.pricingInfo || "Competitive pricing"}
+- Target Audience: ${kb.currentPersonas || "General audience"}
+- Demographics: ${kb.demographics || "Various demographics"}
+- Social Content Style: ${kb.contentStyle || "Authentic and engaging"}
 
 SCRIPT REQUIREMENTS:
 - Type: ${scriptTypeGuidance[request.scriptType]}
