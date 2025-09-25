@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import React from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { queryClient, apiRequest } from "@/lib/queryClient"
@@ -99,33 +99,18 @@ export function KnowledgeBaseDashboard() {
   const saveKB = useMutation({
     mutationFn: async (data: UpdateKnowledgeBase) => {
       if (existingKB) {
-        return fetch(`/api/knowledge-base/${userId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        }).then(res => res.json())
+        const response = await apiRequest("PATCH", `/api/knowledge-base/${userId}`, data)
+        return response.json()
       } else {
-        return fetch("/api/knowledge-base", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...data, userId })
-        }).then(res => res.json())
+        const response = await apiRequest("POST", "/api/knowledge-base", { ...data, userId })
+        return response.json()
       }
     },
     onSuccess: () => {
+      // Always invalidate cache, but no toast - toast handled per call
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base", userId] })
-      toast({
-        title: "Progress Saved",
-        description: "Your knowledge base has been updated successfully."
-      })
-    },
-    onError: () => {
-      toast({
-        title: "Save Failed",
-        description: "Unable to save your progress. Please try again.",
-        variant: "destructive"
-      })
     }
+    // No global onError - errors handled per call to avoid toast spam
   })
   
   // Load existing data when available
@@ -202,7 +187,33 @@ export function KnowledgeBaseDashboard() {
     }
   }
 
-  const overallProgress = steps.reduce((total, step) => total + getStepProgress(step.id), 0) / steps.length
+  // Check if required fields are missing for visual indicators
+  const getRequiredFieldsMissing = () => {
+    const missing = {
+      websiteUrl: !knowledgeBase.websiteUrl.trim(),
+      brandVoice: !knowledgeBase.brandVoice.trim(),
+      missionStatement: !knowledgeBase.missionStatement.trim(),
+      productLinks: knowledgeBase.productLinks.length === 0,
+      pricingInfo: !knowledgeBase.pricingInfo.trim(),
+      keyBenefits: knowledgeBase.keyBenefits.length === 0,
+      currentPersonas: !knowledgeBase.currentPersonas.trim(),
+      demographics: !knowledgeBase.demographics.trim(),
+      mainCompetitors: knowledgeBase.mainCompetitors.length === 0,
+      instagramHandle: !knowledgeBase.instagramHandle.trim(),
+      contentStyle: !knowledgeBase.contentStyle.trim(),
+      salesTrends: !knowledgeBase.salesTrends.trim()
+    }
+    return missing
+  }
+  
+  const requiredFieldsMissing = getRequiredFieldsMissing()
+  
+  // Calculate progress based on required steps only (excluding assets step)
+  const requiredSteps = steps.slice(0, 6) // Exclude Creative Assets step
+  const overallProgress = requiredSteps.reduce((total, step) => total + getStepProgress(step.id), 0) / requiredSteps.length
+  
+  // Check completion based on required fields, not percentage
+  const isCompleted = !Object.values(requiredFieldsMissing).some(Boolean)
 
   const addArrayItem = (field: keyof KnowledgeBaseData, value: string) => {
     setKnowledgeBase(prev => ({
@@ -225,13 +236,74 @@ export function KnowledgeBaseDashboard() {
     }))
   }
   
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const updatedData = {
       ...knowledgeBase,
       completionPercentage: Math.round(overallProgress)
     }
-    saveKB.mutate(updatedData)
-  }
+    saveKB.mutate(updatedData, {
+      onSuccess: () => {
+        toast({
+          title: "Progress Saved",
+          description: "Your knowledge base has been updated successfully."
+        })
+      },
+      onError: () => {
+        toast({
+          title: "Save Failed",
+          description: "Unable to save your progress. Please try again.",
+          variant: "destructive"
+        })
+      }
+    })
+  }, [knowledgeBase, overallProgress, saveKB, toast])
+  
+  // Autosave functionality with debouncing and guards
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (userId && !saveKB.isPending && (existingKB || Object.values(knowledgeBase).some(field => 
+        typeof field === 'string' ? field.trim() : 
+        Array.isArray(field) ? field.length > 0 : 
+        false
+      ))) {
+        // Silent autosave - don't show toast
+        const updatedData = {
+          ...knowledgeBase,
+          completionPercentage: Math.round(overallProgress)
+        }
+        saveKB.mutate(updatedData, {
+          onSuccess: () => {
+            // Silent success - no toast for autosave
+          },
+          onError: () => {
+            // Silent error - no toast for autosave
+          }
+        })
+      }
+    }, 2000) // Auto-save after 2 seconds of no changes
+    
+    return () => clearTimeout(timeoutId)
+  }, [knowledgeBase, userId, existingKB, overallProgress, saveKB])
+  
+  // Trigger one-time save when completion is achieved (silent)
+  const prevCompleted = React.useRef(false)
+  useEffect(() => {
+    if (isCompleted && !prevCompleted.current && userId) {
+      prevCompleted.current = true
+      // Silent save when completion is achieved
+      const updatedData = {
+        ...knowledgeBase,
+        completionPercentage: Math.round(overallProgress)
+      }
+      saveKB.mutate(updatedData, {
+        onError: () => {
+          // Silent error - no toast for completion-triggered save
+        }
+      })
+    } else if (!isCompleted) {
+      prevCompleted.current = false
+    }
+  }, [isCompleted, userId, knowledgeBase, overallProgress, saveKB])
 
   return (
     <div className="p-6 space-y-8">
@@ -244,12 +316,40 @@ export function KnowledgeBaseDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="px-3 py-1">
+          <Badge 
+            variant={isCompleted ? "default" : "secondary"} 
+            className={`px-3 py-1 ${isCompleted ? 'bg-green-600 text-white' : ''}`}
+          >
             {Math.round(overallProgress)}% Complete
           </Badge>
-          <Button onClick={handleSave} disabled={saveKB.isPending} data-testid="button-save-knowledge-base">
+          <Button 
+            onClick={() => {
+              const updatedData = {
+                ...knowledgeBase,
+                completionPercentage: Math.round(overallProgress)
+              }
+              saveKB.mutate(updatedData, {
+                onSuccess: () => {
+                  toast({
+                    title: "Progress saved",
+                    description: "Your knowledge base has been updated."
+                  })
+                },
+                onError: () => {
+                  toast({
+                    title: "Save Failed",
+                    description: "Unable to save your progress. Please try again.",
+                    variant: "destructive"
+                  })
+                }
+              })
+            }} 
+            disabled={saveKB.isPending} 
+            variant="outline" 
+            data-testid="button-save-knowledge-base"
+          >
             <CheckCircle2 className="h-4 w-4 mr-2" />
-            {saveKB.isPending ? "Saving..." : "Save Progress"}
+            {saveKB.isPending ? "Saving..." : "Save Now"}
           </Button>
         </div>
       </div>
@@ -302,14 +402,21 @@ export function KnowledgeBaseDashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="website-url">Website URL *</Label>
+                  <Label htmlFor="website-url" className={requiredFieldsMissing.websiteUrl ? 'text-red-600 dark:text-red-400' : ''}>
+                    Website URL *
+                  </Label>
                   <Input
                     id="website-url"
                     placeholder="https://yourbrand.com"
                     value={knowledgeBase.websiteUrl}
                     onChange={(e) => updateField("websiteUrl", e.target.value)}
+                    className={requiredFieldsMissing.websiteUrl ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+                    aria-invalid={requiredFieldsMissing.websiteUrl}
                     data-testid="input-website-url"
                   />
+                  {requiredFieldsMissing.websiteUrl && (
+                    <p className="text-xs text-red-600 dark:text-red-400">Website URL is required</p>
+                  )}
                   <p className="text-xs text-muted-foreground">AI will analyze your website for brand understanding</p>
                 </div>
                 <div className="space-y-2">
@@ -325,23 +432,29 @@ export function KnowledgeBaseDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="brand-voice">Brand Voice & Tone *</Label>
+                <Label htmlFor="brand-voice" className={requiredFieldsMissing.brandVoice ? 'text-red-600 dark:text-red-400' : ''}>
+                  Brand Voice & Tone *
+                </Label>
                 <Textarea
                   id="brand-voice"
                   placeholder="Describe your brand's personality... (e.g., 'Friendly and approachable, professional but not stuffy, speaks directly to busy parents')"
                   value={knowledgeBase.brandVoice}
                   onChange={(e) => updateField("brandVoice", e.target.value)}
+                  className={requiredFieldsMissing.brandVoice ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   data-testid="textarea-brand-voice"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mission-statement">Mission Statement *</Label>
+                <Label htmlFor="mission-statement" className={requiredFieldsMissing.missionStatement ? 'text-red-600 dark:text-red-400' : ''}>
+                  Mission Statement *
+                </Label>
                 <Textarea
                   id="mission-statement"
                   placeholder="What is your brand's mission and core purpose?"
                   value={knowledgeBase.missionStatement}
                   onChange={(e) => updateField("missionStatement", e.target.value)}
+                  className={requiredFieldsMissing.missionStatement ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   data-testid="textarea-mission-statement"
                 />
               </div>
@@ -383,7 +496,9 @@ export function KnowledgeBaseDashboard() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label>Product Links *</Label>
+                <Label className={requiredFieldsMissing.productLinks ? 'text-red-600 dark:text-red-400' : ''}>
+                  Product Links *
+                </Label>
                 <div className="space-y-2">
                   {knowledgeBase.productLinks.map((link, index) => (
                     <div key={index} className="flex gap-2">
@@ -418,19 +533,24 @@ export function KnowledgeBaseDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pricing-info">Pricing Strategy *</Label>
+                <Label htmlFor="pricing-info" className={requiredFieldsMissing.pricingInfo ? 'text-red-600 dark:text-red-400' : ''}>
+                  Pricing Strategy *
+                </Label>
                 <Textarea
                   id="pricing-info"
                   placeholder="Describe your pricing model, price points, and positioning (e.g., 'Premium pricing at $99-199, positioned as high-quality alternative to cheaper competitors')"
                   value={knowledgeBase.pricingInfo}
                   onChange={(e) => updateField("pricingInfo", e.target.value)}
+                  className={requiredFieldsMissing.pricingInfo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   data-testid="textarea-pricing-info"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Key Benefits *</Label>
+                  <Label className={requiredFieldsMissing.keyBenefits ? 'text-red-600 dark:text-red-400' : ''}>
+                    Key Benefits *
+                  </Label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {knowledgeBase.keyBenefits.map((benefit, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1">
@@ -487,24 +607,30 @@ export function KnowledgeBaseDashboard() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="current-personas">Current Customer Personas *</Label>
+                <Label htmlFor="current-personas" className={requiredFieldsMissing.currentPersonas ? 'text-red-600 dark:text-red-400' : ''}>
+                  Current Customer Personas *
+                </Label>
                 <Textarea
                   id="current-personas"
                   placeholder="Describe your main customer segments... (e.g., 'Primary: Working moms 28-45, household income $75k+, values convenience and quality. Secondary: Health-conscious millennials 25-35, urban, willing to pay premium for organic')"
                   value={knowledgeBase.currentPersonas}
                   onChange={(e) => updateField("currentPersonas", e.target.value)}
+                  className={requiredFieldsMissing.currentPersonas ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   rows={4}
                   data-testid="textarea-personas"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="demographics">Demographics & Psychographics *</Label>
+                <Label htmlFor="demographics" className={requiredFieldsMissing.demographics ? 'text-red-600 dark:text-red-400' : ''}>
+                  Demographics & Psychographics *
+                </Label>
                 <Textarea
                   id="demographics"
                   placeholder="Age, gender, income, location, interests, pain points, shopping behavior..."
                   value={knowledgeBase.demographics}
                   onChange={(e) => updateField("demographics", e.target.value)}
+                  className={requiredFieldsMissing.demographics ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   rows={3}
                   data-testid="textarea-demographics"
                 />
@@ -539,7 +665,9 @@ export function KnowledgeBaseDashboard() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label>Main Competitors *</Label>
+                <Label className={requiredFieldsMissing.mainCompetitors ? 'text-red-600 dark:text-red-400' : ''}>
+                  Main Competitors *
+                </Label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {knowledgeBase.mainCompetitors.map((competitor, index) => (
                     <Badge key={index} variant="secondary" className="flex items-center gap-1">
@@ -600,12 +728,15 @@ export function KnowledgeBaseDashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="instagram-handle">Instagram Handle *</Label>
+                  <Label htmlFor="instagram-handle" className={requiredFieldsMissing.instagramHandle ? 'text-red-600 dark:text-red-400' : ''}>
+                    Instagram Handle *
+                  </Label>
                   <Input
                     id="instagram-handle"
                     placeholder="@yourbrand"
                     value={knowledgeBase.instagramHandle}
                     onChange={(e) => updateField("instagramHandle", e.target.value)}
+                    className={requiredFieldsMissing.instagramHandle ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                     data-testid="input-instagram"
                   />
                 </div>
@@ -632,12 +763,15 @@ export function KnowledgeBaseDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="content-style">Content Style & Guidelines *</Label>
+                <Label htmlFor="content-style" className={requiredFieldsMissing.contentStyle ? 'text-red-600 dark:text-red-400' : ''}>
+                  Content Style & Guidelines *
+                </Label>
                 <Textarea
                   id="content-style"
                   placeholder="Describe your social media style... (e.g., 'Bright, lifestyle-focused imagery. User-generated content featuring real customers. Captions are conversational and include questions to drive engagement. Always include product in use shots')"
                   value={knowledgeBase.contentStyle}
                   onChange={(e) => updateField("contentStyle", e.target.value)}
+                  className={requiredFieldsMissing.contentStyle ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   rows={4}
                   data-testid="textarea-content-style"
                 />
@@ -650,12 +784,15 @@ export function KnowledgeBaseDashboard() {
           {currentStep === 5 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="sales-trends">Sales Trends & Seasonality *</Label>
+                <Label htmlFor="sales-trends" className={requiredFieldsMissing.salesTrends ? 'text-red-600 dark:text-red-400' : ''}>
+                  Sales Trends & Seasonality *
+                </Label>
                 <Textarea
                   id="sales-trends"
                   placeholder="Describe your sales patterns... (e.g., 'Peak sales November-January (holiday season), summer lull June-August. Friday-Sunday best performing days. Product A outsells B 3:1. Average order value $85')"
                   value={knowledgeBase.salesTrends}
                   onChange={(e) => updateField("salesTrends", e.target.value)}
+                  className={requiredFieldsMissing.salesTrends ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                   rows={3}
                   data-testid="textarea-sales-trends"
                 />
@@ -757,23 +894,60 @@ export function KnowledgeBaseDashboard() {
 
       {/* Completion Summary */}
       {overallProgress > 80 && (
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className={isCompleted ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20" : "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20"}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-800 dark:text-green-200">
+            <CardTitle className={`flex items-center gap-2 ${isCompleted ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'}`}>
               <CheckCircle2 className="h-5 w-5" />
-              Knowledge Base Nearly Complete!
+              {isCompleted ? 'Knowledge Base Complete!' : 'Knowledge Base Nearly Complete!'}
             </CardTitle>
             <CardDescription>
-              You've provided {Math.round(overallProgress)}% of the recommended information. Your AI agents are ready to deliver highly targeted results.
+              {isCompleted 
+                ? 'Perfect! You\'ve provided all the essential brand intelligence. Your AI agents are fully activated and ready to deliver highly targeted results.' 
+                : `You've provided ${Math.round(overallProgress)}% of the recommended information. Complete all required fields to unlock maximum AI performance.`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" data-testid="button-activate-agents">
-              <Zap className="h-4 w-4 mr-2" />
-              Activate AI Agents
-            </Button>
+            {isCompleted ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Auto-saved and ready to use</span>
+                </div>
+                <Button className="w-full bg-green-600 hover:bg-green-700" data-testid="button-activate-agents">
+                  <Zap className="h-4 w-4 mr-2" />
+                  AI Agents Activated
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Missing required fields in red above
+                </div>
+                <Button className="w-full" variant="outline" disabled data-testid="button-activate-agents">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Complete Required Fields to Activate
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+      )}
+      
+      {/* Auto-save indicator */}
+      {saveKB.isPending && (
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+          <span className="text-sm">Saving...</span>
+        </div>
+      )}
+      
+      {/* Completion status indicator */}
+      {isCompleted && !saveKB.isPending && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <CheckCircle2 className="h-3 w-3" />
+          <span className="text-sm">All changes saved</span>
+        </div>
       )}
     </div>
   )
