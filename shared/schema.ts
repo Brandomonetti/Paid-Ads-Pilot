@@ -25,6 +25,8 @@ export const avatars = pgTable("avatars", {
   demographics: text("demographics").notNull(),
   painPoint: text("pain_point").notNull(),
   hooks: text("hooks").array().notNull(),
+  sources: text("sources").array().notNull().default(sql`ARRAY[]::text[]`), // Reddit forums, articles, etc.
+  angleIdeas: text("angle_ideas").array().notNull().default(sql`ARRAY[]::text[]`), // Creative angle suggestions
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   feedback: text("feedback"),
   createdAt: timestamp("created_at").defaultNow()

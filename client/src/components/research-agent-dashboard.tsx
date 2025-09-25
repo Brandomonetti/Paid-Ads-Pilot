@@ -129,6 +129,19 @@ export function ResearchAgentDashboard() {
             "Stop feeling guilty about another takeout order",
             "Your kids deserve better than processed food"
           ],
+          sources: [
+            "Reddit: r/Parenting - 47 meal prep discussions",
+            "Facebook Groups: Working Parents United - 12 surveys",
+            "Article: 'The Modern Parent's Kitchen Struggle' - Parents Magazine",
+            "Survey: Family Dinner Trends 2024 - 2,500 respondents"
+          ],
+          angleIdeas: [
+            "Before/after kitchen transformation timelapse",
+            "Parent testimonial during chaotic dinner prep",
+            "Kids taste-testing healthy vs. fast food",
+            "Time comparison: homemade vs. takeout delivery",
+            "Real parent reaction to saving 30 mins daily"
+          ],
           status: "pending"
         },
         {
@@ -141,6 +154,19 @@ export function ResearchAgentDashboard() {
             "Organic doesn't have to break the bank", 
             "Your body will thank you for this switch"
           ],
+          sources: [
+            "Reddit: r/HealthyFood - 89 ingredient discussions",
+            "Medium: 'Clean Eating Trends Among Urban Millennials'",
+            "Instagram: #cleaneating hashtag analysis - 50K posts",
+            "Survey: Wellness Consumer Report 2024 - 3,200 participants"
+          ],
+          angleIdeas: [
+            "Ingredient label comparison shocking reveal",
+            "Day-in-life of clean eating millennial",
+            "Grocery store walkthrough - clean vs. processed",
+            "Before/after energy levels transformation",
+            "Budget breakdown: healthy eating economics"
+          ],
           status: "approved"
         },
         {
@@ -152,6 +178,19 @@ export function ResearchAgentDashboard() {
             "Success shouldn't cost you your health",
             "Fuel your hustle with real nutrition",
             "The meal prep solution for busy CEOs"
+          ],
+          sources: [
+            "LinkedIn: Entrepreneur Health Survey - 1,800 responses",
+            "Article: 'The Burnout Economy' - Harvard Business Review",
+            "Reddit: r/Entrepreneur - 125 nutrition-related posts",
+            "Podcast: 'Founder Stories' - 15 episodes on work-life balance"
+          ],
+          angleIdeas: [
+            "CEO morning routine transformation",
+            "Productivity before/after proper nutrition",
+            "Office kitchen setup for busy founders",
+            "Energy crash prevention testimonial",
+            "Time audit: cooking vs. ordering vs. meal prep"
           ],
           status: "pending"
         }
@@ -517,8 +556,8 @@ export function ResearchAgentDashboard() {
       </div>
 
       {/* Integrated Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Avatar Selection */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Avatar Selection - Now More Prominent */}
         <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -574,6 +613,48 @@ export function ResearchAgentDashboard() {
                     </div>
                     <p className="text-xs text-muted-foreground">{avatar.painPoint}</p>
                   </div>
+                  
+                  {/* Research Sources */}
+                  {avatar.sources && avatar.sources.length > 0 && (
+                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="h-3 w-3 text-blue-600" />
+                        <span className="font-medium text-blue-600 text-xs">Research Sources</span>
+                      </div>
+                      <div className="space-y-1">
+                        {avatar.sources.slice(0, 2).map((source, index) => (
+                          <p key={index} className="text-xs text-muted-foreground">{source}</p>
+                        ))}
+                        {avatar.sources.length > 2 && (
+                          <p className="text-xs text-blue-600 font-medium">
+                            +{avatar.sources.length - 2} more sources
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Creative Angle Ideas */}
+                  {avatar.angleIdeas && avatar.angleIdeas.length > 0 && (
+                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-3 w-3 text-purple-600" />
+                        <span className="font-medium text-purple-600 text-xs">Creative Angles</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {avatar.angleIdeas.slice(0, 3).map((angle, index) => (
+                          <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
+                            {angle}
+                          </Badge>
+                        ))}
+                        {avatar.angleIdeas.length > 3 && (
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
+                            +{avatar.angleIdeas.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Linked Concepts Preview */}
                   {selectedAvatar === avatar.id && getLinkedConcepts(avatar.id).length > 0 && (
@@ -641,7 +722,7 @@ export function ResearchAgentDashboard() {
         </div>
 
         {/* Right: Filtered Concepts */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -677,6 +758,24 @@ export function ResearchAgentDashboard() {
             </Card>
           ) : (
             <div className="space-y-4">
+              {/* Enhanced Selection CTA */}
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-primary mb-1">
+                      Choose Concepts for {avatars.find(a => a.id === selectedAvatar)?.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Select creative concepts below to reproduce or take inspiration from. Link concepts to generate targeted scripts and briefs.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-primary">{getFilteredConcepts().length}</p>
+                    <p className="text-xs text-muted-foreground">Available Concepts</p>
+                  </div>
+                </div>
+              </Card>
+              
               {getFilteredConcepts().map((concept) => {
                 const isLinked = selectedAvatar ? isConceptLinked(selectedAvatar, concept.id) : false
                 return (
@@ -809,7 +908,7 @@ export function ResearchAgentDashboard() {
                         <div className="flex flex-wrap gap-2">
                           {concept.keyElements.map((element, index) => {
                             const avatar = selectedAvatar ? avatars.find(a => a.id === selectedAvatar) : null
-                            const { matchedElements } = avatar ? getMatchedElements(avatar, concept) : { matchedElements: [] }
+                            const { matchedElements } = avatar ? getMatchedElements(avatar, concept) : { matchedElements: [] as string[] }
                             const isMatched = matchedElements.includes(element)
                             return (
                               <Badge 
