@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { CSSProperties } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { ResearchAgentDashboard } from "@/components/research-agent-dashboard";
 import { ScriptAgentDashboard } from "@/components/script-agent-dashboard";
 import { PerformanceAgentDashboard } from "@/components/performance-agent-dashboard";
 import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-dashboard";
+import { SettingsDashboard } from "@/components/settings-dashboard";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import NotFound from "@/pages/not-found";
@@ -24,7 +25,7 @@ function Router() {
       <Route path="/script" component={ScriptAgentDashboard} />
       <Route path="/performance" component={PerformanceAgentDashboard} />
       <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
-      <Route path="/settings" component={() => <div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">Configure your AI agents and integrations.</p></div>} />
+      <Route path="/settings" component={SettingsDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -45,13 +46,7 @@ function App() {
             <div className="flex h-screen w-full">
               <AppSidebar />
               <div className="flex flex-col flex-1">
-                <header className="flex items-center justify-between p-4 border-b border-border bg-background">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <Button variant="outline" size="sm" data-testid="button-header-settings">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </Button>
-                </header>
+                <Header />
                 <main className="flex-1 overflow-auto bg-background">
                   <Router />
                 </main>
@@ -62,6 +57,25 @@ function App() {
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+function Header() {
+  const [location, setLocation] = useLocation();
+  
+  return (
+    <header className="flex items-center justify-between p-4 border-b border-border bg-background">
+      <SidebarTrigger data-testid="button-sidebar-toggle" />
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setLocation("/settings")}
+        data-testid="button-header-settings"
+      >
+        <Settings className="h-4 w-4 mr-2" />
+        Settings
+      </Button>
+    </header>
   );
 }
 

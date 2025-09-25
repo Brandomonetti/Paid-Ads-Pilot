@@ -285,3 +285,30 @@ export const insertWeeklyObservationSchema = createInsertSchema(weeklyObservatio
 
 export type InsertWeeklyObservation = z.infer<typeof insertWeeklyObservationSchema>;
 export type WeeklyObservation = typeof weeklyObservations.$inferSelect;
+
+// Platform Settings schema
+export const platformSettings = pgTable("platform_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provenConceptsPercentage: integer("proven_concepts_percentage").notNull().default(80), // 0-100
+  weeklyBriefsVolume: integer("weekly_briefs_volume").notNull().default(5), // 1-20
+  subscriptionTier: text("subscription_tier").notNull().default("free"), // free, pro, enterprise
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertPlatformSettingsSchema = createInsertSchema(platformSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const updatePlatformSettingsSchema = z.object({
+  provenConceptsPercentage: z.number().min(0).max(100).optional(),
+  weeklyBriefsVolume: z.number().min(1).max(200).optional(),
+  subscriptionTier: z.enum(["free", "pro", "enterprise"]).optional()
+});
+
+export type InsertPlatformSettings = z.infer<typeof insertPlatformSettingsSchema>;
+export type UpdatePlatformSettings = z.infer<typeof updatePlatformSettingsSchema>;
+export type PlatformSettings = typeof platformSettings.$inferSelect;

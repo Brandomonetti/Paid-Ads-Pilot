@@ -4,7 +4,9 @@ import { storage } from "./storage";
 import {
   insertAvatarSchema,
   insertConceptSchema,
-  insertAvatarConceptSchema
+  insertAvatarConceptSchema,
+  insertPlatformSettingsSchema,
+  updatePlatformSettingsSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -125,6 +127,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(avatarConcept);
     } catch (error) {
       res.status(500).json({ error: "Failed to update avatar-concept link" });
+    }
+  });
+
+  // Platform Settings routes
+  app.get("/api/settings/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      let settings = await storage.getPlatformSettings(userId);
+      
+      // Create default settings if they don't exist
+      if (!settings) {
+        settings = await storage.createPlatformSettings({
+          userId,
+          provenConceptsPercentage: 80,
+          weeklyBriefsVolume: 5,
+          subscriptionTier: "free"
+        });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch platform settings" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    try {
+      const validatedData = insertPlatformSettingsSchema.parse(req.body);
+      const settings = await storage.createPlatformSettings(validatedData);
+      res.status(201).json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid settings data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create platform settings" });
+      }
+    }
+  });
+
+  app.patch("/api/settings/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Validate the update data
+      const validatedData = updatePlatformSettingsSchema.parse(req.body);
+      
+      // Get current settings to check subscription tier for cap enforcement
+      const currentSettings = await storage.getPlatformSettings(userId);
+      if (!currentSettings) {
+        res.status(404).json({ error: "Platform settings not found" });
+        return;
+      }
+      
+      // Enforce subscription-based weekly caps
+      if (validatedData.weeklyBriefsVolume !== undefined) {
+        const subscriptionTier = validatedData.subscriptionTier || currentSettings.subscriptionTier;
+        const maxVolume = subscriptionTier === "free" ? 20 : subscriptionTier === "pro" ? 50 : 200;
+        
+        if (validatedData.weeklyBriefsVolume > maxVolume) {
+          res.status(400).json({ 
+            error: `Weekly briefs volume exceeds limit for ${subscriptionTier} tier (max: ${maxVolume})` 
+          });
+          return;
+        }
+      }
+      
+      const settings = await storage.updatePlatformSettings(userId, validatedData);
+      if (!settings) {
+        res.status(404).json({ error: "Platform settings not found" });
+        return;
+      }
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid settings data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update platform settings" });
+      }
     }
   });
 

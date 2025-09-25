@@ -2,7 +2,9 @@ import {
   type User, type InsertUser,
   type Avatar, type InsertAvatar,
   type Concept, type InsertConcept,
-  type AvatarConcept, type InsertAvatarConcept
+  type AvatarConcept, type InsertAvatarConcept,
+  type PlatformSettings, type InsertPlatformSettings,
+  type UpdatePlatformSettings
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -32,6 +34,11 @@ export interface IStorage {
   getAvatarConcept(id: string): Promise<AvatarConcept | undefined>;
   createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
   updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
+  
+  // Platform Settings methods
+  getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
+  createPlatformSettings(settings: InsertPlatformSettings): Promise<PlatformSettings>;
+  updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -39,12 +46,14 @@ export class MemStorage implements IStorage {
   private avatars: Map<string, Avatar>;
   private concepts: Map<string, Concept>;
   private avatarConcepts: Map<string, AvatarConcept>;
+  private platformSettings: Map<string, PlatformSettings>;
 
   constructor() {
     this.users = new Map();
     this.avatars = new Map();
     this.concepts = new Map();
     this.avatarConcepts = new Map();
+    this.platformSettings = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -182,6 +191,42 @@ export class MemStorage implements IStorage {
     const updatedAvatarConcept = { ...avatarConcept, ...updates };
     this.avatarConcepts.set(id, updatedAvatarConcept);
     return updatedAvatarConcept;
+  }
+
+  // Platform Settings methods
+  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
+    return this.platformSettings.get(userId);
+  }
+
+  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
+    const id = randomUUID();
+    const settings: PlatformSettings = { 
+      ...insertSettings,
+      id,
+      provenConceptsPercentage: insertSettings.provenConceptsPercentage ?? 80,
+      weeklyBriefsVolume: insertSettings.weeklyBriefsVolume ?? 5,
+      subscriptionTier: insertSettings.subscriptionTier ?? "free",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.platformSettings.set(insertSettings.userId, settings);
+    return settings;
+  }
+
+  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
+    const settings = this.platformSettings.get(userId);
+    if (!settings) return undefined;
+    
+    // Only allow specific fields to be updated, prevent id/userId tampering
+    const updatedSettings: PlatformSettings = { 
+      ...settings,
+      ...(updates.provenConceptsPercentage !== undefined && { provenConceptsPercentage: updates.provenConceptsPercentage }),
+      ...(updates.weeklyBriefsVolume !== undefined && { weeklyBriefsVolume: updates.weeklyBriefsVolume }),
+      ...(updates.subscriptionTier !== undefined && { subscriptionTier: updates.subscriptionTier }),
+      updatedAt: new Date()
+    };
+    this.platformSettings.set(userId, updatedSettings);
+    return updatedSettings;
   }
 }
 
