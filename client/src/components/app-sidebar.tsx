@@ -76,7 +76,9 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
-                      <item.icon className="h-4 w-4" />
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+                        <item.icon className="h-4 w-4 text-primary" />
+                      </div>
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -99,7 +101,9 @@ export function AppSidebar() {
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
                     <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(' ', '-')}`}>
-                      <agent.icon className="h-4 w-4" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                        <agent.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
                       <div className="flex flex-col">
                         <span>{agent.title}</span>
                         <span className="text-xs text-muted-foreground">{agent.description}</span>
