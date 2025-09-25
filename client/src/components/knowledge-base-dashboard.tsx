@@ -463,10 +463,10 @@ export function KnowledgeBaseDashboard() {
                 <Label>Brand Values</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {knowledgeBase.brandValues.map((value, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {value}
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1 max-w-xs" title={value}>
+                      <span className="truncate">{value.length > 30 ? value.substring(0, 30) + '...' : value}</span>
                       <X 
-                        className="h-3 w-3 cursor-pointer" 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
                         onClick={() => removeArrayItem("brandValues", index)}
                         data-testid={`button-remove-value-${index}`}
                       />
@@ -573,10 +573,10 @@ export function KnowledgeBaseDashboard() {
                   </Label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {knowledgeBase.keyBenefits.map((benefit, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {benefit}
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 max-w-xs" title={benefit}>
+                        <span className="truncate">{benefit.length > 30 ? benefit.substring(0, 30) + '...' : benefit}</span>
                         <X 
-                          className="h-3 w-3 cursor-pointer" 
+                          className="h-3 w-3 cursor-pointer flex-shrink-0" 
                           onClick={() => removeArrayItem("keyBenefits", index)}
                           data-testid={`button-remove-benefit-${index}`}
                         />
@@ -613,10 +613,10 @@ export function KnowledgeBaseDashboard() {
                   <Label>Unique Selling Points</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {knowledgeBase.usps.map((usp, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {usp}
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 max-w-xs" title={usp}>
+                        <span className="truncate">{usp.length > 30 ? usp.substring(0, 30) + '...' : usp}</span>
                         <X 
-                          className="h-3 w-3 cursor-pointer" 
+                          className="h-3 w-3 cursor-pointer flex-shrink-0" 
                           onClick={() => removeArrayItem("usps", index)}
                           data-testid={`button-remove-usp-${index}`}
                         />
@@ -647,6 +647,7 @@ export function KnowledgeBaseDashboard() {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">Examples: Only organic ingredients, 30-day guarantee, Free shipping</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">💡 Keep entries short (1-5 words) for better display. Long text will be truncated.</p>
                   </div>
                 </div>
               </div>
@@ -720,10 +721,10 @@ export function KnowledgeBaseDashboard() {
                 </Label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {knowledgeBase.mainCompetitors.map((competitor, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {competitor}
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1 max-w-xs" title={competitor}>
+                      <span className="truncate">{competitor.length > 30 ? competitor.substring(0, 30) + '...' : competitor}</span>
                       <X 
-                        className="h-3 w-3 cursor-pointer" 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
                         onClick={() => removeArrayItem("mainCompetitors", index)}
                         data-testid={`button-remove-competitor-${index}`}
                       />
