@@ -22,7 +22,11 @@ import {
   Lightbulb,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  ExternalLink,
+  Video,
+  Check,
+  X
 } from "lucide-react"
 
 interface CreativeBrief {
@@ -485,58 +489,73 @@ export function CreativeBriefAgentDashboard() {
 
               <CardContent className="space-y-6">
                 {/* Header Information */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-semibold">Avatar: </span>
-                      <span className="text-sm">{brief.avatar}</span>
+                <div className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-blue-100/50 dark:border-blue-800/30">
+                  <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    Creative Strategy
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Avatar Card */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Avatar</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{brief.avatar}</div>
                     </div>
-                    <div>
-                      <span className="text-sm font-semibold">Angle: </span>
-                      <span className="text-sm">{brief.angle}</span>
+                    
+                    {/* Angle Card */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Angle</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{brief.angle}</div>
+                    </div>
+                    
+                    {/* Funnel Stage Card */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Funnel Stage</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{brief.funnelStage}</div>
                     </div>
                   </div>
                   
-                  <div>
-                    <span className="text-sm font-semibold">Desire: </span>
-                    <span className="text-sm">{brief.desire}</span>
+                  {/* Desire - Full Width */}
+                  <div className="mt-4 bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Desired Outcome</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{brief.desire}</div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-semibold">Funnel Stage: </span>
-                      <span className="text-sm">{brief.funnelStage}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold">Reference: </span>
-                      <a href={brief.reference} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:text-blue-600 underline">
-                        {brief.reference}
+                  {/* Reference Link */}
+                  {brief.reference && (
+                    <div className="mt-4 bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Reference Material</div>
+                      <a href={brief.reference} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline flex items-center gap-1" data-testid={`link-reference-${brief.id}`}>
+                        View Reference
+                        <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Production Details */}
-                <div className="border-t pt-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-semibold">RAW files: </span>
-                      <span className="text-sm">{brief.rawFiles}</span>
+                <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100/50 dark:border-green-800/30">
+                  <h3 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Production Specs
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Duration</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{brief.duration}</div>
                     </div>
-                    <div>
-                      <span className="text-sm font-semibold">Duration: </span>
-                      <span className="text-sm">{brief.duration}</span>
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">AI Voiceover</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                        {brief.aiVo ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                        {brief.aiVo ? "Yes" : "No"}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-semibold">AI VO: </span>
-                      <span className="text-sm">{brief.aiVo ? "Yes" : "No"}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold">Subtitles: </span>
-                      <span className="text-sm">{brief.subtitles ? "Yes" : "No"}</span>
+                    <div className="bg-white/80 dark:bg-gray-900/80 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Subtitles</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                        {brief.subtitles ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                        {brief.subtitles ? "Yes" : "No"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -565,7 +584,31 @@ export function CreativeBriefAgentDashboard() {
                           <p className="text-sm">{block.textOverlay}</p>
                         </div>
                         <div className="p-3">
-                          <p className="text-sm text-muted-foreground">{block.notes}</p>
+                          <div className="space-y-2">
+                            {/* Check if notes contain a URL for visual example */}
+                            {block.notes?.includes('http') && (
+                              <div className="mb-2">
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Visual Example:</div>
+                                <a 
+                                  href={block.notes.match(/https?:\/\/[^\s]+/)?.[0]} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-xs rounded border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                  data-testid={`link-example-${block.id}`}
+                                >
+                                  <Video className="w-3 h-3" />
+                                  View Example
+                                </a>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {block.notes.replace(/https?:\/\/[^\s]+/g, '').trim() || 'Reference the example above for visual inspiration.'}
+                                </p>
+                              </div>
+                            )}
+                            {/* Regular notes without URL */}
+                            {!block.notes?.includes('http') && (
+                              <p className="text-sm text-muted-foreground">{block.notes || 'Follow the voiceover and text overlay for this scene.'}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
