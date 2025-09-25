@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateScript, generateAvatar } from "./openai-service";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import {
   insertAvatarSchema,
   insertConceptSchema,
@@ -19,6 +19,11 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Authentication
   await setupAuth(app);
+
+  // CSRF token endpoint for frontend (with token setup)
+  app.get('/api/csrf-token', isAuthenticated, setupCSRFToken, (req: any, res) => {
+    res.json({ csrfToken: req.session.csrfToken });
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -41,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/avatars", isAuthenticated, async (req, res) => {
+  app.post("/api/avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const validatedData = insertAvatarSchema.parse(req.body);
       const avatar = await storage.createAvatar(validatedData);
@@ -55,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/avatars/:id", isAuthenticated, async (req, res) => {
+  app.patch("/api/avatars/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const { id } = req.params;
       const avatar = await storage.updateAvatar(id, req.body);
@@ -80,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/concepts", isAuthenticated, async (req, res) => {
+  app.post("/api/concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const validatedData = insertConceptSchema.parse(req.body);
       const concept = await storage.createConcept(validatedData);
@@ -94,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/concepts/:id", isAuthenticated, async (req, res) => {
+  app.patch("/api/concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const { id } = req.params;
       const concept = await storage.updateConcept(id, req.body);
@@ -122,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/avatar-concepts", isAuthenticated, async (req, res) => {
+  app.post("/api/avatar-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const validatedData = insertAvatarConceptSchema.parse(req.body);
       const avatarConcept = await storage.createAvatarConcept(validatedData);
@@ -136,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/avatar-concepts/:id", isAuthenticated, async (req, res) => {
+  app.patch("/api/avatar-concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
     try {
       const { id } = req.params;
       const avatarConcept = await storage.updateAvatarConcept(id, req.body);
@@ -172,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
+  app.post("/api/settings", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertPlatformSettingsSchema.parse({
@@ -190,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/settings", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/settings", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
@@ -249,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
+  app.post("/api/knowledge-base", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertKnowledgeBaseSchema.parse({
@@ -267,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/knowledge-base", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
@@ -290,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Script generation routes (protected with persistence)
-  app.post("/api/generate-script", isAuthenticated, async (req: any, res) => {
+  app.post("/api/generate-script", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { scriptRequest } = req.body;
@@ -366,14 +371,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update script with performance data for self-learning
-  app.patch("/api/scripts/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/scripts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const { id } = req.params;
+      const userId = req.user.claims.sub;
       const validatedData = updateGeneratedScriptSchema.parse(req.body);
       
-      const updatedScript = await storage.updateGeneratedScript(id, validatedData);
+      const updatedScript = await storage.updateGeneratedScript(id, userId, validatedData);
       if (!updatedScript) {
-        res.status(404).json({ error: "Script not found" });
+        res.status(404).json({ error: "Script not found or access denied" });
         return;
       }
       
@@ -389,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Avatar generation route (protected)
-  app.post("/api/generate-avatar", isAuthenticated, async (req: any, res) => {
+  app.post("/api/generate-avatar", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
 

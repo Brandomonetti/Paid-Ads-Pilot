@@ -1,5 +1,6 @@
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { randomBytes } from "crypto";
 
 import passport from "passport";
 import session from "express-session";
@@ -39,10 +40,39 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
 }
+
+// CSRF Protection middleware
+export function generateCSRFToken(): string {
+  return randomBytes(32).toString('hex');
+}
+
+export const csrfProtection: RequestHandler = (req: any, res, next) => {
+  // Skip CSRF for GET, HEAD, OPTIONS requests (safe methods)
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  const sessionToken = req.session?.csrfToken;
+  const requestToken = req.headers['x-csrf-token'] || req.body?.csrfToken;
+
+  if (!sessionToken || !requestToken || sessionToken !== requestToken) {
+    return res.status(403).json({ error: 'CSRF token validation failed' });
+  }
+
+  next();
+};
+
+export const setupCSRFToken: RequestHandler = (req: any, res, next) => {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = generateCSRFToken();
+  }
+  next();
+};
 
 function updateUserSession(
   user: any,

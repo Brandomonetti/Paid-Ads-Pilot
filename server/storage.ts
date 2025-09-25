@@ -57,7 +57,7 @@ export interface IStorage {
   getGeneratedScripts(userId: string): Promise<GeneratedScript[]>;
   getGeneratedScript(id: string): Promise<GeneratedScript | undefined>;
   createGeneratedScript(script: InsertGeneratedScript): Promise<GeneratedScript>;
-  updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined>;
+  updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -355,9 +355,12 @@ export class MemStorage implements IStorage {
     return script;
   }
 
-  async updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+  async updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
     const script = this.generatedScripts.get(id);
     if (!script) return undefined;
+    
+    // Security: Verify ownership before allowing updates
+    if (script.userId !== userId) return undefined;
     
     const updatedScript: GeneratedScript = {
       ...script,
@@ -625,14 +628,14 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  async updateGeneratedScript(id: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+  async updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
     const result = await this.db
       .update(generatedScripts)
       .set({
         ...updates,
         updatedAt: new Date()
       })
-      .where(eq(generatedScripts.id, id))
+      .where(and(eq(generatedScripts.id, id), eq(generatedScripts.userId, userId)))
       .returning();
     return result[0];
   }

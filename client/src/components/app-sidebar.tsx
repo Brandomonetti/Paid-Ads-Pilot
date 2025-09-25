@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/hooks/useAuth"
 
 const agents = [
   {
@@ -63,6 +64,7 @@ const navigation = [
 
 export function AppSidebar() {
   const [location] = useLocation()
+  const { user } = useAuth()
 
   return (
     <Sidebar collapsible="icon">
@@ -125,12 +127,22 @@ export function AppSidebar() {
       <SidebarFooter className="px-4 py-3 border-t border-border/50">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src={user?.profileImageUrl || ""} />
+            <AvatarFallback>
+              {user?.firstName && user?.lastName 
+                ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+                : user?.email?.[0]?.toUpperCase() || "U"
+              }
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">John Doe</p>
-            <p className="text-xs text-muted-foreground truncate">john@acmecorp.com</p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {user?.firstName && user?.lastName 
+                ? `${user.firstName} ${user.lastName}`
+                : user?.email || "User"
+              }
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email || ""}</p>
           </div>
         </div>
       </SidebarFooter>
