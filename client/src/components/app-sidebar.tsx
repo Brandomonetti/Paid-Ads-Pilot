@@ -29,16 +29,16 @@ const agents = [
     description: "Create UGC scripts"
   },
   {
-    title: "Performance Agent",
-    url: "/performance", 
-    icon: BarChart3,
-    description: "Analyze ad performance"
-  },
-  {
     title: "Creative Brief Agent",
     url: "/creative-brief", 
     icon: Lightbulb,
     description: "Generate creative briefs"
+  },
+  {
+    title: "Performance Agent",
+    url: "/performance", 
+    icon: BarChart3,
+    description: "Analyze ad performance"
   },
 ]
 
