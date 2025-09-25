@@ -6,7 +6,9 @@ import {
   insertConceptSchema,
   insertAvatarConceptSchema,
   insertPlatformSettingsSchema,
-  updatePlatformSettingsSchema
+  updatePlatformSettingsSchema,
+  insertKnowledgeBaseSchema,
+  updateKnowledgeBaseSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -204,6 +206,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Invalid settings data", details: error.errors });
       } else {
         res.status(500).json({ error: "Failed to update platform settings" });
+      }
+    }
+  });
+
+  // Knowledge Base routes
+  app.get("/api/knowledge-base/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const knowledgeBase = await storage.getKnowledgeBase(userId);
+      
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found" });
+        return;
+      }
+      
+      res.json(knowledgeBase);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch knowledge base" });
+    }
+  });
+
+  app.post("/api/knowledge-base", async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseSchema.parse(req.body);
+      const knowledgeBase = await storage.createKnowledgeBase(validatedData);
+      res.status(201).json(knowledgeBase);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid knowledge base data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create knowledge base" });
+      }
+    }
+  });
+
+  app.patch("/api/knowledge-base/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Validate the update data
+      const validatedData = updateKnowledgeBaseSchema.parse(req.body);
+      
+      const knowledgeBase = await storage.updateKnowledgeBase(userId, validatedData);
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found" });
+        return;
+      }
+      res.json(knowledgeBase);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid knowledge base data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update knowledge base" });
       }
     }
   });

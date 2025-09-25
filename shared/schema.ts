@@ -318,3 +318,54 @@ export const updatePlatformSettingsSchema = z.object({
 export type InsertPlatformSettings = z.infer<typeof insertPlatformSettingsSchema>;
 export type UpdatePlatformSettings = z.infer<typeof updatePlatformSettingsSchema>;
 export type PlatformSettings = typeof platformSettings.$inferSelect;
+
+// Knowledge Base schema
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Brand Fundamentals
+  websiteUrl: text("website_url"),
+  brandVoice: text("brand_voice"),
+  missionStatement: text("mission_statement"),
+  brandValues: text("brand_values").array().notNull().default(sql`ARRAY[]::text[]`),
+  
+  // Products & Services
+  productLinks: text("product_links").array().notNull().default(sql`ARRAY[]::text[]`),
+  pricingInfo: text("pricing_info"),
+  keyBenefits: text("key_benefits").array().notNull().default(sql`ARRAY[]::text[]`),
+  usps: text("usps").array().notNull().default(sql`ARRAY[]::text[]`),
+  
+  // Target Audience
+  currentPersonas: text("current_personas"),
+  demographics: text("demographics"),
+  
+  // Competitors
+  mainCompetitors: text("main_competitors").array().notNull().default(sql`ARRAY[]::text[]`),
+  
+  // Social Media
+  instagramHandle: text("instagram_handle"),
+  facebookPage: text("facebook_page"),
+  tiktokHandle: text("tiktok_handle"),
+  contentStyle: text("content_style"),
+  
+  // Performance Data
+  salesTrends: text("sales_trends"),
+  
+  // Completion tracking
+  completionPercentage: integer("completion_percentage").notNull().default(0),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true
+});
+
+export const updateKnowledgeBaseSchema = insertKnowledgeBaseSchema.partial();
+
+export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
+export type UpdateKnowledgeBase = z.infer<typeof updateKnowledgeBaseSchema>;
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;

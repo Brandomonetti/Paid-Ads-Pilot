@@ -1,5 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import React from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { queryClient, apiRequest } from "@/lib/queryClient"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,97 +31,127 @@ import {
   Zap
 } from "lucide-react"
 
+import type { KnowledgeBase, UpdateKnowledgeBase } from "@shared/schema"
+
 interface KnowledgeBaseData {
-  brandFundamentals: {
-    websiteUrl: string
-    brandGuidelines: File | null
-    logoFiles: File[]
-    brandVoice: string
-    missionStatement: string
-    brandValues: string[]
-  }
-  products: {
-    productLinks: string[]
-    catalogFile: File | null
-    pricingInfo: string
-    keyBenefits: string[]
-    usps: string[]
-  }
-  audience: {
-    currentPersonas: string
-    demographics: string
-    customerFeedback: File | null
-    marketResearch: File | null
-  }
-  competitors: {
-    mainCompetitors: string[]
-    competitorAnalysis: File | null
-    competitorAds: File[]
-  }
-  socialMedia: {
-    instagramHandle: string
-    facebookPage: string
-    tiktokHandle: string
-    contentStyle: string
-  }
-  performance: {
-    previousAdData: File | null
-    analyticsData: File | null
-    salesTrends: string
-  }
-  creativeAssets: {
-    productPhotos: File[]
-    lifestyleImages: File[]
-    videoContent: File[]
-  }
+  websiteUrl: string
+  brandVoice: string
+  missionStatement: string
+  brandValues: string[]
+  productLinks: string[]
+  pricingInfo: string
+  keyBenefits: string[]
+  usps: string[]
+  currentPersonas: string
+  demographics: string
+  mainCompetitors: string[]
+  instagramHandle: string
+  facebookPage: string
+  tiktokHandle: string
+  contentStyle: string
+  salesTrends: string
+  completionPercentage: number
 }
 
 export function KnowledgeBaseDashboard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>({
-    brandFundamentals: {
-      websiteUrl: "",
-      brandGuidelines: null,
-      logoFiles: [],
-      brandVoice: "",
-      missionStatement: "",
-      brandValues: []
+    websiteUrl: "",
+    brandVoice: "",
+    missionStatement: "",
+    brandValues: [],
+    productLinks: [],
+    pricingInfo: "",
+    keyBenefits: [],
+    usps: [],
+    currentPersonas: "",
+    demographics: "",
+    mainCompetitors: [],
+    instagramHandle: "",
+    facebookPage: "",
+    tiktokHandle: "",
+    contentStyle: "",
+    salesTrends: "",
+    completionPercentage: 0
+  })
+  
+  const { toast } = useToast()
+  const userId = "user-1" // TODO: Get from auth context
+  
+  // Load existing knowledge base
+  const { data: existingKB } = useQuery({
+    queryKey: ["/api/knowledge-base", userId],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/knowledge-base/${userId}`)
+        if (response.ok) {
+          return response.json() as Promise<KnowledgeBase>
+        }
+        return null
+      } catch {
+        return null
+      }
     },
-    products: {
-      productLinks: [],
-      catalogFile: null,
-      pricingInfo: "",
-      keyBenefits: [],
-      usps: []
+    enabled: !!userId
+  })
+  
+  // Save knowledge base mutation
+  const saveKB = useMutation({
+    mutationFn: async (data: UpdateKnowledgeBase) => {
+      if (existingKB) {
+        return fetch(`/api/knowledge-base/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        }).then(res => res.json())
+      } else {
+        return fetch("/api/knowledge-base", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...data, userId })
+        }).then(res => res.json())
+      }
     },
-    audience: {
-      currentPersonas: "",
-      demographics: "",
-      customerFeedback: null,
-      marketResearch: null
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base", userId] })
+      toast({
+        title: "Progress Saved",
+        description: "Your knowledge base has been updated successfully."
+      })
     },
-    competitors: {
-      mainCompetitors: [],
-      competitorAnalysis: null,
-      competitorAds: []
-    },
-    socialMedia: {
-      instagramHandle: "",
-      facebookPage: "",
-      tiktokHandle: "",
-      contentStyle: ""
-    },
-    performance: {
-      previousAdData: null,
-      analyticsData: null,
-      salesTrends: ""
-    },
-    creativeAssets: {
-      productPhotos: [],
-      lifestyleImages: [],
-      videoContent: []
+    onError: () => {
+      toast({
+        title: "Save Failed",
+        description: "Unable to save your progress. Please try again.",
+        variant: "destructive"
+      })
     }
   })
+  
+  // Load existing data when available
+  useEffect(() => {
+    if (existingKB) {
+      setKnowledgeBase({
+        websiteUrl: existingKB.websiteUrl || "",
+        brandVoice: existingKB.brandVoice || "",
+        missionStatement: existingKB.missionStatement || "",
+        brandValues: existingKB.brandValues || [],
+        productLinks: existingKB.productLinks || [],
+        pricingInfo: existingKB.pricingInfo || "",
+        keyBenefits: existingKB.keyBenefits || [],
+        usps: existingKB.usps || [],
+        currentPersonas: existingKB.currentPersonas || "",
+        demographics: existingKB.demographics || "",
+        mainCompetitors: existingKB.mainCompetitors || [],
+        instagramHandle: existingKB.instagramHandle || "",
+        facebookPage: existingKB.facebookPage || "",
+        tiktokHandle: existingKB.tiktokHandle || "",
+        contentStyle: existingKB.contentStyle || "",
+        salesTrends: existingKB.salesTrends || "",
+        completionPercentage: existingKB.completionPercentage || 0
+      })
+    }
+  }, [existingKB])
 
   const steps = [
     { id: "brand", title: "Brand Fundamentals", icon: Palette, description: "Core brand identity and guidelines" },
@@ -134,36 +167,36 @@ export function KnowledgeBaseDashboard() {
     switch (stepId) {
       case "brand":
         const brandFields = [
-          knowledgeBase.brandFundamentals.websiteUrl,
-          knowledgeBase.brandFundamentals.brandVoice,
-          knowledgeBase.brandFundamentals.missionStatement
+          knowledgeBase.websiteUrl,
+          knowledgeBase.brandVoice,
+          knowledgeBase.missionStatement
         ].filter(Boolean).length
         return (brandFields / 3) * 100
       case "products":
         const productFields = [
-          knowledgeBase.products.productLinks.length > 0,
-          knowledgeBase.products.pricingInfo,
-          knowledgeBase.products.keyBenefits.length > 0
+          knowledgeBase.productLinks.length > 0,
+          knowledgeBase.pricingInfo,
+          knowledgeBase.keyBenefits.length > 0
         ].filter(Boolean).length
         return (productFields / 3) * 100
       case "audience":
         const audienceFields = [
-          knowledgeBase.audience.currentPersonas,
-          knowledgeBase.audience.demographics
+          knowledgeBase.currentPersonas,
+          knowledgeBase.demographics
         ].filter(Boolean).length
         return (audienceFields / 2) * 100
       case "competitors":
-        return knowledgeBase.competitors.mainCompetitors.length > 0 ? 100 : 0
+        return knowledgeBase.mainCompetitors.length > 0 ? 100 : 0
       case "social":
         const socialFields = [
-          knowledgeBase.socialMedia.instagramHandle,
-          knowledgeBase.socialMedia.contentStyle
+          knowledgeBase.instagramHandle,
+          knowledgeBase.contentStyle
         ].filter(Boolean).length
         return (socialFields / 2) * 100
       case "performance":
-        return knowledgeBase.performance.salesTrends ? 100 : 0
+        return knowledgeBase.salesTrends ? 100 : 0
       case "assets":
-        return knowledgeBase.creativeAssets.productPhotos.length > 0 ? 100 : 0
+        return 50 // Placeholder since we don't have file storage yet
       default:
         return 0
     }
@@ -171,34 +204,33 @@ export function KnowledgeBaseDashboard() {
 
   const overallProgress = steps.reduce((total, step) => total + getStepProgress(step.id), 0) / steps.length
 
-  const addArrayItem = (section: keyof KnowledgeBaseData, field: string, value: string) => {
+  const addArrayItem = (field: keyof KnowledgeBaseData, value: string) => {
     setKnowledgeBase(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: [...((prev[section] as any)[field] as string[]), value]
-      }
+      [field]: [...(prev[field] as string[]), value]
     }))
   }
 
-  const removeArrayItem = (section: keyof KnowledgeBaseData, field: string, index: number) => {
+  const removeArrayItem = (field: keyof KnowledgeBaseData, index: number) => {
     setKnowledgeBase(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: ((prev[section] as any)[field] as string[]).filter((_, i) => i !== index)
-      }
+      [field]: (prev[field] as string[]).filter((_, i) => i !== index)
     }))
   }
 
-  const updateField = (section: keyof KnowledgeBaseData, field: string, value: any) => {
+  const updateField = (field: keyof KnowledgeBaseData, value: any) => {
     setKnowledgeBase(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      } as any
+      [field]: value
     }))
+  }
+  
+  const handleSave = () => {
+    const updatedData = {
+      ...knowledgeBase,
+      completionPercentage: Math.round(overallProgress)
+    }
+    saveKB.mutate(updatedData)
   }
 
   return (
@@ -215,9 +247,9 @@ export function KnowledgeBaseDashboard() {
           <Badge variant="secondary" className="px-3 py-1">
             {Math.round(overallProgress)}% Complete
           </Badge>
-          <Button data-testid="button-save-knowledge-base">
+          <Button onClick={handleSave} disabled={saveKB.isPending} data-testid="button-save-knowledge-base">
             <CheckCircle2 className="h-4 w-4 mr-2" />
-            Save Progress
+            {saveKB.isPending ? "Saving..." : "Save Progress"}
           </Button>
         </div>
       </div>
@@ -274,8 +306,8 @@ export function KnowledgeBaseDashboard() {
                   <Input
                     id="website-url"
                     placeholder="https://yourbrand.com"
-                    value={knowledgeBase.brandFundamentals.websiteUrl}
-                    onChange={(e) => updateField("brandFundamentals", "websiteUrl", e.target.value)}
+                    value={knowledgeBase.websiteUrl}
+                    onChange={(e) => updateField("websiteUrl", e.target.value)}
                     data-testid="input-website-url"
                   />
                   <p className="text-xs text-muted-foreground">AI will analyze your website for brand understanding</p>
@@ -297,8 +329,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="brand-voice"
                   placeholder="Describe your brand's personality... (e.g., 'Friendly and approachable, professional but not stuffy, speaks directly to busy parents')"
-                  value={knowledgeBase.brandFundamentals.brandVoice}
-                  onChange={(e) => updateField("brandFundamentals", "brandVoice", e.target.value)}
+                  value={knowledgeBase.brandVoice}
+                  onChange={(e) => updateField("brandVoice", e.target.value)}
                   data-testid="textarea-brand-voice"
                 />
               </div>
@@ -308,8 +340,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="mission-statement"
                   placeholder="What is your brand's mission and core purpose?"
-                  value={knowledgeBase.brandFundamentals.missionStatement}
-                  onChange={(e) => updateField("brandFundamentals", "missionStatement", e.target.value)}
+                  value={knowledgeBase.missionStatement}
+                  onChange={(e) => updateField("missionStatement", e.target.value)}
                   data-testid="textarea-mission-statement"
                 />
               </div>
@@ -317,12 +349,12 @@ export function KnowledgeBaseDashboard() {
               <div className="space-y-2">
                 <Label>Brand Values</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {knowledgeBase.brandFundamentals.brandValues.map((value, index) => (
+                  {knowledgeBase.brandValues.map((value, index) => (
                     <Badge key={index} variant="secondary" className="flex items-center gap-1">
                       {value}
                       <X 
                         className="h-3 w-3 cursor-pointer" 
-                        onClick={() => removeArrayItem("brandFundamentals", "brandValues", index)}
+                        onClick={() => removeArrayItem("brandValues", index)}
                         data-testid={`button-remove-value-${index}`}
                       />
                     </Badge>
@@ -333,7 +365,7 @@ export function KnowledgeBaseDashboard() {
                     placeholder="Add brand value (e.g., Sustainability, Innovation)"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("brandFundamentals", "brandValues", e.currentTarget.value.trim())
+                        addArrayItem("brandValues", e.currentTarget.value.trim())
                         e.currentTarget.value = ''
                       }
                     }}
@@ -353,13 +385,13 @@ export function KnowledgeBaseDashboard() {
               <div className="space-y-2">
                 <Label>Product Links *</Label>
                 <div className="space-y-2">
-                  {knowledgeBase.products.productLinks.map((link, index) => (
+                  {knowledgeBase.productLinks.map((link, index) => (
                     <div key={index} className="flex gap-2">
                       <Input value={link} readOnly />
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => removeArrayItem("products", "productLinks", index)}
+                        onClick={() => removeArrayItem("productLinks", index)}
                         data-testid={`button-remove-product-${index}`}
                       >
                         <X className="h-4 w-4" />
@@ -371,7 +403,7 @@ export function KnowledgeBaseDashboard() {
                       placeholder="https://yourbrand.com/product-name"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          addArrayItem("products", "productLinks", e.currentTarget.value.trim())
+                          addArrayItem("productLinks", e.currentTarget.value.trim())
                           e.currentTarget.value = ''
                         }
                       }}
@@ -390,8 +422,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="pricing-info"
                   placeholder="Describe your pricing model, price points, and positioning (e.g., 'Premium pricing at $99-199, positioned as high-quality alternative to cheaper competitors')"
-                  value={knowledgeBase.products.pricingInfo}
-                  onChange={(e) => updateField("products", "pricingInfo", e.target.value)}
+                  value={knowledgeBase.pricingInfo}
+                  onChange={(e) => updateField("pricingInfo", e.target.value)}
                   data-testid="textarea-pricing-info"
                 />
               </div>
@@ -400,12 +432,12 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Key Benefits *</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {knowledgeBase.products.keyBenefits.map((benefit, index) => (
+                    {knowledgeBase.keyBenefits.map((benefit, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1">
                         {benefit}
                         <X 
                           className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeArrayItem("products", "keyBenefits", index)}
+                          onClick={() => removeArrayItem("keyBenefits", index)}
                           data-testid={`button-remove-benefit-${index}`}
                         />
                       </Badge>
@@ -415,7 +447,7 @@ export function KnowledgeBaseDashboard() {
                     placeholder="Benefit (e.g., Saves time, Improves health)"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("products", "keyBenefits", e.currentTarget.value.trim())
+                        addArrayItem("keyBenefits", e.currentTarget.value.trim())
                         e.currentTarget.value = ''
                       }
                     }}
@@ -425,12 +457,12 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Unique Selling Points</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {knowledgeBase.products.usps.map((usp, index) => (
+                    {knowledgeBase.usps.map((usp, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1">
                         {usp}
                         <X 
                           className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeArrayItem("products", "usps", index)}
+                          onClick={() => removeArrayItem("usps", index)}
                           data-testid={`button-remove-usp-${index}`}
                         />
                       </Badge>
@@ -440,7 +472,7 @@ export function KnowledgeBaseDashboard() {
                     placeholder="USP (e.g., Only organic ingredients, 30-day guarantee)"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("products", "usps", e.currentTarget.value.trim())
+                        addArrayItem("usps", e.currentTarget.value.trim())
                         e.currentTarget.value = ''
                       }
                     }}
@@ -459,8 +491,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="current-personas"
                   placeholder="Describe your main customer segments... (e.g., 'Primary: Working moms 28-45, household income $75k+, values convenience and quality. Secondary: Health-conscious millennials 25-35, urban, willing to pay premium for organic')"
-                  value={knowledgeBase.audience.currentPersonas}
-                  onChange={(e) => updateField("audience", "currentPersonas", e.target.value)}
+                  value={knowledgeBase.currentPersonas}
+                  onChange={(e) => updateField("currentPersonas", e.target.value)}
                   rows={4}
                   data-testid="textarea-personas"
                 />
@@ -471,8 +503,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="demographics"
                   placeholder="Age, gender, income, location, interests, pain points, shopping behavior..."
-                  value={knowledgeBase.audience.demographics}
-                  onChange={(e) => updateField("audience", "demographics", e.target.value)}
+                  value={knowledgeBase.demographics}
+                  onChange={(e) => updateField("demographics", e.target.value)}
                   rows={3}
                   data-testid="textarea-demographics"
                 />
@@ -509,12 +541,12 @@ export function KnowledgeBaseDashboard() {
               <div className="space-y-2">
                 <Label>Main Competitors *</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {knowledgeBase.competitors.mainCompetitors.map((competitor, index) => (
+                  {knowledgeBase.mainCompetitors.map((competitor, index) => (
                     <Badge key={index} variant="secondary" className="flex items-center gap-1">
                       {competitor}
                       <X 
                         className="h-3 w-3 cursor-pointer" 
-                        onClick={() => removeArrayItem("competitors", "mainCompetitors", index)}
+                        onClick={() => removeArrayItem("mainCompetitors", index)}
                         data-testid={`button-remove-competitor-${index}`}
                       />
                     </Badge>
@@ -525,7 +557,7 @@ export function KnowledgeBaseDashboard() {
                     placeholder="Competitor brand name"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addArrayItem("competitors", "mainCompetitors", e.currentTarget.value.trim())
+                        addArrayItem("mainCompetitors", e.currentTarget.value.trim())
                         e.currentTarget.value = ''
                       }
                     }}
@@ -572,8 +604,8 @@ export function KnowledgeBaseDashboard() {
                   <Input
                     id="instagram-handle"
                     placeholder="@yourbrand"
-                    value={knowledgeBase.socialMedia.instagramHandle}
-                    onChange={(e) => updateField("socialMedia", "instagramHandle", e.target.value)}
+                    value={knowledgeBase.instagramHandle}
+                    onChange={(e) => updateField("instagramHandle", e.target.value)}
                     data-testid="input-instagram"
                   />
                 </div>
@@ -582,8 +614,8 @@ export function KnowledgeBaseDashboard() {
                   <Input
                     id="facebook-page"
                     placeholder="facebook.com/yourbrand"
-                    value={knowledgeBase.socialMedia.facebookPage}
-                    onChange={(e) => updateField("socialMedia", "facebookPage", e.target.value)}
+                    value={knowledgeBase.facebookPage}
+                    onChange={(e) => updateField("facebookPage", e.target.value)}
                     data-testid="input-facebook"
                   />
                 </div>
@@ -592,8 +624,8 @@ export function KnowledgeBaseDashboard() {
                   <Input
                     id="tiktok-handle"
                     placeholder="@yourbrand"
-                    value={knowledgeBase.socialMedia.tiktokHandle}
-                    onChange={(e) => updateField("socialMedia", "tiktokHandle", e.target.value)}
+                    value={knowledgeBase.tiktokHandle}
+                    onChange={(e) => updateField("tiktokHandle", e.target.value)}
                     data-testid="input-tiktok"
                   />
                 </div>
@@ -604,8 +636,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="content-style"
                   placeholder="Describe your social media style... (e.g., 'Bright, lifestyle-focused imagery. User-generated content featuring real customers. Captions are conversational and include questions to drive engagement. Always include product in use shots')"
-                  value={knowledgeBase.socialMedia.contentStyle}
-                  onChange={(e) => updateField("socialMedia", "contentStyle", e.target.value)}
+                  value={knowledgeBase.contentStyle}
+                  onChange={(e) => updateField("contentStyle", e.target.value)}
                   rows={4}
                   data-testid="textarea-content-style"
                 />
@@ -622,8 +654,8 @@ export function KnowledgeBaseDashboard() {
                 <Textarea
                   id="sales-trends"
                   placeholder="Describe your sales patterns... (e.g., 'Peak sales November-January (holiday season), summer lull June-August. Friday-Sunday best performing days. Product A outsells B 3:1. Average order value $85')"
-                  value={knowledgeBase.performance.salesTrends}
-                  onChange={(e) => updateField("performance", "salesTrends", e.target.value)}
+                  value={knowledgeBase.salesTrends}
+                  onChange={(e) => updateField("salesTrends", e.target.value)}
                   rows={3}
                   data-testid="textarea-sales-trends"
                 />

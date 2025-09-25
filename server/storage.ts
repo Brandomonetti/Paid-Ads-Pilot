@@ -4,7 +4,9 @@ import {
   type Concept, type InsertConcept,
   type AvatarConcept, type InsertAvatarConcept,
   type PlatformSettings, type InsertPlatformSettings,
-  type UpdatePlatformSettings
+  type UpdatePlatformSettings,
+  type KnowledgeBase, type InsertKnowledgeBase,
+  type UpdateKnowledgeBase
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -39,6 +41,11 @@ export interface IStorage {
   getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
   createPlatformSettings(settings: InsertPlatformSettings): Promise<PlatformSettings>;
   updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined>;
+  
+  // Knowledge Base methods
+  getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined>;
+  createKnowledgeBase(knowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase>;
+  updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,6 +54,7 @@ export class MemStorage implements IStorage {
   private concepts: Map<string, Concept>;
   private avatarConcepts: Map<string, AvatarConcept>;
   private platformSettings: Map<string, PlatformSettings>;
+  private knowledgeBase: Map<string, KnowledgeBase>;
 
   constructor() {
     this.users = new Map();
@@ -54,6 +62,7 @@ export class MemStorage implements IStorage {
     this.concepts = new Map();
     this.avatarConcepts = new Map();
     this.platformSettings = new Map();
+    this.knowledgeBase = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -87,6 +96,12 @@ export class MemStorage implements IStorage {
     const avatar: Avatar = { 
       ...insertAvatar,
       id,
+      sources: insertAvatar.sources || [],
+      angleIdeas: insertAvatar.angleIdeas || [],
+      reasoning: insertAvatar.reasoning || "",
+      priority: insertAvatar.priority || "medium",
+      dataConfidence: insertAvatar.dataConfidence || "0.75",
+      recommendationSource: insertAvatar.recommendationSource || "research",
       status: insertAvatar.status || "pending",
       feedback: insertAvatar.feedback || null,
       createdAt: new Date()
@@ -227,6 +242,53 @@ export class MemStorage implements IStorage {
     };
     this.platformSettings.set(userId, updatedSettings);
     return updatedSettings;
+  }
+  
+  // Knowledge Base methods
+  async getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined> {
+    return this.knowledgeBase.get(userId);
+  }
+
+  async createKnowledgeBase(insertKnowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const id = randomUUID();
+    const knowledgeBase: KnowledgeBase = {
+      ...insertKnowledgeBase,
+      id,
+      websiteUrl: insertKnowledgeBase.websiteUrl || null,
+      brandVoice: insertKnowledgeBase.brandVoice || null,
+      missionStatement: insertKnowledgeBase.missionStatement || null,
+      brandValues: insertKnowledgeBase.brandValues || [],
+      productLinks: insertKnowledgeBase.productLinks || [],
+      pricingInfo: insertKnowledgeBase.pricingInfo || null,
+      keyBenefits: insertKnowledgeBase.keyBenefits || [],
+      usps: insertKnowledgeBase.usps || [],
+      currentPersonas: insertKnowledgeBase.currentPersonas || null,
+      demographics: insertKnowledgeBase.demographics || null,
+      mainCompetitors: insertKnowledgeBase.mainCompetitors || [],
+      instagramHandle: insertKnowledgeBase.instagramHandle || null,
+      facebookPage: insertKnowledgeBase.facebookPage || null,
+      tiktokHandle: insertKnowledgeBase.tiktokHandle || null,
+      contentStyle: insertKnowledgeBase.contentStyle || null,
+      salesTrends: insertKnowledgeBase.salesTrends || null,
+      completionPercentage: insertKnowledgeBase.completionPercentage || 0,
+      lastUpdated: new Date(),
+      createdAt: new Date()
+    };
+    this.knowledgeBase.set(insertKnowledgeBase.userId, knowledgeBase);
+    return knowledgeBase;
+  }
+
+  async updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined> {
+    const existing = this.knowledgeBase.get(userId);
+    if (!existing) return undefined;
+    
+    const updated: KnowledgeBase = {
+      ...existing,
+      ...updates,
+      lastUpdated: new Date()
+    };
+    this.knowledgeBase.set(userId, updated);
+    return updated;
   }
 }
 
