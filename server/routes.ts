@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { generateScript, generateAvatar } from "./openai-service";
 import {
   insertAvatarSchema,
   insertConceptSchema,
@@ -260,6 +261,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: "Failed to update knowledge base" });
       }
+    }
+  });
+
+  // Script generation routes
+  app.post("/api/generate-script", async (req, res) => {
+    try {
+      const { userId, scriptRequest } = req.body;
+      
+      if (!userId || !scriptRequest) {
+        res.status(400).json({ error: "Missing userId or scriptRequest" });
+        return;
+      }
+
+      // Fetch the user's knowledge base
+      const knowledgeBase = await storage.getKnowledgeBase(userId);
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
+        return;
+      }
+
+      // Validate script request
+      const validatedRequest = z.object({
+        scriptType: z.enum(["ugc", "testimonial", "demo", "story"]),
+        duration: z.enum(["15s", "30s", "45s", "60s"]),
+        targetAvatar: z.string().optional(),
+        marketingAngle: z.string().optional(),
+        awarenessStage: z.enum(["unaware", "problem aware", "solution aware", "product aware", "most aware"]).optional()
+      }).parse(scriptRequest);
+
+      // Generate script using OpenAI
+      const generatedScript = await generateScript(validatedRequest, knowledgeBase);
+      
+      res.json(generatedScript);
+    } catch (error) {
+      console.error("Script generation error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid script request", details: error.errors });
+      } else {
+        res.status(500).json({ 
+          error: "Failed to generate script", 
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
+    }
+  });
+
+  // Avatar generation route
+  app.post("/api/generate-avatar", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        res.status(400).json({ error: "Missing userId" });
+        return;
+      }
+
+      // Fetch the user's knowledge base
+      const knowledgeBase = await storage.getKnowledgeBase(userId);
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
+        return;
+      }
+
+      // Generate avatar using OpenAI
+      const generatedAvatar = await generateAvatar(knowledgeBase);
+      
+      res.json(generatedAvatar);
+    } catch (error) {
+      console.error("Avatar generation error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate avatar", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
