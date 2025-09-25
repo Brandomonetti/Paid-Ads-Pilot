@@ -1131,9 +1131,12 @@ export function ResearchAgentDashboard() {
                 return (
                   <Card key={concept.id} className="hover-elevate" data-testid={`card-concept-${concept.id}`}>
                     <CardHeader>
+                      {/* Title stretched across full width */}
+                      <CardTitle className="text-lg w-full">{concept.title}</CardTitle>
+                      
+                      {/* Badges and buttons row */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <CardTitle className="text-lg">{concept.title}</CardTitle>
                           <Badge 
                             variant="outline"
                             className={`${
@@ -1152,6 +1155,13 @@ export function ResearchAgentDashboard() {
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Linked
                             </Badge>
+                          )}
+                          {concept.referenceUrl && (
+                            <Button size="sm" variant="ghost" asChild>
+                              <a href={concept.referenceUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -1173,13 +1183,6 @@ export function ResearchAgentDashboard() {
                                   Link
                                 </>
                               )}
-                            </Button>
-                          )}
-                          {concept.referenceUrl && (
-                            <Button size="sm" variant="ghost" asChild>
-                              <a href={concept.referenceUrl} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
                             </Button>
                           )}
                         </div>
