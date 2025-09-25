@@ -67,7 +67,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-4 py-2">
+      <SidebarContent className="px-4 py-2 group-data-[collapsible=icon]:px-2">
         <SidebarGroup className="mb-6">
           <SidebarGroupLabel className="text-sm font-semibold text-foreground/80 mb-3">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -76,7 +76,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
                         <item.icon className="h-4 w-4 text-primary" />
                       </div>
                       <span>{item.title}</span>
@@ -101,8 +101,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
                     <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(' ', '-')}`}>
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                        <agent.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
+                        <agent.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" />
                       </div>
                       <div className="flex flex-col">
                         <span>{agent.title}</span>
