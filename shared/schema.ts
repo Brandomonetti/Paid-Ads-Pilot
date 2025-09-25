@@ -27,6 +27,10 @@ export const avatars = pgTable("avatars", {
   hooks: text("hooks").array().notNull(),
   sources: text("sources").array().notNull().default(sql`ARRAY[]::text[]`), // Reddit forums, articles, etc.
   angleIdeas: text("angle_ideas").array().notNull().default(sql`ARRAY[]::text[]`), // Creative angle suggestions
+  reasoning: text("reasoning").notNull().default(""), // Why this avatar is being presented
+  priority: text("priority").notNull().default("medium"), // high, medium, low - based on data confidence
+  dataConfidence: decimal("data_confidence", { precision: 3, scale: 2 }).notNull().default("0.75"), // 0.00 to 1.00
+  recommendationSource: text("recommendation_source").notNull().default("research"), // research, performance_agent, user_request
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   feedback: text("feedback"),
   createdAt: timestamp("created_at").defaultNow()

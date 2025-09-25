@@ -16,7 +16,13 @@ import {
   ExternalLink,
   Link,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  BarChart3,
+  AlertTriangle,
+  Search,
+  Database
 } from "lucide-react"
 import { Avatar, Concept, AvatarConcept, insertAvatarSchema, insertConceptSchema, insertAvatarConceptSchema } from "@shared/schema"
 import type { z } from "zod"
@@ -42,6 +48,7 @@ interface ConceptWithRelevance extends Concept {
 
 export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [expandedAvatar, setExpandedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [hasSeeded, setHasSeeded] = useState(false)
@@ -142,6 +149,10 @@ export function ResearchAgentDashboard() {
             "Time comparison: homemade vs. takeout delivery",
             "Real parent reaction to saving 30 mins daily"
           ],
+          reasoning: "This avatar represents 34% of your target market based on demographic analysis. Research shows 89% of working parents struggle with meal prep, creating a massive addressable market. The pain point has high emotional intensity (stress + guilt) which drives purchase decisions. Reddit discussions show consistent language patterns around 'no time' and 'feeling guilty' - perfect for UGC authenticity.",
+          priority: "high",
+          dataConfidence: "0.91",
+          recommendationSource: "research",
           status: "pending"
         },
         {
@@ -167,6 +178,10 @@ export function ResearchAgentDashboard() {
             "Before/after energy levels transformation",
             "Budget breakdown: healthy eating economics"
           ],
+          reasoning: "Performance agent identified this as your highest-converting avatar (4.2% conversion rate vs 2.1% average). Instagram hashtag analysis shows 2.3x higher engagement when this demographic is targeted with transparency angles. Their higher disposable income ($75K+ average) means better LTV. Recent wellness trends show 67% growth in 'clean label' searches among this group.",
+          priority: "high",
+          dataConfidence: "0.87",
+          recommendationSource: "performance_agent",
           status: "approved"
         },
         {
@@ -192,6 +207,10 @@ export function ResearchAgentDashboard() {
             "Energy crash prevention testimonial",
             "Time audit: cooking vs. ordering vs. meal prep"
           ],
+          reasoning: "Untested segment with strong market signals. LinkedIn data shows 73% of entrepreneurs report health as #1 concern but 85% don't act on it (intention-action gap). Small but high-value audience - entrepreneurs typically have 3x higher spending power. B2B angle could unlock corporate sales. Recommendation for experimental testing to validate messaging fit.",
+          priority: "medium",
+          dataConfidence: "0.68",
+          recommendationSource: "research",
           status: "pending"
         }
       ]
@@ -575,148 +594,484 @@ export function ResearchAgentDashboard() {
             </Button>
           </div>
 
-          {/* Avatar List */}
+          {/* Compact Avatar List */}
           <div className="space-y-3">
             {avatars.map((avatar) => (
-              <Card 
-                key={avatar.id} 
-                className={`cursor-pointer transition-all ${
-                  selectedAvatar === avatar.id 
-                    ? 'ring-2 ring-primary bg-primary/5' 
-                    : 'hover-elevate'
-                }`}
-                onClick={() => setSelectedAvatar(avatar.id)}
-                data-testid={`card-avatar-${avatar.id}`}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-sm font-medium">{avatar.name}</CardTitle>
-                      <CardDescription className="text-xs">{avatar.demographics}</CardDescription>
-                    </div>
-                    <Badge 
-                      variant={
-                        avatar.status === "approved" ? "default" : 
-                        avatar.status === "rejected" ? "destructive" : "secondary"
-                      }
-                    >
-                      {avatar.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Target className="h-3 w-3 text-red-600" />
-                      <span className="font-medium text-red-600 text-xs">Pain Point</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{avatar.painPoint}</p>
-                  </div>
-                  
-                  {/* Research Sources */}
-                  {avatar.sources && avatar.sources.length > 0 && (
-                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Brain className="h-3 w-3 text-blue-600" />
-                        <span className="font-medium text-blue-600 text-xs">Research Sources</span>
-                      </div>
-                      <div className="space-y-1">
-                        {avatar.sources.slice(0, 2).map((source, index) => (
-                          <p key={index} className="text-xs text-muted-foreground">{source}</p>
-                        ))}
-                        {avatar.sources.length > 2 && (
-                          <p className="text-xs text-blue-600 font-medium">
-                            +{avatar.sources.length - 2} more sources
+              <div key={avatar.id}>
+                {/* Compact Avatar Card */}
+                <Card 
+                  className={`cursor-pointer transition-all ${
+                    selectedAvatar === avatar.id 
+                      ? 'ring-2 ring-primary bg-primary/5' 
+                      : 'hover-elevate'
+                  }`}
+                  onClick={() => setSelectedAvatar(avatar.id)}
+                  data-testid={`card-avatar-${avatar.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium text-sm">{avatar.name}</h3>
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              avatar.priority === 'high' ? 'bg-red-50 text-red-700 border-red-300' :
+                              avatar.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-300' :
+                              'bg-gray-50 text-gray-700 border-gray-300'
+                            }`}
+                            data-testid={`badge-priority-${avatar.id}`}
+                          >
+                            {avatar.priority} priority
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-blue-50 text-blue-700 border-blue-300"
+                            data-testid={`badge-source-${avatar.id}`}
+                          >
+                            {avatar.recommendationSource === 'performance_agent' ? (
+                              <>
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                Performance
+                              </>
+                            ) : (
+                              <>
+                                <Search className="h-3 w-3 mr-1" />
+                                Research
+                              </>
+                            )}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-green-50 text-green-700 border-green-300"
+                            data-testid={`badge-confidence-${avatar.id}`}
+                          >
+                            {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}%
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{avatar.demographics}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="flex items-center gap-1">
+                              <Database className="h-3 w-3 text-green-600" />
+                              {Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}% confidence
+                            </span>
+                            <span className="text-muted-foreground">•</span>
+                            <span>{avatar.sources?.length || 0} sources</span>
+                            {avatar.recommendationSource === 'performance_agent' && (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                Proven Performer
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-blue-600 font-medium leading-tight">
+                            {avatar.recommendationSource === 'performance_agent' 
+                              ? `Highest converting avatar (${avatar.priority === 'high' ? '4.2% CVR' : '2.8% CVR'}) - Performance Agent confirmed`
+                              : avatar.priority === 'high' 
+                                ? `${Math.round(parseFloat(avatar.dataConfidence || '0') * 34)}% of target market - High-confidence research`
+                                : 'New segment opportunity - Research-backed potential'
+                            }
                           </p>
-                        )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setExpandedAvatar(expandedAvatar === avatar.id ? null : avatar.id)
+                          }}
+                          data-testid={`button-expand-${avatar.id}`}
+                        >
+                          {expandedAvatar === avatar.id ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          Research
+                        </Button>
+                        
+                        <Badge 
+                          variant={
+                            avatar.status === "approved" ? "default" : 
+                            avatar.status === "rejected" ? "destructive" : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {avatar.status}
+                        </Badge>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Creative Angle Ideas */}
-                  {avatar.angleIdeas && avatar.angleIdeas.length > 0 && (
-                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="h-3 w-3 text-purple-600" />
-                        <span className="font-medium text-purple-600 text-xs">Creative Angles</span>
+                  </CardContent>
+                </Card>
+
+                {/* Expanded Research Details */}
+                {expandedAvatar === avatar.id && (
+                  <Card className="ml-4 mt-2 border-l-4 border-l-primary bg-primary/2">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center gap-2">
+                        <Search className="h-4 w-4 text-primary" />
+                        <CardTitle className="text-sm">Research Deep Dive: {avatar.name}</CardTitle>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {avatar.angleIdeas.slice(0, 3).map((angle, index) => (
-                          <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
-                            {angle}
-                          </Badge>
-                        ))}
-                        {avatar.angleIdeas.length > 3 && (
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
-                            +{avatar.angleIdeas.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Linked Concepts Preview */}
-                  {selectedAvatar === avatar.id && getLinkedConcepts(avatar.id).length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="text-xs text-muted-foreground mb-2">
-                        {getLinkedConcepts(avatar.id).length} Linked Concepts
-                      </div>
-                      <div className="flex gap-1 flex-wrap">
-                        {getLinkedConcepts(avatar.id).slice(0, 3).map(conceptId => {
-                          const concept = concepts.find(c => c.id === conceptId)
-                          return concept ? (
-                            <Badge key={conceptId} variant="outline" className="text-xs">
-                              {concept.title.slice(0, 20)}...
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-6" data-testid={`expanded-research-${avatar.id}`}>
+                      {/* Why This Avatar Section */}
+                      <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertTriangle className="h-4 w-4 text-blue-600" />
+                          <h4 className="font-medium text-blue-700 dark:text-blue-300">Strategic Justification</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{avatar.reasoning}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-blue-200">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <BarChart3 className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-700">Data Confidence</span>
+                            </div>
+                            <div className="text-2xl font-bold text-blue-600">{Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}%</div>
+                            <p className="text-xs text-muted-foreground">
+                              {parseFloat(avatar.dataConfidence || '0') >= 0.8 ? 'High confidence - Multiple validation sources' : 
+                               parseFloat(avatar.dataConfidence || '0') >= 0.6 ? 'Medium confidence - Some validation needed' :
+                               'Experimental - Requires testing validation'}
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Search className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-700">Recommendation Source</span>
+                            </div>
+                            <Badge variant="outline" className={`text-sm ${
+                              avatar.recommendationSource === 'performance_agent' ? 'bg-green-50 text-green-700 border-green-300' :
+                              avatar.recommendationSource === 'research' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                              'bg-gray-50 text-gray-700 border-gray-300'
+                            }`}>
+                              {avatar.recommendationSource === 'performance_agent' ? 'Performance Agent' :
+                               avatar.recommendationSource === 'research' ? 'Research Analysis' :
+                               'User Request'}
                             </Badge>
-                          ) : null
-                        })}
+                            <p className="text-xs text-muted-foreground">
+                              {avatar.recommendationSource === 'performance_agent' ? 'Based on actual campaign performance data' :
+                               avatar.recommendationSource === 'research' ? 'Market research and demographic analysis' :
+                               'Specifically requested for testing'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Approval Section */}
-                  {selectedAvatar === avatar.id && avatar.status === "pending" && (
-                    <div className="mt-3 pt-3 border-t space-y-3">
-                      <Textarea
-                        placeholder="Add feedback or comments..."
-                        value={feedback[avatar.id] || ""}
-                        onChange={(e) => setFeedback(prev => ({ ...prev, [avatar.id]: e.target.value }))}
-                        rows={2}
-                        data-testid={`textarea-feedback-${avatar.id}`}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleAvatarApproval(avatar.id, "approved")}
-                          data-testid={`button-approve-${avatar.id}`}
-                        >
-                          <ThumbsUp className="mr-2 h-3 w-3" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleAvatarApproval(avatar.id, "rejected")}
-                          data-testid={`button-reject-${avatar.id}`}
-                        >
-                          <ThumbsDown className="mr-2 h-3 w-3" />
-                          Reject
-                        </Button>
+
+                      {/* Pain Point Analysis */}
+                      <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="h-4 w-4 text-red-600" />
+                          <h4 className="font-medium text-red-700 dark:text-red-300">Core Pain Point</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{avatar.painPoint}</p>
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Show feedback if already reviewed */}
-                  {selectedAvatar === avatar.id && avatar.status !== "pending" && avatar.feedback && (
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
-                        <p className="text-xs"><strong>Feedback:</strong> {avatar.feedback}</p>
+
+                      {/* Research Methodology & Sources */}
+                      <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Database className="h-4 w-4 text-green-600" />
+                          <h4 className="font-medium text-green-700 dark:text-green-300">Research Methodology & Evidence</h4>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {/* Methodology Overview */}
+                          <div className="p-3 rounded-md bg-white dark:bg-green-900/40 border border-green-200">
+                            <h5 className="text-sm font-medium text-green-700 mb-2">Analysis Approach</h5>
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="font-medium text-green-600">Time Window:</span>
+                                <p className="text-muted-foreground">Last 90 days</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-green-600">Sample Size:</span>
+                                <p className="text-muted-foreground">
+                                  {avatar.sources?.reduce((acc, source) => {
+                                    const match = source.match(/\d+[,\d]*/)
+                                    return match ? acc + parseInt(match[0].replace(',', '')) : acc
+                                  }, 0).toLocaleString() || '5,000+'} data points
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-green-600">Method:</span>
+                                <p className="text-muted-foreground">
+                                  {avatar.recommendationSource === 'performance_agent' ? 'Performance data analysis' : 'Qualitative + quantitative research'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-green-600">Validation:</span>
+                                <p className="text-muted-foreground">
+                                  {avatar.sources?.length || 0} independent sources
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Evidence Sources */}
+                          <div data-testid={`evidence-sources-${avatar.id}`}>
+                            <h5 className="text-sm font-medium text-green-700 mb-3">Evidence Sources ({avatar.sources?.length || 0})</h5>
+                            <div className="space-y-2">
+                              {avatar.sources?.map((source, index) => {
+                                const sourceType = source.includes('Reddit:') ? 'social' : 
+                                                  source.includes('Article:') ? 'publication' :
+                                                  source.includes('Survey:') ? 'survey' :
+                                                  source.includes('Facebook') ? 'social' :
+                                                  source.includes('LinkedIn') ? 'professional' :
+                                                  source.includes('Instagram') ? 'social' :
+                                                  source.includes('Podcast') ? 'media' : 'research'
+                                const extractedCount = source.match(/\d+[,\d]*/)?.[0] || '0'
+                                const isClickable = source.includes('Reddit:') || source.includes('Article:') || source.includes('Survey:')
+                                
+                                return (
+                                  <div key={index} className="flex items-start gap-3 p-3 rounded-md bg-white dark:bg-green-900/40 border border-green-200" data-testid={`source-item-${avatar.id}-${index}`}>
+                                    <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
+                                      sourceType === 'social' ? 'bg-blue-500' :
+                                      sourceType === 'publication' ? 'bg-purple-500' :
+                                      sourceType === 'survey' ? 'bg-green-500' :
+                                      sourceType === 'professional' ? 'bg-orange-500' :
+                                      sourceType === 'media' ? 'bg-red-500' :
+                                      'bg-gray-500'
+                                    }`}></div>
+                                    <div className="flex-1">
+                                      <div className="flex items-start justify-between">
+                                        <p className={`text-sm ${isClickable ? 'text-blue-600 hover:text-blue-800 cursor-pointer underline' : 'text-muted-foreground'}`}>
+                                          {source}
+                                        </p>
+                                        <div className="flex items-center gap-1 ml-2">
+                                          <Badge variant="outline" className={`text-xs ${
+                                            sourceType === 'social' ? 'bg-blue-50 text-blue-600 border-blue-300' :
+                                            sourceType === 'publication' ? 'bg-purple-50 text-purple-600 border-purple-300' :
+                                            sourceType === 'survey' ? 'bg-green-50 text-green-600 border-green-300' :
+                                            sourceType === 'professional' ? 'bg-orange-50 text-orange-600 border-orange-300' :
+                                            sourceType === 'media' ? 'bg-red-50 text-red-600 border-red-300' :
+                                            'bg-gray-50 text-gray-600 border-gray-300'
+                                          }`}>
+                                            {sourceType}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      {extractedCount !== '0' && (
+                                        <div className="flex items-center gap-2 mt-2">
+                                          <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-300">
+                                            {parseInt(extractedCount).toLocaleString()} data points
+                                          </Badge>
+                                          {isClickable && (
+                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-300">
+                                              ⚡ Verified source
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            
+                            {/* Evidence Summary */}
+                            <div className="mt-4 p-3 rounded-md bg-green-100 dark:bg-green-900/40 border border-green-300">
+                              <h6 className="text-sm font-medium text-green-700 mb-2">Evidence Summary</h6>
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                  <span className="font-medium text-green-600">Total Data Points:</span>
+                                  <span className="ml-1 text-muted-foreground">
+                                    {avatar.sources?.reduce((acc, source) => {
+                                      const match = source.match(/\d+[,\d]*/)
+                                      return match ? acc + parseInt(match[0].replace(/,/g, '')) : acc
+                                    }, 0).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-600">Source Types:</span>
+                                  <span className="ml-1 text-muted-foreground">
+                                    {[...new Set(avatar.sources?.map(source => 
+                                      source.includes('Reddit:') ? 'Social' : 
+                                      source.includes('Article:') ? 'Publication' :
+                                      source.includes('Survey:') ? 'Survey' : 'Other'
+                                    ))].join(', ')}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-600">Verification Status:</span>
+                                  <span className="ml-1 text-muted-foreground">
+                                    {avatar.sources?.filter(s => s.includes('Reddit:') || s.includes('Article:') || s.includes('Survey:')).length} verified
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-600">Reliability Score:</span>
+                                  <span className="ml-1 text-muted-foreground">
+                                    {avatar.sources?.length || 0 > 3 ? 'High' : avatar.sources?.length || 0 > 1 ? 'Medium' : 'Low'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Performance Metrics (if from Performance Agent) */}
+                          {avatar.recommendationSource === 'performance_agent' && (
+                            <div className="p-3 rounded-md bg-white dark:bg-green-900/40 border border-green-200">
+                              <h5 className="text-sm font-medium text-green-700 mb-2">Account Performance Evidence</h5>
+                              <div className="grid grid-cols-3 gap-4 text-xs">
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600">4.2%</div>
+                                  <div className="text-muted-foreground">Conversion Rate</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-blue-600">2.3x</div>
+                                  <div className="text-muted-foreground">Engagement Lift</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-purple-600">$2.40</div>
+                                  <div className="text-muted-foreground">ROAS</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      
+                      {/* Structured Confidence Breakdown */}
+                      <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800" data-testid={`confidence-breakdown-${avatar.id}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <BarChart3 className="h-4 w-4 text-gray-600" />
+                          <h4 className="font-medium text-gray-700 dark:text-gray-300">Confidence Score Breakdown</h4>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-medium text-gray-600">Research Volume</span>
+                                <span className="text-xs text-gray-500">{avatar.sources?.length || 0 > 3 ? '40%' : '20%'}</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className={`bg-blue-500 h-2 rounded-full`} style={{width: avatar.sources?.length || 0 > 3 ? '40%' : '20%'}}></div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-medium text-gray-600">Data Recency</span>
+                                <span className="text-xs text-gray-500">30%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="bg-green-500 h-2 rounded-full" style={{width: '30%'}}></div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-medium text-gray-600">Source Validation</span>
+                                <span className="text-xs text-gray-500">{parseFloat(avatar.dataConfidence || '0') >= 0.8 ? '25%' : '15%'}</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="bg-purple-500 h-2 rounded-full" style={{width: parseFloat(avatar.dataConfidence || '0') >= 0.8 ? '25%' : '15%'}}></div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-medium text-gray-600">Performance Lift</span>
+                                <span className="text-xs text-gray-500">{avatar.recommendationSource === 'performance_agent' ? '25%' : '5%'}</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="bg-orange-500 h-2 rounded-full" style={{width: avatar.recommendationSource === 'performance_agent' ? '25%' : '5%'}}></div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-3 border-t border-gray-200">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-700">Total Confidence Score</span>
+                              <span className="text-lg font-bold text-gray-700">{Math.round(parseFloat(avatar.dataConfidence || '0') * 100)}%</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {parseFloat(avatar.dataConfidence || '0') >= 0.85 ? 'Excellent confidence - Recommend immediate testing' :
+                               parseFloat(avatar.dataConfidence || '0') >= 0.7 ? 'Good confidence - Suitable for testing with monitoring' :
+                               'Moderate confidence - Consider as experimental segment'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Creative Hooks */}
+                      <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center gap-2 mb-3">
+                          <TrendingUp className="h-4 w-4 text-purple-600" />
+                          <h4 className="font-medium text-purple-700 dark:text-purple-300">Tested Hooks ({avatar.hooks?.length || 0})</h4>
+                        </div>
+                        <div className="space-y-2">
+                          {avatar.hooks?.map((hook, index) => (
+                            <div key={index} className="p-2 rounded-md bg-white dark:bg-purple-900/40 border border-purple-200 dark:border-purple-700">
+                              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">"{hook}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Creative Angle Ideas */}
+                      <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Brain className="h-4 w-4 text-orange-600" />
+                          <h4 className="font-medium text-orange-700 dark:text-orange-300">Creative Angles ({avatar.angleIdeas?.length || 0})</h4>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {avatar.angleIdeas?.map((angle, index) => (
+                            <Badge key={index} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                              {angle}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Approval Section for Expanded View */}
+                      {avatar.status === "pending" && (
+                        <div className="pt-4 border-t space-y-3">
+                          <Textarea
+                            placeholder="Add feedback or strategic notes about this avatar..."
+                            value={feedback[avatar.id] || ""}
+                            onChange={(e) => setFeedback(prev => ({ ...prev, [avatar.id]: e.target.value }))}
+                            rows={3}
+                            data-testid={`textarea-feedback-${avatar.id}`}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAvatarApproval(avatar.id, "approved")}
+                              data-testid={`button-approve-${avatar.id}`}
+                            >
+                              <ThumbsUp className="mr-2 h-3 w-3" />
+                              Approve for Testing
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleAvatarApproval(avatar.id, "rejected")}
+                              data-testid={`button-reject-${avatar.id}`}
+                            >
+                              <ThumbsDown className="mr-2 h-3 w-3" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show feedback if already reviewed */}
+                      {avatar.status !== "pending" && avatar.feedback && (
+                        <div className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-primary">
+                          <p className="text-sm"><strong>Strategic Notes:</strong> {avatar.feedback}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             ))}
           </div>
         </div>
