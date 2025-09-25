@@ -12,6 +12,7 @@ import { ResearchAgentDashboard } from "@/components/research-agent-dashboard";
 import { ScriptAgentDashboard } from "@/components/script-agent-dashboard";
 import { PerformanceAgentDashboard } from "@/components/performance-agent-dashboard";
 import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-dashboard";
+import { KnowledgeBaseDashboard } from "@/components/knowledge-base-dashboard";
 import { SettingsDashboard } from "@/components/settings-dashboard";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
@@ -21,6 +22,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
       <Route path="/research" component={ResearchAgentDashboard} />
       <Route path="/script" component={ScriptAgentDashboard} />
       <Route path="/performance" component={PerformanceAgentDashboard} />

@@ -1,4 +1,4 @@
-import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb } from "lucide-react"
+import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb, Database } from "lucide-react"
 import logoPath from "@assets/b52CH3jEBgKI03ajauLebDVQ3o_1758796736572.webp"
 import { Link, useLocation } from "wouter"
 import {
@@ -48,6 +48,11 @@ const navigation = [
     title: "Dashboard",
     url: "/",
     icon: Zap,
+  },
+  {
+    title: "Knowledge Base",
+    url: "/knowledge-base",
+    icon: Database,
   },
   {
     title: "Settings",
