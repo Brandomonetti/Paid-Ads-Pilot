@@ -892,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Try to generate AI observations, but gracefully handle quota/rate limit issues
-      let observations = [];
+      let observations: any[] = [];
       try {
         observations = await aiInsightsService.generateWeeklyObservations([
           { type: 'account', data: insights },

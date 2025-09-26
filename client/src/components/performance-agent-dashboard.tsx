@@ -170,8 +170,9 @@ export function PerformanceAgentDashboard() {
   
   // Loading and error states
   const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
-  // Exclude 401 account errors from generic error handling
-  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError || observationsError
+  // Exclude 401 account errors and observations errors from generic error handling
+  // Observations are nice-to-have AI insights, not critical for core functionality
+  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError
 
   if (isLoading) {
     return (
