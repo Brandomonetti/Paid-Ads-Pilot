@@ -651,15 +651,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/campaigns/:adAccountId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
       const { adAccountId } = req.params;
       const { dateRange = 'last_30_days' } = req.query;
       
-      const campaigns = await metaAdsService.getCampaigns(adAccountId, dateRange as string);
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
+      const campaigns = await userMetaService.getCampaigns(adAccountId, dateRange as string);
       
       // Generate AI insights for each campaign
       const campaignsWithInsights = await Promise.all(
         campaigns.map(async (campaign) => {
-          const metrics = metaAdsService.calculateMetrics(campaign);
+          const metrics = userMetaService.calculateMetrics(campaign);
           
           try {
             const aiInsight = await aiInsightsService.generateInsight({
@@ -709,10 +720,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/adsets/:adAccountId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
       const { adAccountId } = req.params;
       const { campaignId, dateRange = 'last_30_days' } = req.query;
       
-      const adSets = await metaAdsService.getAdSets(
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
+      const adSets = await userMetaService.getAdSets(
         adAccountId, 
         campaignId as string, 
         dateRange as string
@@ -721,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate AI insights for each ad set
       const adSetsWithInsights = await Promise.all(
         adSets.map(async (adSet) => {
-          const metrics = metaAdsService.calculateMetrics(adSet);
+          const metrics = userMetaService.calculateMetrics(adSet);
           
           try {
             const aiInsight = await aiInsightsService.generateInsight({
@@ -769,10 +791,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/ads/:adAccountId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
       const { adAccountId } = req.params;
       const { adSetId, dateRange = 'last_30_days' } = req.query;
       
-      const ads = await metaAdsService.getAds(
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
+      const ads = await userMetaService.getAds(
         adAccountId, 
         adSetId as string, 
         dateRange as string
@@ -781,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate AI insights for each ad
       const adsWithInsights = await Promise.all(
         ads.map(async (ad) => {
-          const metrics = metaAdsService.calculateMetrics(ad);
+          const metrics = userMetaService.calculateMetrics(ad);
           
           try {
             const aiInsight = await aiInsightsService.generateInsight({
@@ -838,12 +871,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Weekly AI observations endpoint
   app.get("/api/weekly-observations/:adAccountId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
       const { adAccountId } = req.params;
+      
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
       
       // Fetch comprehensive account data for analysis
       const [campaigns, insights] = await Promise.all([
-        metaAdsService.getCampaigns(adAccountId, 'last_7_days'),
-        metaAdsService.getAccountInsights(adAccountId, 'last_7_days')
+        userMetaService.getCampaigns(adAccountId, 'last_7_days'),
+        userMetaService.getAccountInsights(adAccountId, 'last_7_days')
       ]);
 
       const observations = await aiInsightsService.generateWeeklyObservations([
