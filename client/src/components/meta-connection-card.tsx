@@ -50,22 +50,24 @@ export function MetaConnectionCard() {
     }
   })
 
-  // Connect to Meta Ads
+  // Connect to Meta Ads using OAuth Broker
   const handleConnect = async () => {
     try {
       setIsConnecting(true)
       
-      // Get authorization URL
-      const response = await fetch('/api/auth/meta/connect', {
+      // Start OAuth flow through broker
+      const response = await fetch('/api/oauth-broker/meta/start', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json'
+        }
       })
       
       if (!response.ok) {
-        throw new Error('Failed to generate authorization URL')
+        throw new Error('Failed to start OAuth flow')
       }
       
-      const { authUrl } = await response.json()
+      const { authUrl, linkSessionId, expiresAt } = await response.json()
       
       // Open popup window for OAuth
       const popup = window.open(
@@ -77,16 +79,118 @@ export function MetaConnectionCard() {
       if (!popup) {
         throw new Error('Popup blocked. Please allow popups and try again.')
       }
+
+      // Listen for postMessage from OAuth broker
+      const handleMessage = (event: MessageEvent) => {
+        // Security: Accept messages from our broker origin or same origin
+        const brokerOrigin = import.meta.env.VITE_OAUTH_BROKER_ORIGIN || window.location.origin;
+        if (event.origin !== brokerOrigin && event.origin !== window.location.origin) return
+        
+        if (event.data?.type === 'oauth-complete') {
+          window.removeEventListener('message', handleMessage)
+          clearTimeout(pollTimeout)
+          clearInterval(checkClosed)
+          
+          if (event.data.success) {
+            toast({
+              title: "Connection Successful",
+              description: "Your Meta Ads account has been connected successfully.",
+            })
+            refetch()
+            // Invalidate related queries
+            queryClient.invalidateQueries({ queryKey: ['/api/ad-accounts'] })
+            queryClient.invalidateQueries({ queryKey: ['/api/account-insights'] })
+            queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] })
+          } else {
+            toast({
+              title: "Connection Failed",
+              description: event.data.error || "Meta Ads connection failed",
+              variant: "destructive"
+            })
+          }
+          setIsConnecting(false)
+        }
+      }
+
+      window.addEventListener('message', handleMessage)
+
+      // Polling fallback for browsers that block postMessage
+      let pollCount = 0
+      const maxPolls = 30 // 5 minutes at 10 second intervals
       
-      // Listen for popup close or success
+      const pollStatus = async () => {
+        try {
+          // Support cross-origin broker URLs
+          const brokerBaseUrl = import.meta.env.VITE_OAUTH_BROKER_URL || '';
+          const statusUrl = brokerBaseUrl 
+            ? `${brokerBaseUrl}/meta/status/${linkSessionId}`
+            : `/api/oauth-broker/meta/status/${linkSessionId}`;
+          
+          const statusResponse = await fetch(statusUrl)
+          
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json()
+            
+            if (statusData.completed) {
+              window.removeEventListener('message', handleMessage)
+              clearInterval(checkClosed)
+              
+              toast({
+                title: "Connection Successful",
+                description: "Your Meta Ads account has been connected successfully.",
+              })
+              refetch()
+              queryClient.invalidateQueries({ queryKey: ['/api/ad-accounts'] })
+              queryClient.invalidateQueries({ queryKey: ['/api/account-insights'] })
+              queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] })
+              setIsConnecting(false)
+              return
+            }
+            
+            if (statusData.error) {
+              window.removeEventListener('message', handleMessage)
+              clearInterval(checkClosed)
+              
+              toast({
+                title: "Connection Failed",
+                description: statusData.error,
+                variant: "destructive"
+              })
+              setIsConnecting(false)
+              return
+            }
+          }
+          
+          // Continue polling if not completed and not expired
+          pollCount++
+          if (pollCount < maxPolls && Date.now() < expiresAt) {
+            setTimeout(pollStatus, 10000) // Poll every 10 seconds
+          } else {
+            // Timeout
+            window.removeEventListener('message', handleMessage)
+            clearInterval(checkClosed)
+            setIsConnecting(false)
+            
+            toast({
+              title: "Connection Timeout",
+              description: "OAuth flow timed out. Please try again.",
+              variant: "destructive"
+            })
+          }
+        } catch (error) {
+          console.error('Error polling OAuth status:', error)
+        }
+      }
+
+      const pollTimeout = setTimeout(pollStatus, 10000) // Start polling after 10 seconds
+
+      // Listen for popup close (cleanup)
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed)
+          clearTimeout(pollTimeout)
+          window.removeEventListener('message', handleMessage)
           setIsConnecting(false)
-          // Refetch status after popup closes
-          setTimeout(() => {
-            refetch()
-          }, 1000)
         }
       }, 1000)
       
@@ -94,7 +198,7 @@ export function MetaConnectionCard() {
       setIsConnecting(false)
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect to Meta Ads",
+        description: error.message || "Failed to start Meta Ads connection",
         variant: "destructive"
       })
     }

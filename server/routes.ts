@@ -5,6 +5,7 @@ import { generateScript, generateAvatar } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
 import { metaOAuthService } from "./meta-oauth-service";
+import { startMetaOAuth, handleMetaCallback, checkLinkSessionStatus } from "./oauth-broker";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import {
   insertAvatarSchema,
@@ -27,6 +28,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/csrf-token', isAuthenticated, setupCSRFToken, (req: any, res) => {
     res.json({ csrfToken: req.session.csrfToken });
   });
+
+  // OAuth Broker routes - centralized OAuth handling for static domain
+  app.get('/api/oauth-broker/meta/start', isAuthenticated, startMetaOAuth);
+  app.get('/api/oauth-broker/meta/callback', handleMetaCallback);
+  app.get('/api/oauth-broker/meta/status/:linkSessionId', checkLinkSessionStatus);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
