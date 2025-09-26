@@ -294,16 +294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Script generation routes (protected with persistence)
+  // AI-powered script generation routes (protected with persistence)
   app.post("/api/generate-script", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { scriptRequest } = req.body;
-      
-      if (!scriptRequest) {
-        res.status(400).json({ error: "Missing scriptRequest" });
-        return;
-      }
 
       // Fetch the user's knowledge base
       const knowledgeBase = await storage.getKnowledgeBase(userId);
@@ -312,34 +306,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Validate script request
-      const validatedRequest = z.object({
-        scriptType: z.enum(["ugc", "testimonial", "demo", "story"]),
-        duration: z.enum(["15s", "30s", "45s", "60s"]),
-        targetAvatar: z.string().optional(),
-        marketingAngle: z.string().optional(),
-        awarenessStage: z.enum(["unaware", "problem aware", "solution aware", "product aware", "most aware"]).optional()
-      }).parse(scriptRequest);
+      // Fetch approved avatars from Research Agent
+      const approvedAvatars = await storage.getAvatars();
+      const userApprovedAvatars = approvedAvatars.filter(avatar => avatar.status === "approved");
+      
+      if (userApprovedAvatars.length === 0) {
+        res.status(400).json({ 
+          error: "No approved avatars found. Please generate and approve customer avatars in the Research Agent first.",
+          redirect: "/research"
+        });
+        return;
+      }
 
-      // Generate script using OpenAI
-      const generatedScript = await generateScript(validatedRequest, knowledgeBase);
+      // AI automatically selects the best avatar and approach based on data
+      const bestAvatar = userApprovedAvatars
+        .sort((a, b) => {
+          // Prioritize Performance Agent recommendations, then high confidence, then high priority
+          const aScore = (a.recommendationSource === 'performance_agent' ? 100 : 0) + 
+                        (parseFloat(a.dataConfidence || '0') * 50) + 
+                        (a.priority === 'high' ? 25 : a.priority === 'medium' ? 15 : 5);
+          const bScore = (b.recommendationSource === 'performance_agent' ? 100 : 0) + 
+                        (parseFloat(b.dataConfidence || '0') * 50) + 
+                        (b.priority === 'high' ? 25 : b.priority === 'medium' ? 15 : 5);
+          return bScore - aScore;
+        })[0];
+
+      // AI determines optimal script parameters based on avatar and brand data
+      const aiScriptRequest = {
+        scriptType: "ugc" as const, // Start with UGC as most versatile
+        duration: "30s" as const, // Optimal for most platforms
+        targetAvatar: bestAvatar.name,
+        marketingAngle: bestAvatar.hooks?.[0] || "Problem-Solution Framework",
+        awarenessStage: "problem aware" as const // Most common starting point
+      };
+
+      // Generate script using OpenAI with selected avatar data
+      const generatedScript = await generateScript(aiScriptRequest, knowledgeBase);
       
       // Save generated script to database for self-learning system
       const savedScript = await storage.createGeneratedScript({
         userId,
         title: generatedScript.title,
-        duration: validatedRequest.duration,
-        scriptType: validatedRequest.scriptType,
+        duration: aiScriptRequest.duration,
+        scriptType: aiScriptRequest.scriptType,
         summary: generatedScript.summary,
         content: generatedScript,
         sourceResearch: {
-          avatarName: validatedRequest.targetAvatar || "General",
-          marketingAngle: validatedRequest.marketingAngle || "Default",
-          awarenessStage: validatedRequest.awarenessStage || "unaware"
+          avatarName: bestAvatar.name,
+          marketingAngle: aiScriptRequest.marketingAngle,
+          awarenessStage: aiScriptRequest.awarenessStage
         },
         generationContext: {
           knowledgeBaseSnapshot: knowledgeBase,
-          requestParameters: validatedRequest,
+          selectedAvatar: bestAvatar,
+          aiDecisionFactors: {
+            avatarConfidence: bestAvatar.dataConfidence,
+            avatarPriority: bestAvatar.priority,
+            recommendationSource: bestAvatar.recommendationSource,
+            availableAvatars: userApprovedAvatars.length
+          },
           timestamp: new Date().toISOString()
         }
       });
@@ -347,14 +372,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ...generatedScript, scriptId: savedScript.id });
     } catch (error) {
       console.error("Script generation error:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid script request", details: error.errors });
-      } else {
-        res.status(500).json({ 
-          error: "Failed to generate script", 
-          message: error instanceof Error ? error.message : "Unknown error"
-        });
-      }
+      res.status(500).json({ 
+        error: "Failed to generate script", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
