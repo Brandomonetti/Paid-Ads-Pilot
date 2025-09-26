@@ -48,9 +48,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const host = req.get('host');
       const redirectUri = `${protocol}://${host}/api/auth/meta/callback`;
       
-      // Basic validation - in production you'd have an allowlist
-      if (!redirectUri.includes('.repl.co') && !redirectUri.includes('localhost')) {
-        throw new Error('Invalid redirect URI host');
+      // More flexible validation for Replit domains
+      const isValidHost = host && (
+        host.includes('repl.co') || 
+        host.includes('replit.dev') ||
+        host.includes('replit.com') ||
+        host.includes('localhost') ||
+        host.includes('127.0.0.1') ||
+        /.*\.repl\.co$/.test(host) ||
+        /.*\.replit\.dev$/.test(host)
+      );
+      
+      if (!isValidHost) {
+        console.log('Invalid host detected:', host);
+        console.log('Full redirect URI:', redirectUri);
+        throw new Error(`Invalid redirect URI host: ${host}`);
       }
       
       const { url, state } = metaOAuthService.generateAuthUrl(redirectUri);
