@@ -152,7 +152,7 @@ class MetaAdsServiceWithToken {
         clicks: insights?.clicks || '0',
         actions: insights?.actions || [],
         purchases: this.extractPurchases(insights?.actions || []),
-        revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0',
+        revenue: this.extractPurchaseValue(insights?.action_values || [], insights?.purchase_roas, insights?.spend),
         cpm: insights?.cpm || '0',
         ctr: insights?.ctr || '0',
         cpc: insights?.cpc || '0'
@@ -207,7 +207,7 @@ class MetaAdsServiceWithToken {
         clicks: insights?.clicks || '0',
         actions: insights?.actions || [],
         purchases: this.extractPurchases(insights?.actions || []),
-        revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0'
+        revenue: this.extractPurchaseValue(insights?.action_values || [], insights?.purchase_roas, insights?.spend)
       };
     });
 
@@ -259,7 +259,7 @@ class MetaAdsServiceWithToken {
         clicks: insights?.clicks || '0',
         actions: insights?.actions || [],
         purchases: this.extractPurchases(insights?.actions || []),
-        revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0',
+        revenue: this.extractPurchaseValue(insights?.action_values || [], insights?.purchase_roas, insights?.spend),
         video_avg_percent_watched_actions: insights?.video_avg_percent_watched_actions,
         video_thruplay_watched_actions: insights?.video_thruplay_watched_actions
       };
@@ -291,13 +291,14 @@ class MetaAdsServiceWithToken {
         cpm: '0',
         ctr: '0',
         cpc: '0',
-        purchases: 0
+        purchases: '0'
       };
     }
     
     return {
       ...insights,
-      purchases: this.extractPurchases(insights.actions || [])
+      purchases: this.extractPurchases(insights.actions || []),
+      revenue: this.extractPurchaseValue(insights.action_values || [], insights.purchase_roas, insights.spend)
     };
   }
 
@@ -369,10 +370,54 @@ class MetaAdsServiceWithToken {
     const purchaseAction = actions.find(action => 
       action.action_type === 'omni_purchase' || 
       action.action_type === 'purchase' ||
-      action.action_type === 'offsite_conversion.fb_pixel_purchase'
+      action.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+      action.action_type === 'onsite_conversion.purchase'
     );
     
     return purchaseAction?.value || '0';
+  }
+
+  // Extract purchase value (revenue) from action_values array
+  private extractPurchaseValue(actionValues: any[], fallbackPurchaseRoas?: any, spend?: string): string {
+    const purchaseActionTypes = [
+      'omni_purchase',
+      'purchase', 
+      'offsite_conversion.fb_pixel_purchase',
+      'onsite_conversion.purchase'
+    ];
+    
+    let totalRevenue = 0;
+    
+    // First try to get revenue from action_values
+    if (actionValues && Array.isArray(actionValues) && actionValues.length > 0) {
+      for (const action of actionValues) {
+        if (purchaseActionTypes.includes(action.action_type)) {
+          totalRevenue += parseFloat(action.value || '0');
+        }
+      }
+    }
+    
+    // If no revenue found in action_values, try fallback to purchase_roas
+    if (totalRevenue === 0 && fallbackPurchaseRoas && spend) {
+      let roasValue = 0;
+      
+      if (Array.isArray(fallbackPurchaseRoas)) {
+        // purchase_roas as array (when action_breakdowns=action_type)
+        const purchaseRoasEntry = fallbackPurchaseRoas.find((entry: any) => 
+          entry.action_type && purchaseActionTypes.includes(entry.action_type)
+        );
+        roasValue = parseFloat(purchaseRoasEntry?.value || '0');
+      } else if (typeof fallbackPurchaseRoas === 'string' || typeof fallbackPurchaseRoas === 'number') {
+        // purchase_roas as string or number
+        roasValue = parseFloat(fallbackPurchaseRoas.toString());
+      }
+      
+      if (roasValue > 0) {
+        totalRevenue = parseFloat(spend) * roasValue;
+      }
+    }
+    
+    return totalRevenue.toString();
   }
 }
 
