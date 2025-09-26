@@ -102,7 +102,7 @@ export function PerformanceAgentDashboard() {
 
   // Fetch account insights
   const { data: accountMetrics = {}, isLoading: metricsLoading, error: metricsError } = useQuery({
-    queryKey: ['/api/account-insights', selectedAccount, dateRange],
+    queryKey: [`/api/account-insights/${selectedAccount}?dateRange=${dateRange}`],
     enabled: !!selectedAccount
   }) as {
     data: any;
@@ -112,7 +112,7 @@ export function PerformanceAgentDashboard() {
 
   // Fetch campaigns with AI insights
   const { data: campaignsData = [], isLoading: campaignsLoading, error: campaignsError } = useQuery({
-    queryKey: ['/api/campaigns', selectedAccount, dateRange],
+    queryKey: [`/api/campaigns/${selectedAccount}?dateRange=${dateRange}`],
     enabled: !!selectedAccount
   }) as {
     data: CampaignWithInsights[];
@@ -122,7 +122,7 @@ export function PerformanceAgentDashboard() {
 
   // Fetch weekly observations
   const { data: weeklyObservationsData = [], isLoading: observationsLoading, error: observationsError } = useQuery({
-    queryKey: ['/api/weekly-observations', selectedAccount],
+    queryKey: [`/api/weekly-observations/${selectedAccount}`],
     enabled: !!selectedAccount
   }) as {
     data: WeeklyObservation[];
@@ -183,6 +183,7 @@ export function PerformanceAgentDashboard() {
       accountsError.message?.includes('Meta Ads account not connected') ||
       accountsError.requiresConnection
     );
+  
   
   // Loading and error states
   const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
