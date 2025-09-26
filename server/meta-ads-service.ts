@@ -84,12 +84,16 @@ class MetaAdsServiceWithToken {
   private async makeRequest(endpoint: string, params: Record<string, string> = {}) {
     try {
       const url = `${this.baseUrl}${endpoint}`;
+      console.log('🔍 Meta API Request:', { url, params: { ...params, access_token: '[REDACTED]' } });
+      
       const response = await axios.get(url, {
         params: {
           access_token: this.accessToken,
           ...params
         }
       });
+      
+      console.log('🔍 Meta API Response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error: any) {
       console.error('Meta Ads API Error:', error.response?.data || error.message);
@@ -117,22 +121,30 @@ class MetaAdsServiceWithToken {
     const campaignIds = response.data.map((c: any) => c.id);
     if (campaignIds.length === 0) return [];
 
-    const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
-      level: 'campaign',
-      fields: 'campaign_id,spend,impressions,clicks,actions,action_values,purchase_roas,cpm,ctr,cpc',
-      action_breakdowns: 'action_type',
-      time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
-      filtering: JSON.stringify([{
-        field: 'campaign.id',
-        operator: 'IN',
-        value: campaignIds
-      }]),
-      limit: '100'
-    });
+    // Try to get insights data, but handle empty results gracefully
+    let insightsData = [];
+    try {
+      const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
+        level: 'campaign',
+        fields: 'campaign_id,spend,impressions,clicks,actions,action_values,purchase_roas,cpm,ctr,cpc',
+        action_breakdowns: 'action_type',
+        time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
+        filtering: JSON.stringify([{
+          field: 'campaign.id',
+          operator: 'IN',
+          value: campaignIds
+        }]),
+        limit: '100'
+      });
+      insightsData = insightsResponse.data || [];
+    } catch (error) {
+      console.log('No insights data available for campaigns in date range');
+      insightsData = [];
+    }
 
-    // Merge campaign data with insights
+    // Merge campaign data with insights (or defaults if no insights)
     const campaigns = response.data.map((campaign: any) => {
-      const insights = insightsResponse.data.find((insight: any) => insight.campaign_id === campaign.id);
+      const insights = insightsData.find((insight: any) => insight.campaign_id === campaign.id);
       return {
         ...campaign,
         spend: insights?.spend || '0',
@@ -140,7 +152,10 @@ class MetaAdsServiceWithToken {
         clicks: insights?.clicks || '0',
         actions: insights?.actions || [],
         purchases: this.extractPurchases(insights?.actions || []),
-        revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0'
+        revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0',
+        cpm: insights?.cpm || '0',
+        ctr: insights?.ctr || '0',
+        cpc: insights?.cpc || '0'
       };
     });
 
@@ -263,6 +278,23 @@ class MetaAdsServiceWithToken {
     });
 
     const insights = response.data[0] || {};
+    
+    // If no data returned, provide default structure with zeros
+    if (!insights || Object.keys(insights).length === 0) {
+      return {
+        spend: '0',
+        impressions: '0',
+        clicks: '0',
+        actions: [],
+        action_values: [],
+        purchase_roas: '0',
+        cpm: '0',
+        ctr: '0',
+        cpc: '0',
+        purchases: 0
+      };
+    }
+    
     return {
       ...insights,
       purchases: this.extractPurchases(insights.actions || [])
@@ -290,9 +322,13 @@ class MetaAdsServiceWithToken {
         since.setDate(today.getDate() - 30);
     }
 
+    // Use yesterday as 'until' since Facebook data can have a 1-day delay
+    const until = new Date();
+    until.setDate(today.getDate() - 1);
+
     return {
       since: since.toISOString().split('T')[0],
-      until: today.toISOString().split('T')[0]
+      until: until.toISOString().split('T')[0]
     };
   }
 
