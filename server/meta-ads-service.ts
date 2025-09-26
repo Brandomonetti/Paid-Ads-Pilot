@@ -16,6 +16,7 @@ interface MetaCampaign {
   spend: string;
   impressions: string;
   clicks: string;
+  actions?: any[];
   purchases?: string;
   revenue?: string;
 }
@@ -31,6 +32,7 @@ interface MetaAdSet {
   spend: string;
   impressions: string;
   clicks: string;
+  actions?: any[];
   purchases?: string;
   revenue?: string;
 }
@@ -48,6 +50,7 @@ interface MetaAd {
   spend: string;
   impressions: string;
   clicks: string;
+  actions?: any[];
   purchases?: string;
   revenue?: string;
   video_avg_percent_watched_actions?: any;
@@ -103,7 +106,8 @@ export class MetaAdsService {
 
     const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
       level: 'campaign',
-      fields: 'campaign_id,spend,impressions,clicks,purchases,purchase_roas',
+      fields: 'campaign_id,spend,impressions,clicks,actions,action_values,purchase_roas,cpm,ctr,cpc',
+      action_breakdowns: 'action_type',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       filtering: JSON.stringify([{
         field: 'campaign.id',
@@ -121,7 +125,8 @@ export class MetaAdsService {
         spend: insights?.spend || '0',
         impressions: insights?.impressions || '0',
         clicks: insights?.clicks || '0',
-        purchases: insights?.purchases || '0',
+        actions: insights?.actions || [],
+        purchases: this.extractPurchases(insights?.actions || []),
         revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0'
       };
     });
@@ -153,7 +158,8 @@ export class MetaAdsService {
 
     const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
       level: 'adset',
-      fields: 'adset_id,spend,impressions,clicks,purchases,purchase_roas',
+      fields: 'adset_id,spend,impressions,clicks,actions,action_values,purchase_roas,cpm,ctr,cpc',
+      action_breakdowns: 'action_type',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       filtering: JSON.stringify([{
         field: 'adset.id',
@@ -171,7 +177,8 @@ export class MetaAdsService {
         spend: insights?.spend || '0',
         impressions: insights?.impressions || '0',
         clicks: insights?.clicks || '0',
-        purchases: insights?.purchases || '0',
+        actions: insights?.actions || [],
+        purchases: this.extractPurchases(insights?.actions || []),
         revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0'
       };
     });
@@ -203,7 +210,8 @@ export class MetaAdsService {
 
     const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
       level: 'ad',
-      fields: 'ad_id,spend,impressions,clicks,purchases,purchase_roas,video_avg_percent_watched_actions,video_thruplay_watched_actions',
+      fields: 'ad_id,spend,impressions,clicks,actions,action_values,purchase_roas,video_avg_percent_watched_actions,video_thruplay_watched_actions,cpm,ctr,cpc',
+      action_breakdowns: 'action_type',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       filtering: JSON.stringify([{
         field: 'ad.id',
@@ -221,7 +229,8 @@ export class MetaAdsService {
         spend: insights?.spend || '0',
         impressions: insights?.impressions || '0',
         clicks: insights?.clicks || '0',
-        purchases: insights?.purchases || '0',
+        actions: insights?.actions || [],
+        purchases: this.extractPurchases(insights?.actions || []),
         revenue: insights?.purchase_roas ? (parseFloat(insights?.spend || '0') * parseFloat(insights.purchase_roas)).toString() : '0',
         video_avg_percent_watched_actions: insights?.video_avg_percent_watched_actions,
         video_thruplay_watched_actions: insights?.video_thruplay_watched_actions
@@ -234,12 +243,17 @@ export class MetaAdsService {
   async getAccountInsights(adAccountId: string, dateRange: string = 'last_30_days'): Promise<any> {
     const response = await this.makeRequest(`/${adAccountId}/insights`, {
       level: 'account',
-      fields: 'spend,impressions,clicks,purchases,purchase_roas,cpm,ctr,cpc',
+      fields: 'spend,impressions,clicks,actions,action_values,purchase_roas,cpm,ctr,cpc',
+      action_breakdowns: 'action_type',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       limit: '1'
     });
 
-    return response.data[0] || {};
+    const insights = response.data[0] || {};
+    return {
+      ...insights,
+      purchases: this.extractPurchases(insights.actions || [])
+    };
   }
 
   private getDateRange(range: string) {
@@ -297,6 +311,19 @@ export class MetaAdsService {
     // Thumbstop rate = average watch time percentage
     const avgWatchPercent = data.video_avg_percent_watched_actions?.[0]?.value || 0;
     return parseFloat(avgWatchPercent) || 0;
+  }
+
+  // Extract purchase count from actions array
+  private extractPurchases(actions: any[]): string {
+    if (!actions || !Array.isArray(actions)) return '0';
+    
+    const purchaseAction = actions.find(action => 
+      action.action_type === 'omni_purchase' || 
+      action.action_type === 'purchase' ||
+      action.action_type === 'offsite_conversion.fb_pixel_purchase'
+    );
+    
+    return purchaseAction?.value || '0';
   }
 }
 
