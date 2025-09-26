@@ -160,7 +160,13 @@ export function PerformanceAgentDashboard() {
   ]
 
   // Check if Meta account needs connection first (before generic error handling)
-  const needsMetaConnection = accountsError?.status === 401 || accountsError?.requiresConnection;
+  const needsMetaConnection = 
+    accountsError && (
+      accountsError.status === 401 || 
+      accountsError.response?.status === 401 ||
+      accountsError.message?.includes('Meta Ads account not connected') ||
+      accountsError.requiresConnection
+    );
   
   // Loading and error states
   const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
