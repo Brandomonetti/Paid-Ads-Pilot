@@ -43,12 +43,7 @@ export function ScriptAgentDashboard() {
   const { user, isAuthenticated } = useAuth()
   const { toast } = useToast()
   
-  // Form state for script generation
-  const [selectedAvatar, setSelectedAvatar] = useState<string>("")
-  const [selectedDuration, setSelectedDuration] = useState<"15s" | "30s" | "45s" | "60s">("30s")
-  const [selectedScriptType, setSelectedScriptType] = useState<"ugc" | "testimonial" | "demo" | "story">("ugc")
-  const [selectedAwarenessStage, setSelectedAwarenessStage] = useState<"unaware" | "problem aware" | "solution aware" | "product aware" | "most aware">("problem aware")
-  const [marketingAngle, setMarketingAngle] = useState<string>("")
+  // UI state only - no manual configuration needed
   
   // UI state
   const [feedback, setFeedback] = useState<Record<string, string>>({})
@@ -59,24 +54,23 @@ export function ScriptAgentDashboard() {
     enabled: isAuthenticated,
   })
 
+  // Fetch approved avatars from Research Agent
+  const { data: approvedAvatars = [] } = useQuery<any[]>({
+    queryKey: ['/api/avatars', 'approved'],
+    enabled: isAuthenticated,
+  })
+
   // Fetch user's generated scripts
   const { data: scripts = [], isLoading: scriptsLoading } = useQuery<Script[]>({
     queryKey: ['/api/scripts'],
     enabled: isAuthenticated,
   })
 
-  // Script generation mutation
+  // Script generation mutation - AI automatically determines best approach
   const generateScriptMutation = useMutation({
     mutationFn: async (): Promise<Script> => {
-      const scriptRequest = {
-        scriptType: selectedScriptType,
-        duration: selectedDuration,
-        targetAvatar: selectedAvatar || undefined,
-        marketingAngle: marketingAngle || undefined,
-        awarenessStage: selectedAwarenessStage
-      }
-      
-      const response = await apiRequest('POST', '/api/generate-script', { scriptRequest })
+      // Send minimal data - AI determines script type, duration, and approach based on research
+      const response = await apiRequest('POST', '/api/generate-script', {})
       return response.json()
     },
     onSuccess: () => {
@@ -84,7 +78,7 @@ export function ScriptAgentDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/scripts'] })
       toast({
         title: "Script Generated!",
-        description: "Your new UGC script has been created using your Knowledge Base data."
+        description: "AI created a new script using your approved research data and brand information."
       })
     },
     onError: (error: any) => {
@@ -196,51 +190,21 @@ export function ScriptAgentDashboard() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Select value={selectedScriptType} onValueChange={(value) => setSelectedScriptType(value as "ugc" | "testimonial" | "demo" | "story")}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ugc">UGC</SelectItem>
-              <SelectItem value="testimonial">Testimonial</SelectItem>
-              <SelectItem value="demo">Demo</SelectItem>
-              <SelectItem value="story">Story</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={selectedDuration} onValueChange={(value) => setSelectedDuration(value as "15s" | "30s" | "45s" | "60s")}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="15s">15s</SelectItem>
-              <SelectItem value="30s">30s</SelectItem>
-              <SelectItem value="45s">45s</SelectItem>
-              <SelectItem value="60s">60s</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedAwarenessStage} onValueChange={(value) => setSelectedAwarenessStage(value as "unaware" | "problem aware" | "solution aware" | "product aware" | "most aware")}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unaware">Unaware</SelectItem>
-              <SelectItem value="problem aware">Problem Aware</SelectItem>
-              <SelectItem value="solution aware">Solution Aware</SelectItem>
-              <SelectItem value="product aware">Product Aware</SelectItem>
-              <SelectItem value="most aware">Most Aware</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4">
+          {/* Research Status Indicator */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="h-4 w-4" />
+            <span>{approvedAvatars.length} approved avatar{approvedAvatars.length !== 1 ? 's' : ''}</span>
+          </div>
           
           <Button 
             onClick={generateNewScript}
-            disabled={generateScriptMutation.isPending || kbLoading || !knowledgeBase}
+            disabled={generateScriptMutation.isPending || kbLoading || !knowledgeBase || approvedAvatars.length === 0}
             data-testid="button-generate-script"
+            size="lg"
           >
             {generateScriptMutation.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
-            {generateScriptMutation.isPending ? "Generating..." : "Generate Script"}
+            {generateScriptMutation.isPending ? "AI Analyzing Research..." : "Generate AI Script"}
           </Button>
         </div>
       </div>
@@ -272,6 +236,23 @@ export function ScriptAgentDashboard() {
               </p>
               <Button variant="outline" size="sm" asChild>
                 <a href="/knowledge-base">Complete Setup</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Research Agent Status */}
+      {knowledgeBase && approvedAvatars.length === 0 && (
+        <Card className="border-blue-300 dark:border-blue-700">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <Users className="h-4 w-4" />
+              <p className="text-sm font-medium">
+                Research Agent hasn't approved any customer avatars yet. Generate and approve research first.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/research">Start Research</a>
               </Button>
             </div>
           </CardContent>
@@ -363,18 +344,25 @@ export function ScriptAgentDashboard() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">No Scripts Generated Yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Generate your first AI-powered UGC script using your Knowledge Base data.
+                    AI will analyze your approved research data and brand information to create targeted, high-converting scripts.
                   </p>
-                  {knowledgeBase ? (
+                  {knowledgeBase && approvedAvatars.length > 0 ? (
                     <Button onClick={generateNewScript} disabled={generateScriptMutation.isPending}>
                       <Video className="mr-2 h-4 w-4" />
-                      Generate Your First Script
+                      Generate Your First AI Script
                     </Button>
-                  ) : (
+                  ) : !knowledgeBase ? (
                     <Button variant="outline" asChild>
                       <a href="/knowledge-base">
                         <FileText className="mr-2 h-4 w-4" />
                         Complete Knowledge Base First
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" asChild>
+                      <a href="/research">
+                        <Users className="mr-2 h-4 w-4" />
+                        Generate Research First
                       </a>
                     </Button>
                   )}
