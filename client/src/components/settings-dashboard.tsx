@@ -17,20 +17,18 @@ import {
 
 export function SettingsDashboard() {
   const { toast } = useToast()
-  const userId = "user-1" // In a real app, this would come from auth context
   
   // Fetch platform settings
   const { data: settings, isLoading, isError } = useQuery<PlatformSettings>({
-    queryKey: ["/api/settings", userId],
-    queryFn: () => fetch(`/api/settings/${userId}`).then(res => res.json()),
+    queryKey: ["/api/settings"],
   })
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: (updates: Partial<PlatformSettings>) => 
-      apiRequest("PATCH", `/api/settings/${userId}`, updates),
+      apiRequest("PATCH", "/api/settings", updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings", userId] })
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] })
       toast({
         title: "Settings Saved",
         description: "Your platform preferences have been updated successfully.",
