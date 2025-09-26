@@ -891,10 +891,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userMetaService.getAccountInsights(adAccountId, 'last_7_days')
       ]);
 
-      const observations = await aiInsightsService.generateWeeklyObservations([
-        { type: 'account', data: insights },
-        { type: 'campaigns', data: campaigns }
-      ]);
+      // Try to generate AI observations, but gracefully handle quota/rate limit issues
+      let observations = [];
+      try {
+        observations = await aiInsightsService.generateWeeklyObservations([
+          { type: 'account', data: insights },
+          { type: 'campaigns', data: campaigns }
+        ]);
+      } catch (aiError: any) {
+        console.error("AI observations failed (quota/rate limit):", aiError.message);
+        // Return empty observations instead of failing the whole endpoint
+        observations = [];
+      }
       
       res.json(observations);
     } catch (error) {
