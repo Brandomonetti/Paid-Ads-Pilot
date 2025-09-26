@@ -569,7 +569,7 @@ export function ResearchAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Research Agent</h1>
-            <p className="text-muted-foreground">Integrated customer research & viral creative concept analysis</p>
+            <p className="text-muted-foreground">Analyzes your target audience and discovers viral creative concepts to fuel your marketing strategy. Use this to identify high-potential customer segments and proven creative angles before generating scripts.</p>
           </div>
         </div>
       </div>

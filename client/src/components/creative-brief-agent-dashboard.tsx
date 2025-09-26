@@ -315,7 +315,7 @@ export function CreativeBriefAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Creative Brief Agent</h1>
-            <p className="text-muted-foreground">Generate comprehensive creative direction documents</p>
+            <p className="text-muted-foreground">Creates detailed creative briefs with shot-by-shot breakdowns for your video content. Transforms your scripts into comprehensive production guides with specific voiceover, text overlays, and visual direction.</p>
           </div>
         </div>
         <div className="flex gap-2">

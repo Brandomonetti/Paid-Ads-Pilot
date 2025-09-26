@@ -143,7 +143,7 @@ export function AssetAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Asset Agent</h1>
-            <p className="text-muted-foreground">Discover winning templates, B-roll, and creative assets</p>
+            <p className="text-muted-foreground">Finds proven creative assets, templates, and B-roll footage to enhance your content production. Saves time by sourcing high-converting design elements and video assets that align with your brand.</p>
           </div>
         </div>
         <div className="flex gap-2">

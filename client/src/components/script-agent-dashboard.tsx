@@ -181,7 +181,7 @@ export function ScriptAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Script Agent</h1>
-            <p className="text-muted-foreground">Create high-converting UGC video scripts from approved research insights</p>
+            <p className="text-muted-foreground">Generates ready-to-film UGC video scripts tailored to your target avatars and proven creative angles. Each script includes hooks, problem-solution structure, and clear calls-to-action optimized for conversion.</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-300">
                 <CheckCircle className="h-3 w-3 mr-1" />

@@ -382,7 +382,7 @@ export function PerformanceAgentDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Performance Agent</h1>
-            <p className="text-muted-foreground">AI-powered strategic analysis & Meta Ads management</p>
+            <p className="text-muted-foreground">Monitors your Meta ads performance and provides strategic recommendations to improve ROAS. Analyzes campaign data to identify winning creatives and suggests optimizations for scaling successful ads.</p>
           </div>
         </div>
         <div className="flex gap-2">
