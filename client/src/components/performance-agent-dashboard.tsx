@@ -77,7 +77,7 @@ export function PerformanceAgentDashboard() {
   const [selectedTab, setSelectedTab] = useState("overview")
 
   // Fetch ad accounts
-  const { data: adAccounts = [] as any[], isLoading: accountsLoading, error: accountsError } = useQuery({
+  const { data: adAccounts = [], isLoading: accountsLoading, error: accountsError } = useQuery({
     queryKey: ['/api/ad-accounts'],
     enabled: true,
     retry: (failureCount, error: any) => {
@@ -87,7 +87,11 @@ export function PerformanceAgentDashboard() {
       }
       return failureCount < 3
     }
-  })
+  }) as {
+    data: any[];
+    isLoading: boolean;
+    error: any;
+  }
 
   // Set first account as default when accounts load
   useEffect(() => {
@@ -97,26 +101,38 @@ export function PerformanceAgentDashboard() {
   }, [adAccounts, selectedAccount])
 
   // Fetch account insights
-  const { data: accountMetrics = {} as any, isLoading: metricsLoading, error: metricsError } = useQuery({
+  const { data: accountMetrics = {}, isLoading: metricsLoading, error: metricsError } = useQuery({
     queryKey: ['/api/account-insights', selectedAccount, dateRange],
     enabled: !!selectedAccount
-  })
+  }) as {
+    data: any;
+    isLoading: boolean;
+    error: any;
+  }
 
   // Fetch campaigns with AI insights
-  const { data: campaignsData = [] as CampaignWithInsights[], isLoading: campaignsLoading, error: campaignsError } = useQuery({
+  const { data: campaignsData = [], isLoading: campaignsLoading, error: campaignsError } = useQuery({
     queryKey: ['/api/campaigns', selectedAccount, dateRange],
     enabled: !!selectedAccount
-  })
+  }) as {
+    data: CampaignWithInsights[];
+    isLoading: boolean;
+    error: any;
+  }
 
   // Fetch weekly observations
-  const { data: weeklyObservationsData = [] as WeeklyObservation[], isLoading: observationsLoading, error: observationsError } = useQuery({
+  const { data: weeklyObservationsData = [], isLoading: observationsLoading, error: observationsError } = useQuery({
     queryKey: ['/api/weekly-observations', selectedAccount],
     enabled: !!selectedAccount
-  })
+  }) as {
+    data: WeeklyObservation[];
+    isLoading: boolean;
+    error: any;
+  }
 
   // Process data
-  const campaigns = campaignsData || []
-  const weeklyObservations = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
+  const campaigns: CampaignWithInsights[] = campaignsData || []
+  const weeklyObservations: WeeklyObservation[] = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
     // Fallback mock data when API doesn't return observations
     {
       id: "1",
@@ -457,12 +473,12 @@ export function PerformanceAgentDashboard() {
         {/* Campaign Insights Tab */}
         <TabsContent value="campaigns" className="space-y-4">
           <div className="space-y-4">
-            {campaigns.map((campaign: any) => (
+            {campaigns.map((campaign: CampaignWithInsights) => (
               <Card key={campaign.id}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="space-y-1">
-                      <h3 className="font-medium">{campaign.name}</h3>
+                      <h3 className="font-medium">{campaign.campaignName}</h3>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <span>{campaign.objective}</span>
                         <Separator orientation="vertical" className="h-4" />
@@ -480,7 +496,7 @@ export function PerformanceAgentDashboard() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
+                              <DialogTitle>Campaign Analysis: {campaign.campaignName}</DialogTitle>
                               <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
