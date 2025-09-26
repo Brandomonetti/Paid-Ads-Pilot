@@ -48,7 +48,7 @@ interface WeeklyObservation {
 // Campaign with AI Insights
 interface CampaignWithInsights {
   id: string
-  campaignName: string
+  name: string
   status: "ACTIVE" | "PAUSED" | "PENDING"
   objective: string
   spend: number
@@ -478,7 +478,7 @@ export function PerformanceAgentDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="space-y-1">
-                      <h3 className="font-medium">{campaign.campaignName}</h3>
+                      <h3 className="font-medium">{campaign.name}</h3>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <span>{campaign.objective}</span>
                         <Separator orientation="vertical" className="h-4" />
@@ -496,7 +496,7 @@ export function PerformanceAgentDashboard() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Campaign Analysis: {campaign.campaignName}</DialogTitle>
+                              <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
                               <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
