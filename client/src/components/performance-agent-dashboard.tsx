@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -66,67 +67,49 @@ interface CampaignWithInsights {
     priority: "high" | "medium" | "low"
     detailedAnalysis: string
   }
-  adSets?: {
-    id: string
-    adSetName: string
-    status: "ACTIVE" | "PAUSED"
-    spend: number
-    revenue: number
-    roas: number
-    cpm: number
-    ctr: number
-    targeting: string
-    dailyBudget: number
-    aiSignal?: {
-      action: "scale" | "pause" | "wait" | "optimize" | "creative-refresh"
-      reasoning: string
-      confidence: number
-    }
-    ads?: {
-      id: string
-      adName: string
-      status: "ACTIVE" | "PAUSED"
-      creativeType: "VIDEO" | "CAROUSEL" | "IMAGE"
-      spend: number
-      revenue: number
-      roas: number
-      cpm: number
-      ctr: number
-      hookRate?: number
-      thumbstopRate?: number
-      aiSignal?: {
-        action: "scale" | "pause" | "wait" | "optimize" | "creative-refresh"
-        reasoning: string
-        confidence: number
-        creativeInsight?: string
-      }
-    }[]
-  }[]
 }
 
 export function PerformanceAgentDashboard() {
-  // Account Overview Mock Data
-  const [accountMetrics] = useState<AccountMetrics>({
-    totalSpend: 45680,
-    totalRevenue: 234580,
-    overallRoas: 5.14,
-    overallCpm: 12.45,
-    overallCtr: 3.2,
-    overallCpc: 0.38,
-    totalImpressions: 1250000,
-    totalClicks: 40000,
-    totalPurchases: 2340,
-    activeAds: 24,
-    trend: "up",
-    periodComparison: {
-      spend: 12.5,
-      revenue: 18.3,
-      roas: 4.2
-    }
+  const [selectedAccount, setSelectedAccount] = useState<string>("")
+  const [dateRange, setDateRange] = useState<string>("last_30_days")
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
+  const [selectedTab, setSelectedTab] = useState("overview")
+
+  // Fetch ad accounts
+  const { data: adAccounts = [] as any[], isLoading: accountsLoading, error: accountsError } = useQuery({
+    queryKey: ['/api/ad-accounts'],
+    enabled: true
   })
 
-  // Top Weekly Observations
-  const [weeklyObservations] = useState<WeeklyObservation[]>([
+  // Set first account as default when accounts load
+  useEffect(() => {
+    if (adAccounts.length > 0 && !selectedAccount) {
+      setSelectedAccount(adAccounts[0].id)
+    }
+  }, [adAccounts, selectedAccount])
+
+  // Fetch account insights
+  const { data: accountMetrics = {} as any, isLoading: metricsLoading, error: metricsError } = useQuery({
+    queryKey: ['/api/account-insights', selectedAccount, dateRange],
+    enabled: !!selectedAccount
+  })
+
+  // Fetch campaigns with AI insights
+  const { data: campaignsData = [] as CampaignWithInsights[], isLoading: campaignsLoading, error: campaignsError } = useQuery({
+    queryKey: ['/api/campaigns', selectedAccount, dateRange],
+    enabled: !!selectedAccount
+  })
+
+  // Fetch weekly observations
+  const { data: weeklyObservationsData = [] as WeeklyObservation[], isLoading: observationsLoading, error: observationsError } = useQuery({
+    queryKey: ['/api/weekly-observations', selectedAccount],
+    enabled: !!selectedAccount
+  })
+
+  // Process data
+  const campaigns = campaignsData || []
+  const weeklyObservations = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
+    // Fallback mock data when API doesn't return observations
     {
       id: "1",
       title: "Creative Fatigue Across Video Campaigns",
@@ -136,7 +119,7 @@ export function PerformanceAgentDashboard() {
         "CPM increased 23% indicating auction pressure", 
         "Demographic analysis shows 65% reach saturation in 25-45 age group"
       ],
-      priority: "high",
+      priority: "high" as const,
       impact: "Projected 18% ROAS decline if not addressed within 3 days",
       confidence: 94
     },
@@ -149,7 +132,7 @@ export function PerformanceAgentDashboard() {
         "Lower CPCs ($0.31 vs $0.45) with higher conversion rates",
         "Ready for aggressive scaling with $2000+ daily budgets"
       ],
-      priority: "high",
+      priority: "high" as const,
       impact: "Opportunity to increase monthly revenue by 35-50%",
       confidence: 89
     },
@@ -162,725 +145,400 @@ export function PerformanceAgentDashboard() {
         "Incrementality tests show campaigns are 40% more profitable",
         "Recommend increasing budgets based on blended ROAS metrics"
       ],
-      priority: "medium",
+      priority: "medium" as const,
       impact: "Under-investing in profitable campaigns by ~$8,000/month",
       confidence: 82
     }
-  ])
+  ]
 
-  // Campaigns with AI Insights
-  const [campaigns] = useState<CampaignWithInsights[]>([
-    {
-      id: "1",
-      campaignName: "Summer Sale - Video Creatives",
-      status: "ACTIVE",
-      objective: "CONVERSIONS",
-      spend: 12340,
-      revenue: 84580,
-      roas: 6.85,
-      cpm: 8.45,
-      ctr: 4.2,
-      cpc: 0.28,
-      impressions: 1460000,
-      clicks: 61320,
-      purchases: 842,
-      trend: "up",
-      aiSignal: {
-        action: "scale",
-        reasoning: "Exceptional ROAS performance (6.85x) with low CPCs and strong conversion rates. Ready for 3x budget increase.",
-        confidence: 96,
-        priority: "high",
-        detailedAnalysis: "This campaign demonstrates all indicators of a winning combination: ROAS 35% above account average, CPC 40% below benchmark, and conversion rate 2.3x higher than similar audiences. The creative resonates strongly with the 25-45 demographic (83% of conversions). Frequency is optimal at 1.8, indicating minimal audience fatigue. Auction insights show we're winning 78% of overlapping auctions at lower bids. Recommendation: Increase daily budget from $800 to $2400 immediately, expand to 2% and 5% lookalike audiences, and test similar creative angles."
-      },
-      adSets: [
-        {
-          id: "1-1",
-          adSetName: "LA - Interests",
-          status: "ACTIVE",
-          spend: 4200,
-          revenue: 31240,
-          roas: 7.44,
-          cpm: 6.20,
-          ctr: 5.1,
-          targeting: "Ages 25-45, Interests: Fitness, Nutrition",
-          dailyBudget: 300,
-          aiSignal: {
-            action: "scale",
-            reasoning: "Best performing ad set. Scale to $600/day immediately.",
-            confidence: 94
-          },
-          ads: [
-            {
-              id: "1-1-1",
-              adName: "Transformation Story - Vertical",
-              status: "ACTIVE",
-              creativeType: "VIDEO",
-              spend: 2100,
-              revenue: 18670,
-              roas: 8.89,
-              cpm: 5.80,
-              ctr: 6.2,
-              hookRate: 14.5,
-              thumbstopRate: 28.3,
-              aiSignal: {
-                action: "scale",
-                reasoning: "Top performer with exceptional hook rate. The transformation reveal at 3 seconds is highly effective.",
-                confidence: 97,
-                creativeInsight: "Hook rate 67% above benchmark. The before/after reveal drives strong emotional engagement."
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "2",
-      campaignName: "Product Demo - Carousel Ads",
-      status: "ACTIVE", 
-      objective: "CONVERSIONS",
-      spend: 8950,
-      revenue: 38420,
-      roas: 4.29,
-      cpm: 15.20,
-      ctr: 2.1,
-      cpc: 0.72,
-      impressions: 588000,
-      clicks: 12348,
-      purchases: 384,
-      trend: "down",
-      aiSignal: {
-        action: "pause",
-        reasoning: "Creative fatigue detected. CTR declined 35% over 7 days while CPMs increased 28%. Immediate refresh needed.",
-        confidence: 91,
-        priority: "high",
-        detailedAnalysis: "This campaign shows classic signs of creative fatigue: declining CTR (from 3.2% to 2.1%), rising CPMs (12.1 to 15.2), and increasing frequency (3.8). The carousel format initially performed well but user engagement has dropped significantly. Comments show repetition complaints. The same audience has seen these creatives 4+ times on average. Recommendation: Pause immediately and develop new creative angles using approved avatars from Research Agent. Test UGC-style videos or testimonial formats instead of product demos."
-      },
-      adSets: [
-        {
-          id: "2-1",
-          adSetName: "Lookalike 1% - Purchasers",
-          status: "ACTIVE",
-          spend: 3200,
-          revenue: 14680,
-          roas: 4.59,
-          cpm: 14.50,
-          ctr: 2.3,
-          targeting: "Lookalike 1% - Website Purchasers (180 days)",
-          dailyBudget: 200,
-          ads: [
-            {
-              id: "2-1-1",
-              adName: "5-Card Product Demo",
-              status: "ACTIVE",
-              creativeType: "CAROUSEL",
-              spend: 3200,
-              revenue: 14680,
-              roas: 4.59,
-              cpm: 14.50,
-              ctr: 2.3,
-              aiSignal: {
-                action: "creative-refresh",
-                reasoning: "Creative showing fatigue. Engagement rates declining while frequency climbs.",
-                confidence: 88,
-                creativeInsight: "Users commenting about seeing this ad repeatedly. Need fresh creative angles."
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ])
+  // Loading and error states
+  const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
+  const hasError = accountsError || metricsError || campaignsError || observationsError
 
-  const [selectedTimeframe, setSelectedTimeframe] = useState("7d")
-  const [selectedObservation, setSelectedObservation] = useState<WeeklyObservation | null>(null)
-  const [selectedSignal, setSelectedSignal] = useState<any>(null)
-  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-
-  const runAnalysis = () => {
-    setIsAnalyzing(true)
-    setTimeout(() => {
-      setIsAnalyzing(false)
-    }, 3000)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading Performance Data...</span>
+      </div>
+    )
   }
 
-  const toggleCampaignExpanded = (campaignId: string) => {
-    setExpandedCampaigns(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(campaignId)) {
-        newSet.delete(campaignId)
-      } else {
-        newSet.add(campaignId)
-      }
-      return newSet
-    })
+  if (hasError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <div className="text-center">
+          <h3 className="text-lg font-medium">Performance Data Error</h3>
+          <p className="text-sm text-muted-foreground">Unable to connect to Meta Ads API. Please check your credentials.</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()} 
+            className="mt-2"
+            data-testid="button-retry-connection"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry Connection
+          </Button>
+        </div>
+      </div>
+    )
   }
 
-  const totalSignals = campaigns.reduce((count, campaign) => {
-    let signals = campaign.aiSignal ? 1 : 0
-    campaign.adSets?.forEach(adSet => {
-      if (adSet.aiSignal) signals++
-      adSet.ads?.forEach(ad => {
-        if (ad.aiSignal) signals++
-      })
-    })
-    return count + signals
-  }, 0)
+  if (adAccounts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <Building2 className="h-12 w-12 text-muted-foreground" />
+        <div className="text-center">
+          <h3 className="text-lg font-medium">No Ad Accounts Found</h3>
+          <p className="text-sm text-muted-foreground">Please check your Meta Ads API connection</p>
+        </div>
+      </div>
+    )
+  }
 
-  const highPrioritySignals = campaigns.reduce((count, campaign) => {
-    if (campaign.aiSignal?.priority === "high") count++
-    return count
-  }, 0) + weeklyObservations.filter(obs => obs.priority === "high").length
+  // Helper functions
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "scale": return <TrendingUp className="h-4 w-4 text-green-600" />
-      case "pause": return <Pause className="h-4 w-4 text-red-600" />
-      case "wait": return <Minus className="h-4 w-4 text-yellow-600" />
-      case "optimize": return <Settings className="h-4 w-4 text-blue-600" />
-      case "creative-refresh": return <RefreshCw className="h-4 w-4 text-purple-600" />
-      default: return <AlertTriangle className="h-4 w-4" />
-    }
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num)
   }
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case "scale": return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-300"
-      case "pause": return "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-300"
-      case "wait": return "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-300"
-      case "optimize": return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-300"
-      case "creative-refresh": return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/20 dark:text-purple-300"
-      default: return "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-300"
+      case 'scale': return 'bg-green-100 text-green-800 hover:bg-green-200'
+      case 'pause': return 'bg-red-100 text-red-800 hover:bg-red-200'
+      case 'optimize': return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+      case 'creative-refresh': return 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+      case 'wait': return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+      default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    }
+  }
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'scale': return <TrendingUp className="h-3 w-3" />
+      case 'pause': return <Pause className="h-3 w-3" />
+      case 'optimize': return <Settings className="h-3 w-3" />
+      case 'creative-refresh': return <RefreshCw className="h-3 w-3" />
+      case 'wait': return <Minus className="h-3 w-3" />
+      default: return <Info className="h-3 w-3" />
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-      case "medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
-      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
+      case 'high': return 'text-red-600'
+      case 'medium': return 'text-yellow-600'
+      case 'low': return 'text-green-600'
+      default: return 'text-gray-600'
     }
   }
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case "up": return <ArrowUp className="h-4 w-4 text-green-600" />
-      case "down": return <ArrowDown className="h-4 w-4 text-red-600" />
-      case "stable": return <Minus className="h-4 w-4 text-gray-600" />
-      default: return null
+  const toggleCampaignExpansion = (campaignId: string) => {
+    const newExpanded = new Set(expandedCampaigns)
+    if (newExpanded.has(campaignId)) {
+      newExpanded.delete(campaignId)
+    } else {
+      newExpanded.add(campaignId)
     }
+    setExpandedCampaigns(newExpanded)
   }
+
+  // Calculate high priority alerts count
+  const highPriorityAlerts = campaigns.reduce((acc, campaign) => {
+    return campaign.aiSignal?.priority === "high" ? acc + 1 : acc
+  }, 0) + weeklyObservations.filter(obs => obs.priority === "high").length
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6" data-testid="performance-agent-dashboard">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <BarChart3 className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Performance Agent</h1>
-            <p className="text-muted-foreground">Monitors your Meta ads performance and provides strategic recommendations to improve ROAS. Analyzes campaign data to identify winning creatives and suggests optimizations for scaling successful ads.</p>
-          </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Performance Agent</h1>
+          <p className="text-muted-foreground">AI-powered Meta Ads performance analysis and strategic insights</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
-            <SelectTrigger className="w-32">
+        <div className="flex items-center gap-3">
+          {/* Account Selector */}
+          <Select value={selectedAccount} onValueChange={setSelectedAccount} data-testid="select-ad-account">
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Ad Account" />
+            </SelectTrigger>
+            <SelectContent>
+              {adAccounts.map((account: any) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Date Range Selector */}
+          <Select value={dateRange} onValueChange={setDateRange} data-testid="select-date-range">
+            <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1d">Last 24h</SelectItem>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="last_7_days">Last 7 Days</SelectItem>
+              <SelectItem value="last_14_days">Last 14 Days</SelectItem>
+              <SelectItem value="last_30_days">Last 30 Days</SelectItem>
+              <SelectItem value="last_90_days">Last 90 Days</SelectItem>
             </SelectContent>
           </Select>
-          <Button 
-            onClick={runAnalysis}
-            disabled={isAnalyzing}
-            data-testid="button-run-analysis"
-          >
-            {isAnalyzing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-            {isAnalyzing ? "Analyzing..." : "Refresh AI Insights"}
-          </Button>
         </div>
       </div>
 
-      {/* Connection Status */}
-      <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <div>
-              <p className="font-medium text-green-800 dark:text-green-200">Meta Ads Manager Connected</p>
-              <p className="text-sm text-green-600 dark:text-green-300">Last sync: 2 minutes ago • 3 ad accounts • {accountMetrics.activeAds} active ads</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Account Overview */}
+      {accountMetrics && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Spend</p>
+                  <p className="text-2xl font-bold" data-testid="metric-total-spend">
+                    {formatCurrency(parseFloat(accountMetrics.spend || '0'))}
+                  </p>
+                </div>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                  <p className="text-2xl font-bold" data-testid="metric-total-revenue">
+                    {formatCurrency((parseFloat(accountMetrics.spend || '0') * parseFloat(accountMetrics.purchase_roas || '0')))}
+                  </p>
+                </div>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">ROAS</p>
+                  <p className="text-2xl font-bold" data-testid="metric-roas">
+                    {parseFloat(accountMetrics.purchase_roas || '0').toFixed(2)}x
+                  </p>
+                </div>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">High Priority Alerts</p>
+                  <p className="text-2xl font-bold text-red-600" data-testid="metric-alerts">
+                    {highPriorityAlerts}
+                  </p>
+                </div>
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Main Tabbed Interface */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="tab-overview">
-            <Brain className="h-4 w-4" />
-            Strategic Overview & AI Insights
-          </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2" data-testid="tab-account">
-            <Building2 className="h-4 w-4" />
-            Meta Ad Account Manager
-          </TabsTrigger>
+      {/* Main Content Tabs */}
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview" data-testid="tab-overview">Weekly Analysis</TabsTrigger>
+          <TabsTrigger value="campaigns" data-testid="tab-campaigns">Campaign Insights</TabsTrigger>
+          <TabsTrigger value="creative" data-testid="tab-creative">Creative Analysis</TabsTrigger>
         </TabsList>
 
-        {/* Overview & Insights Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Account Overview Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs flex items-center gap-1">
-                  Total Spend {getTrendIcon(accountMetrics.trend)}
-                </CardDescription>
-                <CardTitle className="text-xl font-bold">${accountMetrics.totalSpend.toLocaleString()}</CardTitle>
-                <p className="text-xs text-green-600">+{accountMetrics.periodComparison.spend}% vs last period</p>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs flex items-center gap-1">
-                  Total Revenue {getTrendIcon(accountMetrics.trend)}
-                </CardDescription>
-                <CardTitle className="text-xl font-bold">${accountMetrics.totalRevenue.toLocaleString()}</CardTitle>
-                <p className="text-xs text-green-600">+{accountMetrics.periodComparison.revenue}% vs last period</p>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">Overall ROAS</CardDescription>
-                <CardTitle className="text-xl font-bold">{accountMetrics.overallRoas}x</CardTitle>
-                <p className="text-xs text-green-600">+{accountMetrics.periodComparison.roas}% vs last period</p>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">CPM</CardDescription>
-                <CardTitle className="text-xl font-bold">${accountMetrics.overallCpm}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">CTR</CardDescription>
-                <CardTitle className="text-xl font-bold">{accountMetrics.overallCtr}%</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">CPC</CardDescription>
-                <CardTitle className="text-xl font-bold">${accountMetrics.overallCpc}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* AI Insights Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">Total AI Signals</CardDescription>
-                <CardTitle className="text-2xl font-bold text-purple-600">{totalSignals}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">High Priority</CardDescription>
-                <CardTitle className="text-2xl font-bold text-red-600">{highPrioritySignals}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">Weekly Observations</CardDescription>
-                <CardTitle className="text-2xl font-bold text-blue-600">{weeklyObservations.length}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* Top Observations of the Week */}
+        {/* Weekly Analysis Tab */}
+        <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Top Observations of the Week
+                <Brain className="h-5 w-5" />
+                AI Weekly Observations
               </CardTitle>
-              <CardDescription>AI-powered strategic insights from your account data</CardDescription>
+              <CardDescription>
+                Strategic insights from AI analysis of account performance patterns
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {weeklyObservations.map((observation) => (
-                  <div key={observation.id} className="border rounded-lg p-4 hover-elevate">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg">{observation.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{observation.observation}</p>
+                  <div key={observation.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h3 className="font-medium">{observation.title}</h3>
+                        <p className="text-sm text-muted-foreground">{observation.observation}</p>
                       </div>
-                      <div className="flex gap-2">
-                        <Badge className={getPriorityColor(observation.priority)}>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getPriorityColor(observation.priority) + " border-current"} variant="outline">
                           {observation.priority.toUpperCase()}
                         </Badge>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setSelectedObservation(observation)}
-                              data-testid={`button-view-observation-${observation.id}`}
-                            >
-                              <Info className="h-4 w-4 mr-1" />
-                              Details
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>{observation.title}</DialogTitle>
-                              <DialogDescription>Strategic Analysis from 8-Figure Media Buying Perspective</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="font-medium mb-2">Observation</h4>
-                                <p className="text-sm text-muted-foreground">{observation.observation}</p>
-                              </div>
-                              <div>
-                                <h4 className="font-medium mb-2">Key Findings</h4>
-                                <ul className="space-y-1">
-                                  {observation.keyFindings.map((finding, index) => (
-                                    <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                      <span className="text-blue-600 mt-1">•</span>
-                                      {finding}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                              <div>
-                                <h4 className="font-medium mb-2">Strategic Impact</h4>
-                                <p className="text-sm text-muted-foreground">{observation.impact}</p>
-                              </div>
-                              <div className="flex items-center gap-4 pt-2 border-t">
-                                <div className="text-center">
-                                  <p className="text-lg font-bold">{observation.confidence}%</p>
-                                  <p className="text-xs text-muted-foreground">Confidence</p>
-                                </div>
-                                <div className="text-center">
-                                  <Badge className={getPriorityColor(observation.priority)}>
-                                    {observation.priority.toUpperCase()} PRIORITY
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <span className="text-xs text-muted-foreground">{observation.confidence}% confidence</span>
                       </div>
                     </div>
-                    <div className="text-sm">
-                      <span className="font-medium text-blue-600">{observation.impact}</span>
-                      <span className="text-muted-foreground ml-2">• {observation.confidence}% confidence</span>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Key Findings:</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {observation.keyFindings.map((finding, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            {finding}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium text-primary">{observation.impact}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-
-          {/* Research Agent Strategic Recommendations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Research Agent Recommendations
-              </CardTitle>
-              <CardDescription>Strategic direction for next creative tests and campaign optimizations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <h4 className="font-semibold mb-2 text-purple-800 dark:text-purple-200">Next Creative Tests Priority</h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-600 mt-1">•</span>
-                      Test UGC-style videos with approved avatars to combat creative fatigue in carousel campaigns
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-600 mt-1">•</span>
-                      Scale exceptional lookalike audiences (1% high-LTV customers) with 3x budget increase
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-600 mt-1">•</span>
-                      Develop new transformation story angles for video campaigns with 14.5% hook rates
-                    </li>
-                  </ul>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-                    <h5 className="font-medium text-green-800 dark:text-green-200">Scale Opportunities</h5>
-                    <p className="text-sm text-green-600 dark:text-green-300 mt-1">2 campaigns ready for immediate scaling</p>
-                  </div>
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
-                    <h5 className="font-medium text-red-800 dark:text-red-200">Creative Refresh Needed</h5>
-                    <p className="text-sm text-red-600 dark:text-red-300 mt-1">1 campaign showing fatigue signals</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        {/* Ad Account Manager Tab */}
-        <TabsContent value="account" className="space-y-4">
+        {/* Campaign Insights Tab */}
+        <TabsContent value="campaigns" className="space-y-4">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Meta Ads Manager
-              </h2>
-              <p className="text-sm text-muted-foreground">Full ad account view with AI-powered recommendations</p>
-            </div>
-            
-            {campaigns.map((campaign) => (
-              <Card key={campaign.id} className="overflow-hidden" data-testid={`card-campaign-${campaign.id}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleCampaignExpanded(campaign.id)}
-                        data-testid={`button-expand-campaign-${campaign.id}`}
-                      >
-                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedCampaigns.has(campaign.id) ? 'rotate-90' : ''}`} />
-                      </Button>
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {campaign.campaignName}
-                          {campaign.status === "ACTIVE" ? 
-                            <Play className="h-4 w-4 text-green-600" /> : 
-                            <Pause className="h-4 w-4 text-gray-600" />
-                          }
-                        </CardTitle>
-                        <CardDescription>{campaign.objective} • {campaign.status}</CardDescription>
+            {campaigns.map((campaign: any) => (
+              <Card key={campaign.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-1">
+                      <h3 className="font-medium">{campaign.name}</h3>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{campaign.objective}</span>
+                        <Separator orientation="vertical" className="h-4" />
+                        <span>{campaign.status}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {campaign.aiSignal && (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="default"
-                              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
-                              onClick={() => setSelectedSignal(campaign.aiSignal)}
-                              data-testid={`button-view-signal-${campaign.id}`}
-                            >
+                            <Button variant="outline" size="sm" data-testid={`button-ai-insight-${campaign.id}`}>
                               {getActionIcon(campaign.aiSignal.action)}
-                              View AI Signal
-                              <Badge className="ml-2 bg-white/20 text-white border-0">
-                                {campaign.aiSignal.confidence}%
-                              </Badge>
+                              <span className="ml-1">AI Insight</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-4xl">
+                          <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle className="text-xl">AI Strategic Recommendation: {campaign.aiSignal.action.toUpperCase()}</DialogTitle>
-                              <DialogDescription>8-Figure Creative Strategist Analysis • Research Agent Intelligence</DialogDescription>
+                              <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
+                              <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-6">
-                              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                                <div>
-                                  <h4 className="font-medium mb-2">Campaign</h4>
-                                  <p className="text-sm text-muted-foreground">{campaign.campaignName}</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Recommended Action</h4>
-                                  <Badge className={getActionColor(campaign.aiSignal.action)}>
-                                    {getActionIcon(campaign.aiSignal.action)}
-                                    {campaign.aiSignal.action.toUpperCase()}
-                                  </Badge>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Strategic Priority</h4>
-                                  <Badge className={getPriorityColor(campaign.aiSignal.priority)}>
-                                    {campaign.aiSignal.priority.toUpperCase()}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <Separator />
+                            <div className="space-y-4">
                               <div>
-                                <h4 className="font-medium mb-3 flex items-center gap-2">
-                                  <Brain className="h-4 w-4" />
-                                  Strategic Reasoning
-                                </h4>
-                                <p className="text-sm text-muted-foreground leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                                  {campaign.aiSignal.reasoning}
-                                </p>
+                                <h4 className="font-medium mb-2">Recommendation</h4>
+                                <Badge className={getActionColor(campaign.aiSignal.action)}>
+                                  {getActionIcon(campaign.aiSignal.action)}
+                                  <span className="ml-1">{campaign.aiSignal.action.toUpperCase()}</span>
+                                </Badge>
                               </div>
                               <div>
-                                <h4 className="font-medium mb-3 flex items-center gap-2">
-                                  <Target className="h-4 w-4" />
-                                  8-Figure Strategist Analysis
-                                </h4>
-                                <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800">
-                                  <p className="text-sm text-muted-foreground leading-relaxed">{campaign.aiSignal.detailedAnalysis}</p>
-                                </div>
+                                <h4 className="font-medium mb-2">Analysis</h4>
+                                <p className="text-sm text-muted-foreground">{campaign.aiSignal.reasoning}</p>
                               </div>
-                              <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border">
+                              <div>
+                                <h4 className="font-medium mb-2">Detailed Strategy</h4>
+                                <p className="text-sm text-muted-foreground">{campaign.aiSignal.detailedAnalysis}</p>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 pt-2 border-t">
                                 <div className="text-center">
-                                  <p className="text-2xl font-bold text-green-600">{campaign.aiSignal.confidence}%</p>
-                                  <p className="text-xs text-muted-foreground">AI Confidence</p>
+                                  <p className="text-lg font-bold">{campaign.roas}x</p>
+                                  <p className="text-xs text-muted-foreground">Current ROAS</p>
                                 </div>
                                 <div className="text-center">
-                                  <Badge className={getPriorityColor(campaign.aiSignal.priority)}>
-                                    {campaign.aiSignal.priority.toUpperCase()} PRIORITY
-                                  </Badge>
+                                  <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
+                                  <p className="text-xs text-muted-foreground">Spend</p>
                                 </div>
                                 <div className="text-center">
-                                  <p className="text-sm font-medium">Research Agent</p>
-                                  <p className="text-xs text-muted-foreground">Strategic Direction</p>
+                                  <p className="text-lg font-bold">{campaign.aiSignal.confidence}%</p>
+                                  <p className="text-xs text-muted-foreground">Confidence</p>
                                 </div>
                               </div>
                             </div>
                           </DialogContent>
                         </Dialog>
                       )}
-                      <Badge className={`${getActionColor(campaign.aiSignal?.action || "wait")} text-sm`}>
-                        {getActionIcon(campaign.aiSignal?.action || "wait")}
-                        {campaign.aiSignal?.action.toUpperCase() || "NO SIGNAL"}
-                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleCampaignExpansion(campaign.id)}
+                        data-testid={`button-expand-${campaign.id}`}
+                      >
+                        <ChevronRight className={`h-4 w-4 transition-transform ${
+                          expandedCampaigns.has(campaign.id) ? 'rotate-90' : ''
+                        }`} />
+                      </Button>
                     </div>
                   </div>
-                </CardHeader>
 
-                <CardContent className="space-y-4">
-                  {/* Campaign Metrics */}
-                  <div className="grid grid-cols-6 gap-4 p-4 rounded-lg bg-muted/30 border">
-                    <div className="text-center">
-                      <p className="text-lg font-bold">${campaign.spend.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Spend</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">${campaign.revenue.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Revenue</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">{campaign.roas}x</p>
+                  <div className="grid grid-cols-5 gap-4 text-center">
+                    <div>
+                      <p className="text-lg font-bold">{campaign.roas?.toFixed(2)}x</p>
                       <p className="text-xs text-muted-foreground">ROAS</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">${campaign.cpm}</p>
+                    <div>
+                      <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
+                      <p className="text-xs text-muted-foreground">Spend</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">${campaign.cpm?.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">CPM</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">{campaign.ctr}%</p>
+                    <div>
+                      <p className="text-lg font-bold">{campaign.ctr?.toFixed(2)}%</p>
                       <p className="text-xs text-muted-foreground">CTR</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">{campaign.purchases}</p>
+                    <div>
+                      <p className="text-lg font-bold">{formatNumber(campaign.purchases || 0)}</p>
                       <p className="text-xs text-muted-foreground">Purchases</p>
                     </div>
                   </div>
-
-                  {/* Expanded Ad Sets and Ads */}
-                  {expandedCampaigns.has(campaign.id) && (
-                    <div className="space-y-3 pl-4 border-l-2 border-muted">
-                      <h4 className="font-medium text-sm text-muted-foreground">AD SETS</h4>
-                      {campaign.adSets?.map((adSet) => (
-                        <div key={adSet.id} className="border rounded-lg p-3 bg-muted/20">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <h5 className="font-medium">{adSet.adSetName}</h5>
-                              <p className="text-xs text-muted-foreground">{adSet.targeting}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {adSet.aiSignal && (
-                                <Badge className={getActionColor(adSet.aiSignal.action)}>
-                                  {getActionIcon(adSet.aiSignal.action)}
-                                  {adSet.aiSignal.action.toUpperCase()}
-                                </Badge>
-                              )}
-                              <p className="text-sm font-medium">{adSet.roas}x ROAS</p>
-                            </div>
-                          </div>
-                          
-                          {/* Ad Set Ads */}
-                          <div className="space-y-2 pl-4 border-l border-muted">
-                            <h6 className="font-medium text-xs text-muted-foreground">ADS</h6>
-                            {adSet.ads?.map((ad) => (
-                              <div key={ad.id} className="flex items-center justify-between p-2 rounded bg-background border">
-                                <div>
-                                  <p className="font-medium text-sm">{ad.adName}</p>
-                                  <p className="text-xs text-muted-foreground">{ad.creativeType}</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                  {ad.aiSignal && (
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                                          {getActionIcon(ad.aiSignal.action)}
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="max-w-2xl">
-                                        <DialogHeader>
-                                          <DialogTitle>Creative Analysis: {ad.adName}</DialogTitle>
-                                          <DialogDescription>AI Creative Performance Insights • Research Agent Feedback</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4">
-                                          <div>
-                                            <h4 className="font-medium mb-2">Recommendation</h4>
-                                            <Badge className={getActionColor(ad.aiSignal.action)}>
-                                              {getActionIcon(ad.aiSignal.action)}
-                                              {ad.aiSignal.action.toUpperCase()}
-                                            </Badge>
-                                          </div>
-                                          <div>
-                                            <h4 className="font-medium mb-2">Analysis</h4>
-                                            <p className="text-sm text-muted-foreground">{ad.aiSignal.reasoning}</p>
-                                          </div>
-                                          {ad.aiSignal.creativeInsight && (
-                                            <div>
-                                              <h4 className="font-medium mb-2">Creative Insight</h4>
-                                              <p className="text-sm text-muted-foreground">{ad.aiSignal.creativeInsight}</p>
-                                            </div>
-                                          )}
-                                          <div className="grid grid-cols-3 gap-4 pt-2 border-t">
-                                            <div className="text-center">
-                                              <p className="text-lg font-bold">{ad.roas}x</p>
-                                              <p className="text-xs text-muted-foreground">ROAS</p>
-                                            </div>
-                                            {ad.hookRate && (
-                                              <div className="text-center">
-                                                <p className="text-lg font-bold">{ad.hookRate}%</p>
-                                                <p className="text-xs text-muted-foreground">Hook Rate</p>
-                                              </div>
-                                            )}
-                                            <div className="text-center">
-                                              <p className="text-lg font-bold">{ad.aiSignal.confidence}%</p>
-                                              <p className="text-xs text-muted-foreground">Confidence</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                  )}
-                                  <p className="font-medium">{ad.roas}x</p>
-                                  {ad.hookRate && <p className="text-xs text-muted-foreground">HR: {ad.hookRate}%</p>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Creative Analysis Tab */}
+        <TabsContent value="creative" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Creative Performance Analysis</CardTitle>
+              <CardDescription>
+                AI-driven insights on creative performance and optimization opportunities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Creative Analysis Coming Soon</h3>
+                <p className="text-sm text-muted-foreground">
+                  Advanced creative performance insights and hook rate analysis will be available here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
