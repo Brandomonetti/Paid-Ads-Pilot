@@ -95,6 +95,8 @@ export async function startMetaOAuth(req: Request, res: Response) {
     const brokerRedirectUri = process.env.OAUTH_BROKER_URL 
       ? `${process.env.OAUTH_BROKER_URL}/meta/callback`
       : `${req.protocol}://${req.get('host')}/api/oauth-broker/meta/callback`;
+      
+    console.log('🔗 OAuth Broker Redirect URI:', brokerRedirectUri);
 
     // Create signed state with link session ID
     const stateData = JSON.stringify({ 
