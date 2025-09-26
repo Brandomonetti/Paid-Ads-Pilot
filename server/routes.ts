@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateScript, generateAvatar } from "./openai-service";
+import { metaAdsService } from "./meta-ads-service";
+import { aiInsightsService } from "./ai-insights-service";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import {
   insertAvatarSchema,
@@ -435,6 +437,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Avatar generation error:", error);
       res.status(500).json({ 
         error: "Failed to generate avatar", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Meta Ads Performance Agent routes (protected)
+  app.get("/api/ad-accounts", isAuthenticated, async (req: any, res) => {
+    try {
+      const adAccounts = await metaAdsService.getAdAccounts();
+      res.json(adAccounts);
+    } catch (error) {
+      console.error("Error fetching ad accounts:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch ad accounts", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/account-insights/:adAccountId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { adAccountId } = req.params;
+      const { dateRange = 'last_30_days' } = req.query;
+      
+      const insights = await metaAdsService.getAccountInsights(adAccountId, dateRange as string);
+      const metrics = metaAdsService.calculateMetrics(insights);
+      
+      res.json({ ...insights, ...metrics });
+    } catch (error) {
+      console.error("Error fetching account insights:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch account insights", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/campaigns/:adAccountId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { adAccountId } = req.params;
+      const { dateRange = 'last_30_days' } = req.query;
+      
+      const campaigns = await metaAdsService.getCampaigns(adAccountId, dateRange as string);
+      
+      // Generate AI insights for each campaign
+      const campaignsWithInsights = await Promise.all(
+        campaigns.map(async (campaign) => {
+          const metrics = metaAdsService.calculateMetrics(campaign);
+          
+          try {
+            const aiInsight = await aiInsightsService.generateInsight({
+              entityType: 'campaign',
+              entityId: campaign.id,
+              entityName: campaign.name,
+              currentMetrics: {
+                spend: parseFloat(campaign.spend),
+                revenue: parseFloat(campaign.revenue || '0'),
+                roas: metrics.roas,
+                cpm: metrics.cpm,
+                ctr: metrics.ctr,
+                cpc: metrics.cpc,
+                impressions: parseInt(campaign.impressions),
+                clicks: parseInt(campaign.clicks),
+                purchases: parseInt(campaign.purchases || '0')
+              }
+            });
+
+            return {
+              ...campaign,
+              ...metrics,
+              aiSignal: {
+                action: aiInsight.action,
+                reasoning: aiInsight.reasoning,
+                confidence: aiInsight.confidence,
+                priority: aiInsight.priority,
+                detailedAnalysis: aiInsight.recommendation
+              }
+            };
+          } catch (aiError) {
+            console.error(`AI insight generation failed for campaign ${campaign.id}:`, aiError);
+            return { ...campaign, ...metrics };
+          }
+        })
+      );
+      
+      res.json(campaignsWithInsights);
+    } catch (error) {
+      console.error("Error fetching campaigns:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch campaigns", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/adsets/:adAccountId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { adAccountId } = req.params;
+      const { campaignId, dateRange = 'last_30_days' } = req.query;
+      
+      const adSets = await metaAdsService.getAdSets(
+        adAccountId, 
+        campaignId as string, 
+        dateRange as string
+      );
+      
+      // Generate AI insights for each ad set
+      const adSetsWithInsights = await Promise.all(
+        adSets.map(async (adSet) => {
+          const metrics = metaAdsService.calculateMetrics(adSet);
+          
+          try {
+            const aiInsight = await aiInsightsService.generateInsight({
+              entityType: 'adset',
+              entityId: adSet.id,
+              entityName: adSet.name,
+              currentMetrics: {
+                spend: parseFloat(adSet.spend),
+                revenue: parseFloat(adSet.revenue || '0'),
+                roas: metrics.roas,
+                cpm: metrics.cpm,
+                ctr: metrics.ctr,
+                cpc: metrics.cpc,
+                impressions: parseInt(adSet.impressions),
+                clicks: parseInt(adSet.clicks),
+                purchases: parseInt(adSet.purchases || '0')
+              }
+            });
+
+            return {
+              ...adSet,
+              ...metrics,
+              aiSignal: {
+                action: aiInsight.action,
+                reasoning: aiInsight.reasoning,
+                confidence: aiInsight.confidence
+              }
+            };
+          } catch (aiError) {
+            console.error(`AI insight generation failed for ad set ${adSet.id}:`, aiError);
+            return { ...adSet, ...metrics };
+          }
+        })
+      );
+      
+      res.json(adSetsWithInsights);
+    } catch (error) {
+      console.error("Error fetching ad sets:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch ad sets", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/ads/:adAccountId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { adAccountId } = req.params;
+      const { adSetId, dateRange = 'last_30_days' } = req.query;
+      
+      const ads = await metaAdsService.getAds(
+        adAccountId, 
+        adSetId as string, 
+        dateRange as string
+      );
+      
+      // Generate AI insights for each ad
+      const adsWithInsights = await Promise.all(
+        ads.map(async (ad) => {
+          const metrics = metaAdsService.calculateMetrics(ad);
+          
+          try {
+            const aiInsight = await aiInsightsService.generateInsight({
+              entityType: 'ad',
+              entityId: ad.id,
+              entityName: ad.name,
+              currentMetrics: {
+                spend: parseFloat(ad.spend),
+                revenue: parseFloat(ad.revenue || '0'),
+                roas: metrics.roas,
+                cpm: metrics.cpm,
+                ctr: metrics.ctr,
+                cpc: metrics.cpc,
+                impressions: parseInt(ad.impressions),
+                clicks: parseInt(ad.clicks),
+                purchases: parseInt(ad.purchases || '0'),
+                hookRate: metrics.hookRate,
+                thumbstopRate: metrics.thumbstopRate
+              }
+            });
+
+            return {
+              ...ad,
+              ...metrics,
+              creativeType: ad.creative?.object_type?.toUpperCase() || 'UNKNOWN',
+              aiSignal: {
+                action: aiInsight.action,
+                reasoning: aiInsight.reasoning,
+                confidence: aiInsight.confidence,
+                creativeInsight: aiInsight.recommendation
+              }
+            };
+          } catch (aiError) {
+            console.error(`AI insight generation failed for ad ${ad.id}:`, aiError);
+            return { 
+              ...ad, 
+              ...metrics,
+              creativeType: ad.creative?.object_type?.toUpperCase() || 'UNKNOWN'
+            };
+          }
+        })
+      );
+      
+      res.json(adsWithInsights);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch ads", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Weekly AI observations endpoint
+  app.get("/api/weekly-observations/:adAccountId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { adAccountId } = req.params;
+      
+      // Fetch comprehensive account data for analysis
+      const [campaigns, insights] = await Promise.all([
+        metaAdsService.getCampaigns(adAccountId, 'last_7_days'),
+        metaAdsService.getAccountInsights(adAccountId, 'last_7_days')
+      ]);
+
+      const observations = await aiInsightsService.generateWeeklyObservations([
+        { type: 'account', data: insights },
+        { type: 'campaigns', data: campaigns }
+      ]);
+      
+      res.json(observations);
+    } catch (error) {
+      console.error("Error generating weekly observations:", error);
+      res.status(500).json({ 
+        error: "Failed to generate weekly observations", 
         message: error instanceof Error ? error.message : "Unknown error"
       });
     }
