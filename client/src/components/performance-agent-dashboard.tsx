@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MetaConnectionCard } from "./meta-connection-card"
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Target, DollarSign,
   Eye, Zap, Pause, Play, Settings, ChevronRight, Calendar, Users, MessageSquare, 
@@ -78,7 +79,14 @@ export function PerformanceAgentDashboard() {
   // Fetch ad accounts
   const { data: adAccounts = [] as any[], isLoading: accountsLoading, error: accountsError } = useQuery({
     queryKey: ['/api/ad-accounts'],
-    enabled: true
+    enabled: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry if Meta account is not connected
+      if (error?.status === 401 || error?.requiresConnection) {
+        return false
+      }
+      return failureCount < 3
+    }
   })
 
   // Set first account as default when accounts load
@@ -181,6 +189,28 @@ export function PerformanceAgentDashboard() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry Connection
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if Meta account needs connection
+  const needsMetaConnection = accountsError?.status === 401 || accountsError?.requiresConnection;
+  
+  if (needsMetaConnection || (adAccounts.length === 0 && !accountsLoading && !hasError)) {
+    return (
+      <div className="space-y-6" data-testid="performance-agent-dashboard">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="text-page-title">Performance Agent</h1>
+            <p className="text-muted-foreground">AI-powered Meta Ads performance analysis and strategic insights</p>
+          </div>
+        </div>
+
+        {/* Meta Connection Required */}
+        <div className="max-w-2xl mx-auto">
+          <MetaConnectionCard />
         </div>
       </div>
     )

@@ -59,13 +59,26 @@ interface MetaAd {
 
 export class MetaAdsService {
   private baseUrl = 'https://graph.facebook.com/v19.0';
-  private accessToken: string;
 
   constructor() {
-    this.accessToken = process.env.META_ACCESS_TOKEN || '';
-    if (!this.accessToken) {
-      throw new Error('META_ACCESS_TOKEN environment variable is required');
+    // No longer requires global access token - uses user-specific tokens
+  }
+
+  // Set user access token for requests
+  setAccessToken(accessToken: string) {
+    if (!accessToken) {
+      throw new Error('User access token is required');
     }
+    return new MetaAdsServiceWithToken(accessToken);
+  }
+}
+
+class MetaAdsServiceWithToken {
+  private baseUrl = 'https://graph.facebook.com/v19.0';
+  private accessToken: string;
+
+  constructor(accessToken: string) {
+    this.accessToken = accessToken;
   }
 
   private async makeRequest(endpoint: string, params: Record<string, string> = {}) {
@@ -328,3 +341,6 @@ export class MetaAdsService {
 }
 
 export const metaAdsService = new MetaAdsService();
+
+// For backward compatibility with existing code
+export { MetaAdsServiceWithToken };

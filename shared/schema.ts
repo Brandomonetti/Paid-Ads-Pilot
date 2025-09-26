@@ -23,6 +23,9 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  metaAccessToken: text("meta_access_token"), // User's Meta Ads access token
+  metaAccountId: text("meta_account_id"), // User's primary Meta account ID
+  metaConnectedAt: timestamp("meta_connected_at"), // When Meta was connected
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { generateScript, generateAvatar } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
+import { metaOAuthService } from "./meta-oauth-service";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import {
   insertAvatarSchema,
@@ -36,6 +37,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Meta OAuth routes
+  app.get('/api/auth/meta/connect', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { url, state } = metaOAuthService.generateAuthUrl(userId);
+      
+      res.json({ 
+        authUrl: url,
+        instructions: "Visit this URL to connect your Meta Ads account"
+      });
+    } catch (error) {
+      console.error("Error generating Meta auth URL:", error);
+      res.status(500).json({ error: "Failed to generate authorization URL" });
+    }
+  });
+
+  app.get('/api/auth/meta/callback', async (req: any, res) => {
+    try {
+      const { code, state, error } = req.query;
+      
+      if (error) {
+        return res.redirect(`/?error=meta_auth_failed&reason=${encodeURIComponent(error)}`);
+      }
+      
+      if (!code || !state) {
+        return res.redirect('/?error=meta_auth_failed&reason=missing_parameters');
+      }
+      
+      // Exchange code for token and get user data
+      const { accessToken, userData, userId } = await metaOAuthService.exchangeCodeForToken(code as string, state as string);
+      
+      // Update user with Meta access token and account info
+      await storage.upsertUser({
+        id: userId,
+        metaAccessToken: accessToken,
+        metaAccountId: userData.id,
+        metaConnectedAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      // Redirect to success page
+      res.redirect('/?success=meta_connected');
+      
+    } catch (error) {
+      console.error("Meta OAuth callback error:", error);
+      res.redirect('/?error=meta_auth_failed&reason=callback_error');
+    }
+  });
+
+  app.post('/api/auth/meta/disconnect', isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Remove Meta access token from user account
+      await storage.upsertUser({
+        id: userId,
+        metaAccessToken: null,
+        metaAccountId: null,
+        metaConnectedAt: null,
+        updatedAt: new Date()
+      });
+      
+      res.json({ success: true, message: "Meta Ads account disconnected" });
+    } catch (error) {
+      console.error("Error disconnecting Meta account:", error);
+      res.status(500).json({ error: "Failed to disconnect Meta account" });
+    }
+  });
+
+  app.get('/api/auth/meta/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      const isConnected = !!(user?.metaAccessToken && user?.metaAccountId);
+      let isValid = false;
+      let accountsCount = 0;
+      
+      if (isConnected && user.metaAccessToken) {
+        // Validate token and get account count
+        try {
+          isValid = await metaOAuthService.validateToken(user.metaAccessToken);
+          if (isValid) {
+            const accounts = await metaOAuthService.getUserAdAccounts(user.metaAccessToken);
+            accountsCount = accounts.length;
+          }
+        } catch (error) {
+          console.error("Token validation error:", error);
+          isValid = false;
+        }
+      }
+      
+      res.json({
+        connected: isConnected,
+        valid: isValid,
+        connectedAt: user?.metaConnectedAt,
+        accountsCount
+      });
+    } catch (error) {
+      console.error("Error checking Meta auth status:", error);
+      res.status(500).json({ error: "Failed to check connection status" });
     }
   });
   // Avatar routes (protected)
@@ -445,7 +550,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Meta Ads Performance Agent routes (protected)
   app.get("/api/ad-accounts", isAuthenticated, async (req: any, res) => {
     try {
-      const adAccounts = await metaAdsService.getAdAccounts();
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
+      const adAccounts = await userMetaService.getAdAccounts();
       res.json(adAccounts);
     } catch (error) {
       console.error("Error fetching ad accounts:", error);
@@ -458,11 +574,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/account-insights/:adAccountId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.metaAccessToken) {
+        return res.status(401).json({ 
+          error: "Meta Ads account not connected", 
+          requiresConnection: true 
+        });
+      }
+      
       const { adAccountId } = req.params;
       const { dateRange = 'last_30_days' } = req.query;
       
-      const insights = await metaAdsService.getAccountInsights(adAccountId, dateRange as string);
-      const metrics = metaAdsService.calculateMetrics(insights);
+      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
+      const insights = await userMetaService.getAccountInsights(adAccountId, dateRange as string);
+      const metrics = userMetaService.calculateMetrics(insights);
       
       res.json({ ...insights, ...metrics });
     } catch (error) {
