@@ -47,13 +47,16 @@ export class MetaOAuthService {
   /**
    * Generate authorization URL with CSRF protection
    */
-  generateAuthUrl(userId: string): { url: string; state: string } {
+  generateAuthUrl(redirectUri?: string): { url: string; state: string } {
+    // Use provided redirectUri or fall back to config default
+    const finalRedirectUri = redirectUri || this.config.redirectUri;
+    
     // Generate secure state parameter for CSRF protection
-    const state = this.generateState(userId);
+    const state = this.generateState();
     
     const params = new URLSearchParams({
       client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
+      redirect_uri: finalRedirectUri,
       scope: this.config.scopes.join(','),
       response_type: 'code',
       state: state,
@@ -67,16 +70,12 @@ export class MetaOAuthService {
   /**
    * Exchange authorization code for access token
    */
-  async exchangeCodeForToken(code: string, state: string): Promise<{
+  async exchangeCodeForToken(code: string, redirectUri?: string): Promise<{
     accessToken: string;
     userData: MetaUserData;
-    userId: string;
   }> {
-    // Verify state parameter
-    const userId = this.verifyState(state);
-    if (!userId) {
-      throw new Error('Invalid state parameter - CSRF check failed');
-    }
+    // Use provided redirectUri or fall back to config default
+    const finalRedirectUri = redirectUri || this.config.redirectUri;
 
     try {
       // Exchange code for access token
@@ -84,7 +83,7 @@ export class MetaOAuthService {
         params: {
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
-          redirect_uri: this.config.redirectUri,
+          redirect_uri: finalRedirectUri,
           code: code
         }
       });
@@ -107,8 +106,7 @@ export class MetaOAuthService {
 
       return {
         accessToken: tokenData.access_token,
-        userData,
-        userId
+        userData
       };
 
     } catch (error: any) {
@@ -155,36 +153,11 @@ export class MetaOAuthService {
   }
 
   /**
-   * Generate secure state parameter
+   * Generate cryptographically secure state parameter
    */
-  private generateState(userId: string): string {
-    const timestamp = Date.now().toString();
-    const randomData = randomBytes(16).toString('hex');
-    const data = `${userId}:${timestamp}:${randomData}`;
-    
-    // In production, you'd want to encrypt this or use JWT
-    return Buffer.from(data).toString('base64url');
-  }
-
-  /**
-   * Verify and extract user ID from state parameter
-   */
-  private verifyState(state: string): string | null {
-    try {
-      const data = Buffer.from(state, 'base64url').toString('utf8');
-      const [userId, timestamp, randomData] = data.split(':');
-      
-      // Check if state is not too old (10 minutes)
-      const stateAge = Date.now() - parseInt(timestamp);
-      if (stateAge > 10 * 60 * 1000) {
-        throw new Error('State parameter expired');
-      }
-
-      return userId;
-    } catch (error) {
-      console.error('State verification failed:', error);
-      return null;
-    }
+  private generateState(): string {
+    // Generate cryptographically secure random state
+    return randomBytes(32).toString('base64url');
   }
 }
 

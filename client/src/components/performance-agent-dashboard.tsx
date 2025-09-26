@@ -159,9 +159,13 @@ export function PerformanceAgentDashboard() {
     }
   ]
 
+  // Check if Meta account needs connection first (before generic error handling)
+  const needsMetaConnection = accountsError?.status === 401 || accountsError?.requiresConnection;
+  
   // Loading and error states
   const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
-  const hasError = accountsError || metricsError || campaignsError || observationsError
+  // Exclude 401 account errors from generic error handling
+  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError || observationsError
 
   if (isLoading) {
     return (
@@ -172,31 +176,6 @@ export function PerformanceAgentDashboard() {
     )
   }
 
-  if (hasError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <AlertTriangle className="h-12 w-12 text-destructive" />
-        <div className="text-center">
-          <h3 className="text-lg font-medium">Performance Data Error</h3>
-          <p className="text-sm text-muted-foreground">Unable to connect to Meta Ads API. Please check your credentials.</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => window.location.reload()} 
-            className="mt-2"
-            data-testid="button-retry-connection"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry Connection
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Check if Meta account needs connection
-  const needsMetaConnection = accountsError?.status === 401 || accountsError?.requiresConnection;
-  
   if (needsMetaConnection || (adAccounts.length === 0 && !accountsLoading && !hasError)) {
     return (
       <div className="space-y-6" data-testid="performance-agent-dashboard">
@@ -211,6 +190,28 @@ export function PerformanceAgentDashboard() {
         {/* Meta Connection Required */}
         <div className="max-w-2xl mx-auto">
           <MetaConnectionCard />
+        </div>
+      </div>
+    )
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <div className="text-center">
+          <h3 className="text-lg font-medium">Performance Data Error</h3>
+          <p className="text-sm text-muted-foreground">Unable to load performance data. Please try again.</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()} 
+            className="mt-2"
+            data-testid="button-retry-connection"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry Connection
+          </Button>
         </div>
       </div>
     )

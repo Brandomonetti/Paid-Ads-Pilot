@@ -43,11 +43,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Meta OAuth routes
   app.get('/api/auth/meta/connect', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const { url, state } = metaOAuthService.generateAuthUrl(userId);
+      // Validate redirect URI against allowlist
+      const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/auth/meta/callback`;
+      
+      // Basic validation - in production you'd have an allowlist
+      if (!redirectUri.includes('.repl.co') && !redirectUri.includes('localhost')) {
+        throw new Error('Invalid redirect URI host');
+      }
+      
+      const { url, state } = metaOAuthService.generateAuthUrl(redirectUri);
+      
+      // Store state and redirectUri in session for secure verification
+      req.session.metaOAuthState = state;
+      req.session.metaOAuthRedirectUri = redirectUri;
       
       res.json({ 
         authUrl: url,
+        redirectUri: redirectUri, // Include for debugging
         instructions: "Visit this URL to connect your Meta Ads account"
       });
     } catch (error) {
@@ -56,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/auth/meta/callback', async (req: any, res) => {
+  app.get('/api/auth/meta/callback', isAuthenticated, async (req: any, res) => {
     try {
       const { code, state, error } = req.query;
       
@@ -68,8 +82,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect('/?error=meta_auth_failed&reason=missing_parameters');
       }
       
+      // Critical security check: Verify state matches session-stored state
+      const sessionState = req.session.metaOAuthState;
+      const sessionRedirectUri = req.session.metaOAuthRedirectUri;
+      
+      if (!sessionState || state !== sessionState) {
+        console.error('OAuth state mismatch - potential CSRF attack');
+        return res.redirect('/?error=meta_auth_failed&reason=invalid_state');
+      }
+      
+      // Get user ID from authenticated session (not from state!)
+      const userId = req.user.claims.sub;
+      
       // Exchange code for token and get user data
-      const { accessToken, userData, userId } = await metaOAuthService.exchangeCodeForToken(code as string, state as string);
+      const { accessToken, userData } = await metaOAuthService.exchangeCodeForToken(code as string, sessionRedirectUri);
       
       // Update user with Meta access token and account info
       await storage.upsertUser({
@@ -79,6 +105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metaConnectedAt: new Date(),
         updatedAt: new Date()
       });
+      
+      // Clean up session data
+      delete req.session.metaOAuthState;
+      delete req.session.metaOAuthRedirectUri;
       
       // Redirect to success page
       res.redirect('/?success=meta_connected');
