@@ -238,7 +238,7 @@ class MetaAdsServiceWithToken {
 
     const insightsResponse = await this.makeRequest(`/${adAccountId}/insights`, {
       level: 'ad',
-      fields: 'ad_id,spend,impressions,clicks,actions,action_values,purchase_roas,video_avg_percent_watched_actions,video_thruplay_watched_actions,cpm,ctr,cpc',
+      fields: 'ad_id,spend,impressions,clicks,actions,action_values,purchase_roas,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,cpm,ctr,cpc',
       action_breakdowns: 'action_type',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       filtering: JSON.stringify([{
@@ -260,8 +260,11 @@ class MetaAdsServiceWithToken {
         actions: insights?.actions || [],
         purchases: this.extractPurchases(insights?.actions || []),
         revenue: this.extractPurchaseValue(insights?.action_values || [], insights?.purchase_roas, insights?.spend),
-        video_avg_percent_watched_actions: insights?.video_avg_percent_watched_actions,
-        video_thruplay_watched_actions: insights?.video_thruplay_watched_actions
+        video_play_actions: insights?.video_play_actions,
+        video_p25_watched_actions: insights?.video_p25_watched_actions,
+        video_p50_watched_actions: insights?.video_p50_watched_actions,
+        video_p75_watched_actions: insights?.video_p75_watched_actions,
+        video_p100_watched_actions: insights?.video_p100_watched_actions
       };
     });
 
@@ -351,16 +354,17 @@ class MetaAdsServiceWithToken {
   }
 
   private calculateHookRate(data: any): number {
-    // Hook rate = 3-second video views / impressions
-    const videoViews = data.video_thruplay_watched_actions?.[0]?.value || 0;
+    // Hook rate = 3-second video views (P25) / impressions
+    const videoP25Views = data.video_p25_watched_actions?.[0]?.value || 0;
     const impressions = parseInt(data.impressions || '0');
-    return impressions > 0 ? (videoViews / impressions * 100) : 0;
+    return impressions > 0 ? (parseInt(videoP25Views) / impressions * 100) : 0;
   }
 
   private calculateThumbstopRate(data: any): number {
-    // Thumbstop rate = average watch time percentage
-    const avgWatchPercent = data.video_avg_percent_watched_actions?.[0]?.value || 0;
-    return parseFloat(avgWatchPercent) || 0;
+    // Thumbstop rate = video plays / impressions
+    const videoPlays = data.video_play_actions?.[0]?.value || 0;
+    const impressions = parseInt(data.impressions || '0');
+    return impressions > 0 ? (parseInt(videoPlays) / impressions * 100) : 0;
   }
 
   // Extract purchase count from actions array

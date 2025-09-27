@@ -45,12 +45,11 @@ interface WeeklyObservation {
   confidence: number
 }
 
-// Campaign with AI Insights
-interface CampaignWithInsights {
+// Base metrics interface
+interface BaseMetrics {
   id: string
   name: string
   status: "ACTIVE" | "PAUSED" | "PENDING"
-  objective: string
   spend: number
   revenue: number
   roas: number
@@ -61,20 +60,81 @@ interface CampaignWithInsights {
   clicks: number
   purchases: number
   trend: "up" | "down" | "stable"
-  aiSignal?: {
-    action: "scale" | "pause" | "wait" | "optimize" | "creative-refresh"
-    reasoning: string
-    confidence: number
-    priority: "high" | "medium" | "low"
-    detailedAnalysis: string
-  }
+}
+
+// AI Signal interface
+interface AISignal {
+  action: "scale" | "pause" | "wait" | "optimize" | "creative-refresh"
+  reasoning: string
+  confidence: number
+  priority: "high" | "medium" | "low"
+  detailedAnalysis: string
+}
+
+// Campaign with AI Insights
+interface CampaignWithInsights extends BaseMetrics {
+  objective: string
+  daily_budget?: number
+  lifetime_budget?: number
+  aiSignal?: AISignal
+  adSets?: AdSetWithInsights[]
+}
+
+// Ad Set with AI Insights  
+interface AdSetWithInsights extends BaseMetrics {
+  campaign_id: string
+  targeting: any
+  daily_budget?: number
+  bid_strategy?: string
+  aiSignal?: AISignal
+  ads?: AdWithInsights[]
+}
+
+// Ad with AI Insights
+interface AdWithInsights extends BaseMetrics {
+  adset_id: string
+  creative_type: string
+  creative_url?: string
+  ad_copy?: string
+  headline?: string
+  description?: string
+  hook_rate?: number
+  thumbstop_rate?: number
+  aiSignal?: AISignal
+}
+
+// Filter and view types
+type ViewType = "all_ads" | "value_reporting" | "had_delivery" | "active_ads" | "paused_ads" | "top_spenders"
+type SortField = "name" | "spend" | "revenue" | "roas" | "cpm" | "ctr" | "purchases" | "status"
+type SortDirection = "asc" | "desc"
+
+// Hierarchical entity type
+type HierarchyLevel = "campaign" | "adset" | "ad"
+
+interface HierarchicalEntity extends BaseMetrics {
+  level: HierarchyLevel
+  campaign_id?: string
+  adset_id?: string
+  objective?: string
+  creative_type?: string
+  children?: HierarchicalEntity[]
+  expanded?: boolean
+  aiSignal?: AISignal
 }
 
 export function PerformanceAgentDashboard() {
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [dateRange, setDateRange] = useState<string>("last_30_days")
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
+  const [expandedAdSets, setExpandedAdSets] = useState<Set<string>>(new Set())
   const [selectedTab, setSelectedTab] = useState("overview")
+  
+  // New state for Meta Ads Manager-like functionality
+  const [currentView, setCurrentView] = useState<ViewType>("all_ads")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortField, setSortField] = useState<SortField>("spend")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [showHierarchy, setShowHierarchy] = useState(true)
 
   // Fetch ad accounts
   const { data: adAccounts = [], isLoading: accountsLoading, error: accountsError } = useQuery({
@@ -120,6 +180,26 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
+  // Fetch ad sets for the selected account
+  const { data: adSetsData = [], isLoading: adSetsLoading, error: adSetsError } = useQuery({
+    queryKey: [`/api/adsets/${selectedAccount}?dateRange=${dateRange}`],
+    enabled: !!selectedAccount && showHierarchy
+  }) as {
+    data: AdSetWithInsights[];
+    isLoading: boolean;
+    error: any;
+  }
+
+  // Fetch ads for the selected account
+  const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
+    queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}`],
+    enabled: !!selectedAccount && showHierarchy
+  }) as {
+    data: AdWithInsights[];
+    isLoading: boolean;
+    error: any;
+  }
+
   // Fetch weekly observations
   const { data: weeklyObservationsData = [], isLoading: observationsLoading, error: observationsError } = useQuery({
     queryKey: [`/api/weekly-observations/${selectedAccount}`],
@@ -130,7 +210,127 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
+  // Helper functions for data processing
+  const buildHierarchicalData = (): HierarchicalEntity[] => {
+    if (!campaignsData) return []
+
+    return campaignsData.map(campaign => {
+      const campaignEntity: HierarchicalEntity = {
+        ...campaign,
+        level: 'campaign',
+        expanded: expandedCampaigns.has(campaign.id),
+        children: []
+      }
+
+      // Add ad sets for this campaign
+      if (adSetsData && showHierarchy) {
+        const campaignAdSets = adSetsData.filter(adSet => adSet.campaign_id === campaign.id)
+        campaignEntity.children = campaignAdSets.map(adSet => {
+          const adSetEntity: HierarchicalEntity = {
+            ...adSet,
+            level: 'adset',
+            campaign_id: campaign.id,
+            expanded: expandedAdSets.has(adSet.id),
+            children: []
+          }
+
+          // Add ads for this ad set
+          if (adsData) {
+            const adSetAds = adsData.filter(ad => ad.adset_id === adSet.id)
+            adSetEntity.children = adSetAds.map(ad => ({
+              ...ad,
+              level: 'ad' as HierarchyLevel,
+              campaign_id: campaign.id,
+              adset_id: adSet.id,
+              expanded: false,
+              children: []
+            }))
+          }
+
+          return adSetEntity
+        })
+      }
+
+      return campaignEntity
+    })
+  }
+
+  const flattenHierarchy = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
+    const result: HierarchicalEntity[] = []
+    
+    entities.forEach(entity => {
+      result.push(entity)
+      if (entity.expanded && entity.children) {
+        result.push(...flattenHierarchy(entity.children))
+      }
+    })
+    
+    return result
+  }
+
+  const filterEntities = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
+    let filtered = [...entities]
+
+    // Apply view filters
+    switch (currentView) {
+      case "active_ads":
+        filtered = filtered.filter(e => e.status === "ACTIVE")
+        break
+      case "paused_ads":
+        filtered = filtered.filter(e => e.status === "PAUSED")
+        break
+      case "had_delivery":
+        filtered = filtered.filter(e => e.impressions > 0)
+        break
+      case "top_spenders":
+        filtered = filtered.filter(e => e.spend > 100) // Top spenders with >$100 spend
+        break
+      case "value_reporting":
+        filtered = filtered.filter(e => e.purchases > 0 || e.revenue > 0)
+        break
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(e => 
+        e.name.toLowerCase().includes(query) ||
+        e.id.toLowerCase().includes(query) ||
+        e.objective?.toLowerCase().includes(query) ||
+        e.creative_type?.toLowerCase().includes(query)
+      )
+    }
+
+    return filtered
+  }
+
+  const sortEntities = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
+    return [...entities].sort((a, b) => {
+      let aVal: any = a[sortField]
+      let bVal: any = b[sortField]
+
+      // Handle numeric sorting
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'desc' ? bVal - aVal : aVal - bVal
+      }
+
+      // Handle string sorting
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortDirection === 'desc' 
+          ? bVal.localeCompare(aVal)
+          : aVal.localeCompare(bVal)
+      }
+
+      return 0
+    })
+  }
+
   // Process data
+  const hierarchicalData = buildHierarchicalData()
+  const flatData = showHierarchy ? flattenHierarchy(hierarchicalData) : hierarchicalData
+  const filteredData = filterEntities(flatData)  
+  const sortedData = sortEntities(filteredData)
+  
   const campaigns: CampaignWithInsights[] = campaignsData || []
   const weeklyObservations: WeeklyObservation[] = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
     // Fallback mock data when API doesn't return observations
@@ -185,11 +385,24 @@ export function PerformanceAgentDashboard() {
     );
   
   
+  // Helper functions for UI interactions
+  const toggleAdSetExpansion = (adSetId: string) => {
+    const newExpanded = new Set(expandedAdSets)
+    if (newExpanded.has(adSetId)) {
+      newExpanded.delete(adSetId)
+    } else {
+      newExpanded.add(adSetId)
+    }
+    setExpandedAdSets(newExpanded)
+  }
+
   // Loading and error states
-  const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading
+  const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading || 
+                    (showHierarchy && (adSetsLoading || adsLoading))
   // Exclude 401 account errors and observations errors from generic error handling
   // Observations are nice-to-have AI insights, not critical for core functionality
-  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError
+  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError || 
+                    (showHierarchy && (adSetsError || adsError))
 
   if (isLoading) {
     return (
