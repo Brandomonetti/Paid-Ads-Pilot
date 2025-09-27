@@ -585,109 +585,6 @@ export function PerformanceAgentDashboard() {
             {showHierarchy ? "Table View" : "Card View"}
           </Toggle>
         </div>
-
-        {/* Enhanced Filtering Bar */}
-        {showHierarchy && (
-          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Search Input */}
-              <div className="flex-1 min-w-[250px]">
-                <Input
-                  placeholder="Search campaigns, ad sets, ads..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full"
-                  data-testid="input-search"
-                />
-              </div>
-
-              {/* Quick Filter Buttons */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={currentView === "all_ads" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("all_ads")}
-                  data-testid="filter-all-ads"
-                >
-                  All Ads
-                </Button>
-                <Button
-                  variant={currentView === "active_ads" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("active_ads")}
-                  data-testid="filter-active-ads"
-                >
-                  Active
-                </Button>
-                <Button
-                  variant={currentView === "paused_ads" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("paused_ads")}
-                  data-testid="filter-paused-ads"
-                >
-                  Paused
-                </Button>
-                <Button
-                  variant={currentView === "had_delivery" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("had_delivery")}
-                  data-testid="filter-had-delivery"
-                >
-                  Had Delivery
-                </Button>
-                <Button
-                  variant={currentView === "top_spenders" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("top_spenders")}
-                  data-testid="filter-top-spenders"
-                >
-                  Top Spenders
-                </Button>
-                <Button
-                  variant={currentView === "value_reporting" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentView("value_reporting")}
-                  data-testid="filter-value-reporting"
-                >
-                  Value Reporting
-                </Button>
-              </div>
-            </div>
-
-            {/* Advanced Filters */}
-            <div className="flex items-center gap-4">
-              <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)} data-testid="select-sort-field">
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spend">Spend</SelectItem>
-                  <SelectItem value="impressions">Impressions</SelectItem>
-                  <SelectItem value="clicks">Clicks</SelectItem>
-                  <SelectItem value="ctr">CTR</SelectItem>
-                  <SelectItem value="cpm">CPM</SelectItem>
-                  <SelectItem value="cpc">CPC</SelectItem>
-                  <SelectItem value="purchases">Purchases</SelectItem>
-                  <SelectItem value="revenue">Revenue</SelectItem>
-                  <SelectItem value="roas">ROAS</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
-                data-testid="button-sort-direction"
-              >
-                {sortDirection === "asc" ? "↑" : "↓"} {sortDirection.toUpperCase()}
-              </Button>
-
-              <div className="text-sm text-muted-foreground">
-                {filteredData.length} of {flatData.length} items shown
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Account Overview */}
@@ -824,6 +721,110 @@ export function PerformanceAgentDashboard() {
                   Hierarchical view showing campaigns, ad sets, and ads with expandable rows
                 </CardDescription>
               </CardHeader>
+              
+              {/* Integrated Filtering Bar */}
+              <div className="px-6 pb-4 space-y-4 border-b">
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Search Input */}
+                  <div className="flex-1 min-w-[250px]">
+                    <Input
+                      placeholder="Search campaigns, ad sets, ads..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                      data-testid="input-search"
+                    />
+                  </div>
+
+                  {/* Quick Filter Buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={currentView === "all_ads" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("all_ads")}
+                      data-testid="filter-all-ads"
+                    >
+                      All Ads
+                    </Button>
+                    <Button
+                      variant={currentView === "active_ads" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("active_ads")}
+                      data-testid="filter-active-ads"
+                    >
+                      Active
+                    </Button>
+                    <Button
+                      variant={currentView === "paused_ads" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("paused_ads")}
+                      data-testid="filter-paused-ads"
+                    >
+                      Paused
+                    </Button>
+                    <Button
+                      variant={currentView === "had_delivery" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("had_delivery")}
+                      data-testid="filter-had-delivery"
+                    >
+                      Had Delivery
+                    </Button>
+                    <Button
+                      variant={currentView === "top_spenders" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("top_spenders")}
+                      data-testid="filter-top-spenders"
+                    >
+                      Top Spenders
+                    </Button>
+                    <Button
+                      variant={currentView === "value_reporting" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentView("value_reporting")}
+                      data-testid="filter-value-reporting"
+                    >
+                      Value Reporting
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Advanced Filters - Second Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)} data-testid="select-sort-field">
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="spend">Spend</SelectItem>
+                        <SelectItem value="impressions">Impressions</SelectItem>
+                        <SelectItem value="clicks">Clicks</SelectItem>
+                        <SelectItem value="ctr">CTR</SelectItem>
+                        <SelectItem value="cpm">CPM</SelectItem>
+                        <SelectItem value="cpc">CPC</SelectItem>
+                        <SelectItem value="purchases">Purchases</SelectItem>
+                        <SelectItem value="revenue">Revenue</SelectItem>
+                        <SelectItem value="roas">ROAS</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+                      data-testid="button-sort-direction"
+                    >
+                      {sortDirection === "asc" ? "↑" : "↓"} {sortDirection.toUpperCase()}
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    {filteredData.length} of {flatData.length} items shown
+                  </div>
+                </div>
+              </div>
+              
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
