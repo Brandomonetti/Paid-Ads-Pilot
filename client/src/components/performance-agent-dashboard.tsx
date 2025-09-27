@@ -273,15 +273,15 @@ export function PerformanceAgentDashboard() {
       case "campaigns": 
         return campaignsData
       case "adsets": 
-        // Show ad sets for selected campaigns, or all if none selected
+        // Only show ad sets for selected campaigns (hierarchical behavior)
         return selectedCampaignIds.size > 0 
           ? adSetsData.filter(adSet => selectedCampaignIds.has(adSet.campaign_id))
-          : adSetsData
+          : []
       case "ads": 
-        // Show ads for selected ad sets, or all if none selected
+        // Only show ads for selected ad sets (hierarchical behavior)
         return selectedAdSetIds.size > 0 
           ? adsData.filter(ad => selectedAdSetIds.has(ad.adset_id))
-          : adsData
+          : []
       default: return []
     }
   }
