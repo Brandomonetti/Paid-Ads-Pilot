@@ -272,7 +272,7 @@ export function PerformanceAgentDashboard() {
   // Level-based data fetching
   // Campaigns - always load when account is selected
   const { data: campaignsData = [], isLoading: campaignsLoading, error: campaignsError } = useQuery({
-    queryKey: ['/api/campaigns', selectedAccount, dateRange],
+    queryKey: [`/api/campaigns/${selectedAccount}?dateRange=${dateRange}`],
     enabled: !!selectedAccount
   }) as {
     data: CampaignWithInsights[];
@@ -282,7 +282,7 @@ export function PerformanceAgentDashboard() {
 
   // Ad Sets - load when campaign is selected and we're viewing adsets or ads
   const { data: adSetsData = [], isLoading: adSetsLoading, error: adSetsError } = useQuery({
-    queryKey: ['/api/adsets', selectedAccount, selectedCampaignId, dateRange],
+    queryKey: [`/api/adsets/${selectedAccount}?dateRange=${dateRange}`],
     enabled: !!selectedAccount && !!selectedCampaignId && (activeLevel === 'adsets' || activeLevel === 'ads')
   }) as {
     data: AdSetWithInsights[];
@@ -292,7 +292,7 @@ export function PerformanceAgentDashboard() {
 
   // Ads - load when ad set is selected and we're viewing ads
   const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
-    queryKey: ['/api/ads', selectedAccount, selectedAdSetId, dateRange],
+    queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}`],
     enabled: !!selectedAccount && !!selectedAdSetId && activeLevel === 'ads'
   }) as {
     data: AdWithInsights[];
