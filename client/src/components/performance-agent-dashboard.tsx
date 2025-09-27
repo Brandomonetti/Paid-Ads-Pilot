@@ -574,16 +574,6 @@ export function PerformanceAgentDashboard() {
               <SelectItem value="last_90_days">Last 90 Days</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* View Toggle */}
-          <Toggle 
-            pressed={showHierarchy} 
-            onPressedChange={setShowHierarchy}
-            aria-label="Toggle hierarchy view"
-            data-testid="toggle-hierarchy-view"
-          >
-            {showHierarchy ? "Table View" : "Card View"}
-          </Toggle>
         </div>
       </div>
 
@@ -709,6 +699,22 @@ export function PerformanceAgentDashboard() {
 
         {/* Campaign Insights Tab */}
         <TabsContent value="campaigns" className="space-y-4">
+          {/* View Toggle for Campaign Insights */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Campaign Performance</h3>
+              <p className="text-sm text-muted-foreground">Analyze your Meta ads performance across campaigns, ad sets, and ads</p>
+            </div>
+            <Toggle 
+              pressed={showHierarchy} 
+              onPressedChange={setShowHierarchy}
+              aria-label="Toggle hierarchy view"
+              data-testid="toggle-hierarchy-view"
+            >
+              {showHierarchy ? "Table View" : "Card View"}
+            </Toggle>
+          </div>
+          
           {showHierarchy ? (
             /* Meta Ads Manager-like Hierarchical Table View */
             <Card>
