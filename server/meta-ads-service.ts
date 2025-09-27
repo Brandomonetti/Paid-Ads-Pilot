@@ -379,20 +379,24 @@ class MetaAdsServiceWithToken {
 
   // Extract purchase value (revenue) from action_values array
   private extractPurchaseValue(actionValues: any[], fallbackPurchaseRoas?: any, spend?: string): string {
+    // Priority order to avoid double-counting the same conversion
     const purchaseActionTypes = [
-      'omni_purchase',
-      'purchase', 
-      'offsite_conversion.fb_pixel_purchase',
-      'onsite_conversion.purchase'
+      'omni_purchase',           // Meta's unified purchase tracking (highest priority)
+      'purchase',                // Standard purchase conversion
+      'offsite_conversion.fb_pixel_purchase',  // Facebook Pixel purchase
+      'onsite_conversion.purchase'  // On-site purchase tracking
     ];
     
     let totalRevenue = 0;
     
     // First try to get revenue from action_values
     if (actionValues && Array.isArray(actionValues) && actionValues.length > 0) {
-      for (const action of actionValues) {
-        if (purchaseActionTypes.includes(action.action_type)) {
-          totalRevenue += parseFloat(action.value || '0');
+      // Use the first available purchase action type to avoid double-counting
+      for (const actionType of purchaseActionTypes) {
+        const action = actionValues.find(a => a.action_type === actionType);
+        if (action && action.value) {
+          totalRevenue = parseFloat(action.value);
+          break; // Stop at first match to avoid double-counting
         }
       }
     }
@@ -403,10 +407,14 @@ class MetaAdsServiceWithToken {
       
       if (Array.isArray(fallbackPurchaseRoas)) {
         // purchase_roas as array (when action_breakdowns=action_type)
-        const purchaseRoasEntry = fallbackPurchaseRoas.find((entry: any) => 
-          entry.action_type && purchaseActionTypes.includes(entry.action_type)
-        );
-        roasValue = parseFloat(purchaseRoasEntry?.value || '0');
+        // Use same priority order for consistency
+        for (const actionType of purchaseActionTypes) {
+          const entry = fallbackPurchaseRoas.find((e: any) => e.action_type === actionType);
+          if (entry && entry.value) {
+            roasValue = parseFloat(entry.value);
+            break;
+          }
+        }
       } else if (typeof fallbackPurchaseRoas === 'string' || typeof fallbackPurchaseRoas === 'number') {
         // purchase_roas as string or number
         roasValue = parseFloat(fallbackPurchaseRoas.toString());
