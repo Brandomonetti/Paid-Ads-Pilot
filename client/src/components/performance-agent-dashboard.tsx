@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Checkbox } from "@/components/ui/checkbox"
 import { MetaConnectionCard } from "./meta-connection-card"
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Target, DollarSign,
@@ -130,6 +131,11 @@ export function PerformanceAgentDashboard() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(null)
   
+  // Selection state for checkbox filtering
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set())
+  const [selectedAdSetIds, setSelectedAdSetIds] = useState<Set<string>>(new Set())
+  const [selectedAdIds, setSelectedAdIds] = useState<Set<string>>(new Set())
+  
   // Per-level filter state
   const [campaignFilters, setCampaignFilters] = useState<LevelFilters>({
     search: "",
@@ -179,6 +185,9 @@ export function PerformanceAgentDashboard() {
     setActiveLevel("campaigns")
     setSelectedCampaignId(null)
     setSelectedAdSetId(null)
+    setSelectedCampaignIds(new Set())
+    setSelectedAdSetIds(new Set())
+    setSelectedAdIds(new Set())
   }, [selectedAccount, dateRange])
 
   // Navigation handlers
@@ -201,6 +210,37 @@ export function PerformanceAgentDashboard() {
     } else if (level === "adsets") {
       setSelectedAdSetId(null)
     }
+  }
+
+  // Selection toggle handlers for checkboxes
+  const toggleCampaignSelection = (campaignId: string) => {
+    const newSelection = new Set(selectedCampaignIds)
+    if (newSelection.has(campaignId)) {
+      newSelection.delete(campaignId)
+    } else {
+      newSelection.add(campaignId)
+    }
+    setSelectedCampaignIds(newSelection)
+  }
+
+  const toggleAdSetSelection = (adSetId: string) => {
+    const newSelection = new Set(selectedAdSetIds)
+    if (newSelection.has(adSetId)) {
+      newSelection.delete(adSetId)
+    } else {
+      newSelection.add(adSetId)
+    }
+    setSelectedAdSetIds(newSelection)
+  }
+
+  const toggleAdSelection = (adId: string) => {
+    const newSelection = new Set(selectedAdIds)
+    if (newSelection.has(adId)) {
+      newSelection.delete(adId)
+    } else {
+      newSelection.add(adId)
+    }
+    setSelectedAdIds(newSelection)
   }
 
   // Get current filters based on active level
@@ -227,12 +267,21 @@ export function PerformanceAgentDashboard() {
     }
   }
 
-  // Get current data based on active level
+  // Get current data based on active level and selections
   const getCurrentData = () => {
     switch (activeLevel) {
-      case "campaigns": return campaignsData
-      case "adsets": return adSetsData.filter(adSet => adSet.campaign_id === selectedCampaignId)
-      case "ads": return adsData.filter(ad => ad.adset_id === selectedAdSetId)
+      case "campaigns": 
+        return campaignsData
+      case "adsets": 
+        // Show ad sets for selected campaigns, or all if none selected
+        return selectedCampaignIds.size > 0 
+          ? adSetsData.filter(adSet => selectedCampaignIds.has(adSet.campaign_id))
+          : adSetsData
+      case "ads": 
+        // Show ads for selected ad sets, or all if none selected
+        return selectedAdSetIds.size > 0 
+          ? adsData.filter(ad => selectedAdSetIds.has(ad.adset_id))
+          : adsData
       default: return []
     }
   }
@@ -742,61 +791,15 @@ export function PerformanceAgentDashboard() {
             </Breadcrumb>
           </div>
 
-          {/* Meta Ads Manager 3-Tab Navigation */}
-          <Tabs value={activeLevel} onValueChange={(value) => setActiveLevel(value as ActiveLevel)} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger 
-                value="campaigns" 
-                data-testid="tab-meta-campaigns"
-                className="relative"
-              >
-                Campaigns
-                {campaignsData.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {campaignsData.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="adsets" 
-                disabled={!selectedCampaignId}
-                data-testid="tab-meta-adsets"
-                className="relative"
-              >
-                Ad Sets
-                {selectedCampaignId && adSetsData.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {adSetsData.filter(a => a.campaign_id === selectedCampaignId).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="ads" 
-                disabled={!selectedAdSetId}
-                data-testid="tab-meta-ads"
-                className="relative"
-              >
-                Ads
-                {selectedAdSetId && adsData.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {adsData.filter(a => a.adset_id === selectedAdSetId).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            {/* Level-based Table Content */}
-            <Card>
+          {/* Level-based Table Content with Tabs below filtering */}
+          <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  {activeLevel === 'campaigns' && 'Campaigns'}
-                  {activeLevel === 'adsets' && 'Ad Sets'}
-                  {activeLevel === 'ads' && 'Ads'}
+                  Meta Ads Manager
                 </CardTitle>
                 <CardDescription>
-                  {activeLevel === 'campaigns' && 'Select a campaign to view its ad sets'}
-                  {activeLevel === 'adsets' && 'Select an ad set to view its ads'}
-                  {activeLevel === 'ads' && 'View individual ad performance'}
+                  Use checkboxes to select campaigns/ad sets for filtering, or navigate freely between levels
                 </CardDescription>
               </CardHeader>
               
@@ -900,6 +903,50 @@ export function PerformanceAgentDashboard() {
                     {filteredData.length} items
                   </div>
                 </div>
+              </div>
+
+              {/* Meta Ads Manager 3-Tab Navigation - Moved below filtering */}
+              <div className="px-6 pt-4">
+                <Tabs value={activeLevel} onValueChange={(value) => setActiveLevel(value as ActiveLevel)}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger 
+                      value="campaigns" 
+                      data-testid="tab-meta-campaigns"
+                      className="relative"
+                    >
+                      Campaigns
+                      {campaignsData.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {campaignsData.length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="adsets" 
+                      data-testid="tab-meta-adsets"
+                      className="relative"
+                    >
+                      Ad Sets
+                      {adSetsData.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {getCurrentData().length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="ads" 
+                      data-testid="tab-meta-ads"
+                      className="relative"
+                    >
+                      Ads
+                      {adsData.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {getCurrentData().length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -1031,7 +1078,6 @@ export function PerformanceAgentDashboard() {
                 )}
               </CardContent>
             </Card>
-          </Tabs>
         </TabsContent>
 
         {/* Creative Analysis Tab */}
