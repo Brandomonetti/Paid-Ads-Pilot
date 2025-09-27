@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MetaConnectionCard } from "./meta-connection-card"
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Target, DollarSign,
-  Eye, Zap, Pause, Play, Settings, ChevronRight, Calendar, Users, MessageSquare, 
+  Eye, Zap, Pause, Play, Settings, Calendar, Users, MessageSquare, 
   ThumbsUp, ArrowUp, ArrowDown, Minus, Info, Brain, Building2, Home
 } from "lucide-react"
 
@@ -329,20 +329,20 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
-  // Ad Sets - load when campaign is selected and we're viewing adsets or ads
+  // Ad Sets - load when account is selected and we're viewing adsets or ads (supports free navigation)
   const { data: adSetsData = [], isLoading: adSetsLoading, error: adSetsError } = useQuery({
     queryKey: [`/api/adsets/${selectedAccount}?dateRange=${dateRange}`],
-    enabled: !!selectedAccount && !!selectedCampaignId && (activeLevel === 'adsets' || activeLevel === 'ads')
+    enabled: !!selectedAccount && (activeLevel === 'adsets' || activeLevel === 'ads')
   }) as {
     data: AdSetWithInsights[];
     isLoading: boolean;
     error: any;
   }
 
-  // Ads - load when ad set is selected and we're viewing ads
+  // Ads - load when account is selected and we're viewing ads (supports free navigation)
   const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
     queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}`],
-    enabled: !!selectedAccount && !!selectedAdSetId && activeLevel === 'ads'
+    enabled: !!selectedAccount && activeLevel === 'ads'
   }) as {
     data: AdWithInsights[];
     isLoading: boolean;
@@ -976,11 +976,15 @@ export function PerformanceAgentDashboard() {
                         <TableRow 
                           key={item.id}
                           className="hover:bg-muted/40 transition-colors cursor-pointer"
-                          onClick={() => {
+                          onClick={(e) => {
+                            // Prevent row click when clicking checkbox
+                            if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                              return;
+                            }
                             if (activeLevel === 'campaigns') {
-                              handleCampaignSelect(item.id)
+                              toggleCampaignSelection(item.id)
                             } else if (activeLevel === 'adsets') {
-                              handleAdSetSelect(item.id)
+                              toggleAdSetSelection(item.id)
                             }
                           }}
                           data-testid={`table-row-${activeLevel}-${item.id}`}
@@ -988,7 +992,21 @@ export function PerformanceAgentDashboard() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {(activeLevel === 'campaigns' || activeLevel === 'adsets') && (
-                                <ChevronRight className="h-3 w-3" />
+                                <Checkbox
+                                  checked={
+                                    activeLevel === 'campaigns' 
+                                      ? selectedCampaignIds.has(item.id)
+                                      : selectedAdSetIds.has(item.id)
+                                  }
+                                  onCheckedChange={() => {
+                                    if (activeLevel === 'campaigns') {
+                                      toggleCampaignSelection(item.id)
+                                    } else if (activeLevel === 'adsets') {
+                                      toggleAdSetSelection(item.id)
+                                    }
+                                  }}
+                                  data-testid={`checkbox-${activeLevel}-${item.id}`}
+                                />
                               )}
                               <div className="flex flex-col">
                                 <span className="font-medium text-sm">
