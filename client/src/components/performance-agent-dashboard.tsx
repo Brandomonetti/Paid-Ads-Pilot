@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Toggle } from "@/components/ui/toggle"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MetaConnectionCard } from "./meta-connection-card"
 import { 
@@ -257,13 +258,23 @@ export function PerformanceAgentDashboard() {
     })
   }
 
-  const flattenHierarchy = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
+  const flattenHierarchyWithExpansion = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
     const result: HierarchicalEntity[] = []
     
     entities.forEach(entity => {
+      // Always include the entity itself
       result.push(entity)
-      if (entity.expanded && entity.children) {
-        result.push(...flattenHierarchy(entity.children))
+      
+      // Only include children if parent is expanded
+      if (entity.level === 'campaign' && expandedCampaigns.has(entity.id) && entity.children) {
+        entity.children.forEach(child => {
+          result.push(child)
+          
+          // Only include ads if ad set is expanded
+          if (child.level === 'adset' && expandedAdSets.has(child.id) && child.children) {
+            result.push(...child.children)
+          }
+        })
       }
     })
     
@@ -329,7 +340,7 @@ export function PerformanceAgentDashboard() {
 
   // Process data
   const hierarchicalData = buildHierarchicalData()
-  const flatData = showHierarchy ? flattenHierarchy(hierarchicalData) : hierarchicalData
+  const flatData = showHierarchy ? flattenHierarchyWithExpansion(hierarchicalData) : hierarchicalData
   const filteredData = filterEntities(flatData)  
   const sortedData = sortEntities(filteredData)
   
@@ -801,106 +812,266 @@ export function PerformanceAgentDashboard() {
 
         {/* Campaign Insights Tab */}
         <TabsContent value="campaigns" className="space-y-4">
-          <div className="space-y-4">
-            {campaigns.map((campaign: CampaignWithInsights) => (
-              <Card key={campaign.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{campaign.name}</h3>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>{campaign.objective}</span>
-                        <Separator orientation="vertical" className="h-4" />
-                        <span>{campaign.status}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {campaign.aiSignal && (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" data-testid={`button-ai-insight-${campaign.id}`}>
-                              {getActionIcon(campaign.aiSignal.action)}
-                              <span className="ml-1">AI Insight</span>
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
-                              <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="font-medium mb-2">Recommendation</h4>
-                                <Badge className={getActionColor(campaign.aiSignal.action)}>
-                                  {getActionIcon(campaign.aiSignal.action)}
-                                  <span className="ml-1">{campaign.aiSignal.action.toUpperCase()}</span>
-                                </Badge>
-                              </div>
-                              <div>
-                                <h4 className="font-medium mb-2">Analysis</h4>
-                                <p className="text-sm text-muted-foreground">{campaign.aiSignal.reasoning}</p>
-                              </div>
-                              <div>
-                                <h4 className="font-medium mb-2">Detailed Strategy</h4>
-                                <p className="text-sm text-muted-foreground">{campaign.aiSignal.detailedAnalysis}</p>
-                              </div>
-                              <div className="grid grid-cols-3 gap-4 pt-2 border-t">
-                                <div className="text-center">
-                                  <p className="text-lg font-bold">{campaign.roas}x</p>
-                                  <p className="text-xs text-muted-foreground">Current ROAS</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
-                                  <p className="text-xs text-muted-foreground">Spend</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-lg font-bold">{campaign.aiSignal.confidence}%</p>
-                                  <p className="text-xs text-muted-foreground">Confidence</p>
-                                </div>
+          {showHierarchy ? (
+            /* Meta Ads Manager-like Hierarchical Table View */
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Meta Ads Performance Table
+                </CardTitle>
+                <CardDescription>
+                  Hierarchical view showing campaigns, ad sets, and ads with expandable rows
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-[300px]">Campaign / Ad Set / Ad</TableHead>
+                        <TableHead className="text-right">Status</TableHead>
+                        <TableHead className="text-right">Delivery</TableHead>
+                        <TableHead className="text-right">Spend</TableHead>
+                        <TableHead className="text-right">Impressions</TableHead>
+                        <TableHead className="text-right">Clicks</TableHead>
+                        <TableHead className="text-right">CTR</TableHead>
+                        <TableHead className="text-right">CPC</TableHead>
+                        <TableHead className="text-right">CPM</TableHead>
+                        <TableHead className="text-right">Purchases</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">ROAS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedData.map((entity) => (
+                        <TableRow 
+                          key={`${entity.level}-${entity.id}`}
+                          className={`
+                            ${entity.level === 'campaign' ? 'bg-background font-medium' : ''}
+                            ${entity.level === 'adset' ? 'bg-muted/20' : ''}
+                            ${entity.level === 'ad' ? 'bg-muted/10' : ''}
+                            hover:bg-muted/40 transition-colors
+                          `}
+                          data-testid={`table-row-${entity.level}-${entity.id}`}
+                        >
+                          <TableCell className={`
+                            ${entity.level === 'adset' ? 'pl-8' : ''}
+                            ${entity.level === 'ad' ? 'pl-16' : ''}
+                          `}>
+                            <div className="flex items-center gap-2">
+                              {entity.level === 'campaign' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => toggleCampaignExpansion(entity.id)}
+                                  data-testid={`button-expand-campaign-${entity.id}`}
+                                >
+                                  <ChevronRight className={`h-3 w-3 transition-transform ${
+                                    expandedCampaigns.has(entity.id) ? 'rotate-90' : ''
+                                  }`} />
+                                </Button>
+                              )}
+                              {entity.level === 'adset' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => toggleAdSetExpansion(entity.id)}
+                                  data-testid={`button-expand-adset-${entity.id}`}
+                                >
+                                  <ChevronRight className={`h-3 w-3 transition-transform ${
+                                    expandedAdSets.has(entity.id) ? 'rotate-90' : ''
+                                  }`} />
+                                </Button>
+                              )}
+                              <div className="flex flex-col">
+                                <span className={`
+                                  ${entity.level === 'campaign' ? 'font-semibold text-sm' : ''}
+                                  ${entity.level === 'adset' ? 'text-sm' : ''}
+                                  ${entity.level === 'ad' ? 'text-xs text-muted-foreground' : ''}
+                                `}>
+                                  {entity.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  ID: {entity.id}
+                                </span>
                               </div>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleCampaignExpansion(campaign.id)}
-                        data-testid={`button-expand-${campaign.id}`}
-                      >
-                        <ChevronRight className={`h-4 w-4 transition-transform ${
-                          expandedCampaigns.has(campaign.id) ? 'rotate-90' : ''
-                        }`} />
-                      </Button>
-                    </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={
+                              entity.status === 'ACTIVE' ? 'default' : 
+                              entity.status === 'PAUSED' ? 'secondary' : 'outline'
+                            }>
+                              {entity.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {entity.impressions > 0 ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                              )}
+                              <span className="text-xs">
+                                {entity.impressions > 0 ? 'Delivering' : 'No Delivery'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(entity.spend)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {entity.impressions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {entity.clicks.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {entity.ctr.toFixed(2)}%
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(entity.cpc)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(entity.cpm)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {entity.purchases.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(entity.revenue)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className={`font-mono text-sm ${
+                              entity.roas >= 3 ? 'text-green-600 font-semibold' :
+                              entity.roas >= 2 ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {entity.roas.toFixed(2)}x
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                {sortedData.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="font-medium text-lg mb-2">No data matches your filters</h3>
+                    <p className="text-muted-foreground text-sm max-w-md">
+                      Try adjusting your search terms or filter criteria to see campaign data.
+                    </p>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            /* Original Card-based Campaign View */
+            <div className="space-y-4">
+              {campaigns.map((campaign: CampaignWithInsights) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="space-y-1">
+                        <h3 className="font-medium">{campaign.name}</h3>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>{campaign.objective}</span>
+                          <Separator orientation="vertical" className="h-4" />
+                          <span>{campaign.status}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {campaign.aiSignal && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid={`button-ai-insight-${campaign.id}`}>
+                                {getActionIcon(campaign.aiSignal.action)}
+                                <span className="ml-1">AI Insight</span>
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
+                                <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">Recommendation</h4>
+                                  <Badge className={getActionColor(campaign.aiSignal.action)}>
+                                    {getActionIcon(campaign.aiSignal.action)}
+                                    <span className="ml-1">{campaign.aiSignal.action.toUpperCase()}</span>
+                                  </Badge>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium mb-2">Analysis</h4>
+                                  <p className="text-sm text-muted-foreground">{campaign.aiSignal.reasoning}</p>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium mb-2">Detailed Strategy</h4>
+                                  <p className="text-sm text-muted-foreground">{campaign.aiSignal.detailedAnalysis}</p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 pt-2 border-t">
+                                  <div className="text-center">
+                                    <p className="text-lg font-bold">{campaign.roas}x</p>
+                                    <p className="text-xs text-muted-foreground">Current ROAS</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
+                                    <p className="text-xs text-muted-foreground">Spend</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-lg font-bold">{campaign.aiSignal.confidence}%</p>
+                                    <p className="text-xs text-muted-foreground">Confidence</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleCampaignExpansion(campaign.id)}
+                          data-testid={`button-expand-${campaign.id}`}
+                        >
+                          <ChevronRight className={`h-4 w-4 transition-transform ${
+                            expandedCampaigns.has(campaign.id) ? 'rotate-90' : ''
+                          }`} />
+                        </Button>
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-5 gap-4 text-center">
-                    <div>
-                      <p className="text-lg font-bold">{campaign.roas?.toFixed(2)}x</p>
-                      <p className="text-xs text-muted-foreground">ROAS</p>
+                    <div className="grid grid-cols-5 gap-4 text-center">
+                      <div>
+                        <p className="text-lg font-bold">{campaign.roas?.toFixed(2)}x</p>
+                        <p className="text-xs text-muted-foreground">ROAS</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
+                        <p className="text-xs text-muted-foreground">Spend</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold">${campaign.cpm?.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">CPM</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold">{campaign.ctr?.toFixed(2)}%</p>
+                        <p className="text-xs text-muted-foreground">CTR</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold">{formatNumber(campaign.purchases || 0)}</p>
+                        <p className="text-xs text-muted-foreground">Purchases</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
-                      <p className="text-xs text-muted-foreground">Spend</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">${campaign.cpm?.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">CPM</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">{campaign.ctr?.toFixed(2)}%</p>
-                      <p className="text-xs text-muted-foreground">CTR</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">{formatNumber(campaign.purchases || 0)}</p>
-                      <p className="text-xs text-muted-foreground">Purchases</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Creative Analysis Tab */}
