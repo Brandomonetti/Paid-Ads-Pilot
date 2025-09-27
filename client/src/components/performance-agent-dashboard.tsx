@@ -7,14 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Toggle } from "@/components/ui/toggle"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { MetaConnectionCard } from "./meta-connection-card"
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Target, DollarSign,
   Eye, Zap, Pause, Play, Settings, ChevronRight, Calendar, Users, MessageSquare, 
-  ThumbsUp, ArrowUp, ArrowDown, Minus, Info, Brain, Building2
+  ThumbsUp, ArrowUp, ArrowDown, Minus, Info, Brain, Building2, Home
 } from "lucide-react"
 
 // Account Overview Metrics
@@ -110,34 +110,45 @@ interface AdWithInsights extends BaseMetrics {
 type ViewType = "all_ads" | "value_reporting" | "had_delivery" | "active_ads" | "paused_ads" | "top_spenders"
 type SortField = "name" | "spend" | "revenue" | "roas" | "cpm" | "ctr" | "purchases" | "status"
 type SortDirection = "asc" | "desc"
+type ActiveLevel = "campaigns" | "adsets" | "ads"
 
-// Hierarchical entity type
-type HierarchyLevel = "campaign" | "adset" | "ad"
-
-interface HierarchicalEntity extends BaseMetrics {
-  level: HierarchyLevel
-  campaign_id?: string
-  adset_id?: string
-  objective?: string
-  creative_type?: string
-  children?: HierarchicalEntity[]
-  expanded?: boolean
-  aiSignal?: AISignal
+// Per-level filter state
+interface LevelFilters {
+  search: string
+  view: ViewType
+  sortField: SortField
+  sortDirection: SortDirection
 }
 
 export function PerformanceAgentDashboard() {
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [dateRange, setDateRange] = useState<string>("last_30_days")
-  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
-  const [expandedAdSets, setExpandedAdSets] = useState<Set<string>>(new Set())
   const [selectedTab, setSelectedTab] = useState("overview")
   
-  // New state for Meta Ads Manager-like functionality
-  const [currentView, setCurrentView] = useState<ViewType>("all_ads")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortField, setSortField] = useState<SortField>("spend")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [showHierarchy, setShowHierarchy] = useState(true)
+  // 3-tab drill-down state
+  const [activeLevel, setActiveLevel] = useState<ActiveLevel>("campaigns")
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
+  const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(null)
+  
+  // Per-level filter state
+  const [campaignFilters, setCampaignFilters] = useState<LevelFilters>({
+    search: "",
+    view: "all_ads",
+    sortField: "spend",
+    sortDirection: "desc"
+  })
+  const [adSetFilters, setAdSetFilters] = useState<LevelFilters>({
+    search: "",
+    view: "all_ads",
+    sortField: "spend",
+    sortDirection: "desc"
+  })
+  const [adFilters, setAdFilters] = useState<LevelFilters>({
+    search: "",
+    view: "all_ads",
+    sortField: "spend",
+    sortDirection: "desc"
+  })
 
   // Fetch ad accounts
   const { data: adAccounts = [], isLoading: accountsLoading, error: accountsError } = useQuery({
@@ -163,6 +174,91 @@ export function PerformanceAgentDashboard() {
     }
   }, [adAccounts, selectedAccount])
 
+  // Reset selections when account or date range changes
+  useEffect(() => {
+    setActiveLevel("campaigns")
+    setSelectedCampaignId(null)
+    setSelectedAdSetId(null)
+  }, [selectedAccount, dateRange])
+
+  // Navigation handlers
+  const handleCampaignSelect = (campaignId: string) => {
+    setSelectedCampaignId(campaignId)
+    setSelectedAdSetId(null) // Clear ad set selection
+    setActiveLevel("adsets")
+  }
+
+  const handleAdSetSelect = (adSetId: string) => {
+    setSelectedAdSetId(adSetId)
+    setActiveLevel("ads")
+  }
+
+  const handleBreadcrumbNavigation = (level: ActiveLevel) => {
+    setActiveLevel(level)
+    if (level === "campaigns") {
+      setSelectedCampaignId(null)
+      setSelectedAdSetId(null)
+    } else if (level === "adsets") {
+      setSelectedAdSetId(null)
+    }
+  }
+
+  // Get current filters based on active level
+  const getCurrentFilters = (): LevelFilters => {
+    switch (activeLevel) {
+      case "campaigns": return campaignFilters
+      case "adsets": return adSetFilters
+      case "ads": return adFilters
+      default: return campaignFilters
+    }
+  }
+
+  const updateCurrentFilters = (updates: Partial<LevelFilters>) => {
+    switch (activeLevel) {
+      case "campaigns":
+        setCampaignFilters(prev => ({ ...prev, ...updates }))
+        break
+      case "adsets":
+        setAdSetFilters(prev => ({ ...prev, ...updates }))
+        break
+      case "ads":
+        setAdFilters(prev => ({ ...prev, ...updates }))
+        break
+    }
+  }
+
+  // Get current data based on active level
+  const getCurrentData = () => {
+    switch (activeLevel) {
+      case "campaigns": return campaignsData
+      case "adsets": return adSetsData.filter(adSet => adSet.campaign_id === selectedCampaignId)
+      case "ads": return adsData.filter(ad => ad.adset_id === selectedAdSetId)
+      default: return []
+    }
+  }
+
+  const getCurrentLoading = () => {
+    switch (activeLevel) {
+      case "campaigns": return campaignsLoading
+      case "adsets": return adSetsLoading
+      case "ads": return adsLoading
+      default: return false
+    }
+  }
+
+  const getCurrentError = () => {
+    switch (activeLevel) {
+      case "campaigns": return campaignsError
+      case "adsets": return adSetsError
+      case "ads": return adsError
+      default: return null
+    }
+  }
+
+  // Get context information for breadcrumbs
+  const getSelectedCampaign = () => campaignsData.find(c => c.id === selectedCampaignId)
+  const getSelectedAdSet = () => adSetsData.find(a => a.id === selectedAdSetId)
+
   // Fetch account insights
   const { data: accountMetrics = {}, isLoading: metricsLoading, error: metricsError } = useQuery({
     queryKey: [`/api/account-insights/${selectedAccount}?dateRange=${dateRange}`],
@@ -173,9 +269,10 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
-  // Fetch campaigns with AI insights
+  // Level-based data fetching
+  // Campaigns - always load when account is selected
   const { data: campaignsData = [], isLoading: campaignsLoading, error: campaignsError } = useQuery({
-    queryKey: [`/api/campaigns/${selectedAccount}?dateRange=${dateRange}`],
+    queryKey: ['/api/campaigns', selectedAccount, dateRange],
     enabled: !!selectedAccount
   }) as {
     data: CampaignWithInsights[];
@@ -183,20 +280,20 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
-  // Fetch ad sets for the selected account
+  // Ad Sets - load when campaign is selected and we're viewing adsets or ads
   const { data: adSetsData = [], isLoading: adSetsLoading, error: adSetsError } = useQuery({
-    queryKey: [`/api/adsets/${selectedAccount}?dateRange=${dateRange}`],
-    enabled: !!selectedAccount && showHierarchy
+    queryKey: ['/api/adsets', selectedAccount, selectedCampaignId, dateRange],
+    enabled: !!selectedAccount && !!selectedCampaignId && (activeLevel === 'adsets' || activeLevel === 'ads')
   }) as {
     data: AdSetWithInsights[];
     isLoading: boolean;
     error: any;
   }
 
-  // Fetch ads for the selected account
+  // Ads - load when ad set is selected and we're viewing ads
   const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
-    queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}`],
-    enabled: !!selectedAccount && showHierarchy
+    queryKey: ['/api/ads', selectedAccount, selectedAdSetId, dateRange],
+    enabled: !!selectedAccount && !!selectedAdSetId && activeLevel === 'ads'
   }) as {
     data: AdWithInsights[];
     isLoading: boolean;
@@ -213,79 +310,13 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
-  // Helper functions for data processing
-  const buildHierarchicalData = (): HierarchicalEntity[] => {
-    if (!campaignsData) return []
-
-    return campaignsData.map(campaign => {
-      const campaignEntity: HierarchicalEntity = {
-        ...campaign,
-        level: 'campaign',
-        expanded: expandedCampaigns.has(campaign.id),
-        children: []
-      }
-
-      // Add ad sets for this campaign
-      if (adSetsData && showHierarchy) {
-        const campaignAdSets = adSetsData.filter(adSet => adSet.campaign_id === campaign.id)
-        campaignEntity.children = campaignAdSets.map(adSet => {
-          const adSetEntity: HierarchicalEntity = {
-            ...adSet,
-            level: 'adset',
-            campaign_id: campaign.id,
-            expanded: expandedAdSets.has(adSet.id),
-            children: []
-          }
-
-          // Add ads for this ad set
-          if (adsData) {
-            const adSetAds = adsData.filter(ad => ad.adset_id === adSet.id)
-            adSetEntity.children = adSetAds.map(ad => ({
-              ...ad,
-              level: 'ad' as HierarchyLevel,
-              campaign_id: campaign.id,
-              adset_id: adSet.id,
-              expanded: false,
-              children: []
-            }))
-          }
-
-          return adSetEntity
-        })
-      }
-
-      return campaignEntity
-    })
-  }
-
-  const flattenHierarchyWithExpansion = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
-    const result: HierarchicalEntity[] = []
-    
-    entities.forEach(entity => {
-      // Always include the entity itself
-      result.push(entity)
-      
-      // Only include children if parent is expanded
-      if (entity.level === 'campaign' && expandedCampaigns.has(entity.id) && entity.children) {
-        entity.children.forEach(child => {
-          result.push(child)
-          
-          // Only include ads if ad set is expanded
-          if (child.level === 'adset' && expandedAdSets.has(child.id) && child.children) {
-            result.push(...child.children)
-          }
-        })
-      }
-    })
-    
-    return result
-  }
-
-  const filterEntities = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
-    let filtered = [...entities]
+  // Filter and sort current level data
+  const filterCurrentLevelData = (data: any[]) => {
+    const filters = getCurrentFilters()
+    let filtered = [...data]
 
     // Apply view filters
-    switch (currentView) {
+    switch (filters.view) {
       case "active_ads":
         filtered = filtered.filter(e => e.status === "ACTIVE")
         break
@@ -296,7 +327,7 @@ export function PerformanceAgentDashboard() {
         filtered = filtered.filter(e => e.impressions > 0)
         break
       case "top_spenders":
-        filtered = filtered.filter(e => e.spend > 100) // Top spenders with >$100 spend
+        filtered = filtered.filter(e => e.spend > 100)
         break
       case "value_reporting":
         filtered = filtered.filter(e => e.purchases > 0 || e.revenue > 0)
@@ -304,8 +335,8 @@ export function PerformanceAgentDashboard() {
     }
 
     // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+    if (filters.search.trim()) {
+      const query = filters.search.toLowerCase()
       filtered = filtered.filter(e => 
         e.name.toLowerCase().includes(query) ||
         e.id.toLowerCase().includes(query) ||
@@ -314,22 +345,17 @@ export function PerformanceAgentDashboard() {
       )
     }
 
-    return filtered
-  }
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      const aVal = a[filters.sortField]
+      const bVal = b[filters.sortField]
 
-  const sortEntities = (entities: HierarchicalEntity[]): HierarchicalEntity[] => {
-    return [...entities].sort((a, b) => {
-      let aVal: any = a[sortField]
-      let bVal: any = b[sortField]
-
-      // Handle numeric sorting
       if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'desc' ? bVal - aVal : aVal - bVal
+        return filters.sortDirection === 'desc' ? bVal - aVal : aVal - bVal
       }
 
-      // Handle string sorting
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortDirection === 'desc' 
+        return filters.sortDirection === 'desc' 
           ? bVal.localeCompare(aVal)
           : aVal.localeCompare(bVal)
       }
@@ -338,11 +364,9 @@ export function PerformanceAgentDashboard() {
     })
   }
 
-  // Process data
-  const hierarchicalData = buildHierarchicalData()
-  const flatData = showHierarchy ? flattenHierarchyWithExpansion(hierarchicalData) : hierarchicalData
-  const filteredData = filterEntities(flatData)  
-  const sortedData = sortEntities(filteredData)
+  // Get filtered and sorted data for current level
+  const currentData = getCurrentData()
+  const filteredData = filterCurrentLevelData(currentData)
   
   const campaigns: CampaignWithInsights[] = campaignsData || []
   const weeklyObservations: WeeklyObservation[] = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
@@ -398,24 +422,10 @@ export function PerformanceAgentDashboard() {
     );
   
   
-  // Helper functions for UI interactions
-  const toggleAdSetExpansion = (adSetId: string) => {
-    const newExpanded = new Set(expandedAdSets)
-    if (newExpanded.has(adSetId)) {
-      newExpanded.delete(adSetId)
-    } else {
-      newExpanded.add(adSetId)
-    }
-    setExpandedAdSets(newExpanded)
-  }
-
   // Loading and error states
-  const isLoading = accountsLoading || metricsLoading || campaignsLoading || observationsLoading || 
-                    (showHierarchy && (adSetsLoading || adsLoading))
+  const isLoading = accountsLoading || metricsLoading || observationsLoading || getCurrentLoading()
   // Exclude 401 account errors and observations errors from generic error handling
-  // Observations are nice-to-have AI insights, not critical for core functionality
-  const hasError = (accountsError && !needsMetaConnection) || metricsError || campaignsError || 
-                    (showHierarchy && (adSetsError || adsError))
+  const hasError = (accountsError && !needsMetaConnection) || metricsError || getCurrentError()
 
   if (isLoading) {
     return (
@@ -524,15 +534,6 @@ export function PerformanceAgentDashboard() {
     }
   }
 
-  const toggleCampaignExpansion = (campaignId: string) => {
-    const newExpanded = new Set(expandedCampaigns)
-    if (newExpanded.has(campaignId)) {
-      newExpanded.delete(campaignId)
-    } else {
-      newExpanded.add(campaignId)
-    }
-    setExpandedCampaigns(newExpanded)
-  }
 
   // Calculate high priority alerts count
   const highPriorityAlerts = campaigns.reduce((acc, campaign) => {
@@ -697,46 +698,117 @@ export function PerformanceAgentDashboard() {
           </Card>
         </TabsContent>
 
-        {/* Campaign Insights Tab */}
+        {/* Campaign Insights Tab - 3-Tab Meta Ads Manager Style */}
         <TabsContent value="campaigns" className="space-y-4">
-          {/* View Toggle for Campaign Insights */}
+          {/* Breadcrumb Navigation */}
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Campaign Performance</h3>
-              <p className="text-sm text-muted-foreground">Analyze your Meta ads performance across campaigns, ad sets, and ads</p>
-            </div>
-            <Toggle 
-              pressed={showHierarchy} 
-              onPressedChange={setShowHierarchy}
-              aria-label="Toggle hierarchy view"
-              data-testid="toggle-hierarchy-view"
-            >
-              {showHierarchy ? "Table View" : "Card View"}
-            </Toggle>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => handleBreadcrumbNavigation("campaigns")}
+                    className="cursor-pointer"
+                    data-testid="breadcrumb-account"
+                  >
+                    <Building2 className="h-3 w-3" />
+                    {adAccounts.find(acc => acc.id === selectedAccount)?.name || "Account"}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {selectedCampaignId && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink 
+                        onClick={() => handleBreadcrumbNavigation("adsets")}
+                        className="cursor-pointer"
+                        data-testid="breadcrumb-campaign"
+                      >
+                        {getSelectedCampaign()?.name || "Campaign"}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  </>
+                )}
+                {selectedAdSetId && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage data-testid="breadcrumb-adset">
+                        {getSelectedAdSet()?.name || "Ad Set"}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          
-          {showHierarchy ? (
-            /* Meta Ads Manager-like Hierarchical Table View */
+
+          {/* Meta Ads Manager 3-Tab Navigation */}
+          <Tabs value={activeLevel} onValueChange={(value) => setActiveLevel(value as ActiveLevel)} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger 
+                value="campaigns" 
+                data-testid="tab-meta-campaigns"
+                className="relative"
+              >
+                Campaigns
+                {campaignsData.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {campaignsData.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="adsets" 
+                disabled={!selectedCampaignId}
+                data-testid="tab-meta-adsets"
+                className="relative"
+              >
+                Ad Sets
+                {selectedCampaignId && adSetsData.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {adSetsData.filter(a => a.campaign_id === selectedCampaignId).length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ads" 
+                disabled={!selectedAdSetId}
+                data-testid="tab-meta-ads"
+                className="relative"
+              >
+                Ads
+                {selectedAdSetId && adsData.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {adsData.filter(a => a.adset_id === selectedAdSetId).length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            {/* Level-based Table Content */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Meta Ads Performance Table
+                  {activeLevel === 'campaigns' && 'Campaigns'}
+                  {activeLevel === 'adsets' && 'Ad Sets'}
+                  {activeLevel === 'ads' && 'Ads'}
                 </CardTitle>
                 <CardDescription>
-                  Hierarchical view showing campaigns, ad sets, and ads with expandable rows
+                  {activeLevel === 'campaigns' && 'Select a campaign to view its ad sets'}
+                  {activeLevel === 'adsets' && 'Select an ad set to view its ads'}
+                  {activeLevel === 'ads' && 'View individual ad performance'}
                 </CardDescription>
               </CardHeader>
               
-              {/* Integrated Filtering Bar */}
+              {/* Level-specific Filtering Bar */}
               <div className="px-6 pb-4 space-y-4 border-b">
                 <div className="flex flex-wrap items-center gap-4">
                   {/* Search Input */}
                   <div className="flex-1 min-w-[250px]">
                     <Input
-                      placeholder="Search campaigns, ad sets, ads..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={`Search ${activeLevel}...`}
+                      value={getCurrentFilters().search}
+                      onChange={(e) => updateCurrentFilters({ search: e.target.value })}
                       className="w-full"
                       data-testid="input-search"
                     />
@@ -745,52 +817,44 @@ export function PerformanceAgentDashboard() {
                   {/* Quick Filter Buttons */}
                   <div className="flex items-center gap-2">
                     <Button
-                      variant={currentView === "all_ads" ? "default" : "outline"}
+                      variant={getCurrentFilters().view === "all_ads" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentView("all_ads")}
+                      onClick={() => updateCurrentFilters({ view: "all_ads" })}
                       data-testid="filter-all-ads"
                     >
-                      All Ads
+                      All
                     </Button>
                     <Button
-                      variant={currentView === "active_ads" ? "default" : "outline"}
+                      variant={getCurrentFilters().view === "active_ads" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentView("active_ads")}
+                      onClick={() => updateCurrentFilters({ view: "active_ads" })}
                       data-testid="filter-active-ads"
                     >
                       Active
                     </Button>
                     <Button
-                      variant={currentView === "paused_ads" ? "default" : "outline"}
+                      variant={getCurrentFilters().view === "paused_ads" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentView("paused_ads")}
+                      onClick={() => updateCurrentFilters({ view: "paused_ads" })}
                       data-testid="filter-paused-ads"
                     >
                       Paused
                     </Button>
                     <Button
-                      variant={currentView === "had_delivery" ? "default" : "outline"}
+                      variant={getCurrentFilters().view === "had_delivery" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentView("had_delivery")}
+                      onClick={() => updateCurrentFilters({ view: "had_delivery" })}
                       data-testid="filter-had-delivery"
                     >
                       Had Delivery
                     </Button>
                     <Button
-                      variant={currentView === "top_spenders" ? "default" : "outline"}
+                      variant={getCurrentFilters().view === "top_spenders" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentView("top_spenders")}
+                      onClick={() => updateCurrentFilters({ view: "top_spenders" })}
                       data-testid="filter-top-spenders"
                     >
                       Top Spenders
-                    </Button>
-                    <Button
-                      variant={currentView === "value_reporting" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentView("value_reporting")}
-                      data-testid="filter-value-reporting"
-                    >
-                      Value Reporting
                     </Button>
                   </div>
                 </div>
@@ -798,11 +862,16 @@ export function PerformanceAgentDashboard() {
                 {/* Advanced Filters - Second Row */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)} data-testid="select-sort-field">
+                    <Select 
+                      value={getCurrentFilters().sortField} 
+                      onValueChange={(value) => updateCurrentFilters({ sortField: value as SortField })} 
+                      data-testid="select-sort-field"
+                    >
                       <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="name">Name</SelectItem>
                         <SelectItem value="spend">Spend</SelectItem>
                         <SelectItem value="impressions">Impressions</SelectItem>
                         <SelectItem value="clicks">Clicks</SelectItem>
@@ -818,25 +887,30 @@ export function PerformanceAgentDashboard() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+                      onClick={() => updateCurrentFilters({ 
+                        sortDirection: getCurrentFilters().sortDirection === "asc" ? "desc" : "asc" 
+                      })}
                       data-testid="button-sort-direction"
                     >
-                      {sortDirection === "asc" ? "↑" : "↓"} {sortDirection.toUpperCase()}
+                      {getCurrentFilters().sortDirection === "asc" ? "↑" : "↓"} {getCurrentFilters().sortDirection.toUpperCase()}
                     </Button>
                   </div>
                   
                   <div className="text-sm text-muted-foreground">
-                    {filteredData.length} of {flatData.length} items shown
+                    {filteredData.length} items
                   </div>
                 </div>
               </div>
-              
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-[300px]">Campaign / Ad Set / Ad</TableHead>
+                        <TableHead className="w-[300px]">
+                          {activeLevel === 'campaigns' && 'Campaign'}
+                          {activeLevel === 'adsets' && 'Ad Set'}
+                          {activeLevel === 'ads' && 'Ad'}
+                        </TableHead>
                         <TableHead className="text-right">Status</TableHead>
                         <TableHead className="text-right">Delivery</TableHead>
                         <TableHead className="text-right">Spend</TableHead>
@@ -851,112 +925,89 @@ export function PerformanceAgentDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedData.map((entity) => (
+                      {filteredData.map((item: any) => (
                         <TableRow 
-                          key={`${entity.level}-${entity.id}`}
-                          className={`
-                            ${entity.level === 'campaign' ? 'bg-background font-medium' : ''}
-                            ${entity.level === 'adset' ? 'bg-muted/20' : ''}
-                            ${entity.level === 'ad' ? 'bg-muted/10' : ''}
-                            hover:bg-muted/40 transition-colors
-                          `}
-                          data-testid={`table-row-${entity.level}-${entity.id}`}
+                          key={item.id}
+                          className="hover:bg-muted/40 transition-colors cursor-pointer"
+                          onClick={() => {
+                            if (activeLevel === 'campaigns') {
+                              handleCampaignSelect(item.id)
+                            } else if (activeLevel === 'adsets') {
+                              handleAdSetSelect(item.id)
+                            }
+                          }}
+                          data-testid={`table-row-${activeLevel}-${item.id}`}
                         >
-                          <TableCell className={`
-                            ${entity.level === 'adset' ? 'pl-8' : ''}
-                            ${entity.level === 'ad' ? 'pl-16' : ''}
-                          `}>
+                          <TableCell>
                             <div className="flex items-center gap-2">
-                              {entity.level === 'campaign' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => toggleCampaignExpansion(entity.id)}
-                                  data-testid={`button-expand-campaign-${entity.id}`}
-                                >
-                                  <ChevronRight className={`h-3 w-3 transition-transform ${
-                                    expandedCampaigns.has(entity.id) ? 'rotate-90' : ''
-                                  }`} />
-                                </Button>
-                              )}
-                              {entity.level === 'adset' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => toggleAdSetExpansion(entity.id)}
-                                  data-testid={`button-expand-adset-${entity.id}`}
-                                >
-                                  <ChevronRight className={`h-3 w-3 transition-transform ${
-                                    expandedAdSets.has(entity.id) ? 'rotate-90' : ''
-                                  }`} />
-                                </Button>
+                              {(activeLevel === 'campaigns' || activeLevel === 'adsets') && (
+                                <ChevronRight className="h-3 w-3" />
                               )}
                               <div className="flex flex-col">
-                                <span className={`
-                                  ${entity.level === 'campaign' ? 'font-semibold text-sm' : ''}
-                                  ${entity.level === 'adset' ? 'text-sm' : ''}
-                                  ${entity.level === 'ad' ? 'text-xs text-muted-foreground' : ''}
-                                `}>
-                                  {entity.name}
+                                <span className="font-medium text-sm">
+                                  {item.name}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  ID: {entity.id}
+                                  ID: {item.id}
                                 </span>
+                                {activeLevel === 'campaigns' && item.objective && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.objective}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <Badge variant={
-                              entity.status === 'ACTIVE' ? 'default' : 
-                              entity.status === 'PAUSED' ? 'secondary' : 'outline'
+                              item.status === 'ACTIVE' ? 'default' : 
+                              item.status === 'PAUSED' ? 'secondary' : 'outline'
                             }>
-                              {entity.status}
+                              {item.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {entity.impressions > 0 ? (
+                              {item.impressions > 0 ? (
                                 <CheckCircle className="h-3 w-3 text-green-600" />
                               ) : (
                                 <AlertTriangle className="h-3 w-3 text-yellow-600" />
                               )}
                               <span className="text-xs">
-                                {entity.impressions > 0 ? 'Delivering' : 'No Delivery'}
+                                {item.impressions > 0 ? 'Delivering' : 'No Delivery'}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {formatCurrency(entity.spend)}
+                            {formatCurrency(item.spend)}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {entity.impressions.toLocaleString()}
+                            {item.impressions.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {entity.clicks.toLocaleString()}
+                            {item.clicks.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {entity.ctr.toFixed(2)}%
+                            {item.ctr.toFixed(2)}%
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {formatCurrency(entity.cpc)}
+                            {formatCurrency(item.cpc)}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {formatCurrency(entity.cpm)}
+                            {formatCurrency(item.cpm)}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {entity.purchases.toLocaleString()}
+                            {item.purchases.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {formatCurrency(entity.revenue)}
+                            {formatCurrency(item.revenue)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className={`font-mono text-sm ${
-                              entity.roas >= 3 ? 'text-green-600 font-semibold' :
-                              entity.roas >= 2 ? 'text-yellow-600' : 'text-red-600'
+                              item.roas >= 3 ? 'text-green-600 font-semibold' :
+                              item.roas >= 2 ? 'text-yellow-600' : 'text-red-600'
                             }`}>
-                              {entity.roas.toFixed(2)}x
+                              {item.roas.toFixed(2)}x
                             </div>
                           </TableCell>
                         </TableRow>
@@ -965,120 +1016,22 @@ export function PerformanceAgentDashboard() {
                   </Table>
                 </div>
                 
-                {sortedData.length === 0 && (
+                {filteredData.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium text-lg mb-2">No data matches your filters</h3>
+                    <h3 className="font-medium text-lg mb-2">No data available</h3>
                     <p className="text-muted-foreground text-sm max-w-md">
-                      Try adjusting your search terms or filter criteria to see campaign data.
+                      {activeLevel === 'campaigns' && 'No campaigns found for the selected filters.'}
+                      {activeLevel === 'adsets' && !selectedCampaignId && 'Select a campaign to view ad sets.'}
+                      {activeLevel === 'adsets' && selectedCampaignId && 'No ad sets found for the selected campaign.'}
+                      {activeLevel === 'ads' && !selectedAdSetId && 'Select an ad set to view ads.'}
+                      {activeLevel === 'ads' && selectedAdSetId && 'No ads found for the selected ad set.'}
                     </p>
                   </div>
                 )}
               </CardContent>
             </Card>
-          ) : (
-            /* Original Card-based Campaign View */
-            <div className="space-y-4">
-              {campaigns.map((campaign: CampaignWithInsights) => (
-                <Card key={campaign.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="space-y-1">
-                        <h3 className="font-medium">{campaign.name}</h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>{campaign.objective}</span>
-                          <Separator orientation="vertical" className="h-4" />
-                          <span>{campaign.status}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {campaign.aiSignal && (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid={`button-ai-insight-${campaign.id}`}>
-                                {getActionIcon(campaign.aiSignal.action)}
-                                <span className="ml-1">AI Insight</span>
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Campaign Analysis: {campaign.name}</DialogTitle>
-                                <DialogDescription>AI-powered performance insights and recommendations</DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Recommendation</h4>
-                                  <Badge className={getActionColor(campaign.aiSignal.action)}>
-                                    {getActionIcon(campaign.aiSignal.action)}
-                                    <span className="ml-1">{campaign.aiSignal.action.toUpperCase()}</span>
-                                  </Badge>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Analysis</h4>
-                                  <p className="text-sm text-muted-foreground">{campaign.aiSignal.reasoning}</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">Detailed Strategy</h4>
-                                  <p className="text-sm text-muted-foreground">{campaign.aiSignal.detailedAnalysis}</p>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4 pt-2 border-t">
-                                  <div className="text-center">
-                                    <p className="text-lg font-bold">{campaign.roas}x</p>
-                                    <p className="text-xs text-muted-foreground">Current ROAS</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
-                                    <p className="text-xs text-muted-foreground">Spend</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-lg font-bold">{campaign.aiSignal.confidence}%</p>
-                                    <p className="text-xs text-muted-foreground">Confidence</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleCampaignExpansion(campaign.id)}
-                          data-testid={`button-expand-${campaign.id}`}
-                        >
-                          <ChevronRight className={`h-4 w-4 transition-transform ${
-                            expandedCampaigns.has(campaign.id) ? 'rotate-90' : ''
-                          }`} />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-5 gap-4 text-center">
-                      <div>
-                        <p className="text-lg font-bold">{campaign.roas?.toFixed(2)}x</p>
-                        <p className="text-xs text-muted-foreground">ROAS</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold">{formatCurrency(campaign.spend)}</p>
-                        <p className="text-xs text-muted-foreground">Spend</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold">${campaign.cpm?.toFixed(2)}</p>
-                        <p className="text-xs text-muted-foreground">CPM</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold">{campaign.ctr?.toFixed(2)}%</p>
-                        <p className="text-xs text-muted-foreground">CTR</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold">{formatNumber(campaign.purchases || 0)}</p>
-                        <p className="text-xs text-muted-foreground">Purchases</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          </Tabs>
         </TabsContent>
 
         {/* Creative Analysis Tab */}
