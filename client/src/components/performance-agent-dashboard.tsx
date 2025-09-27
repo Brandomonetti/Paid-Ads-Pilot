@@ -417,21 +417,43 @@ export function PerformanceAgentDashboard() {
   const currentData = getCurrentData()
   const filteredData = filterCurrentLevelData(currentData)
 
-  // Calculate aggregated metrics for selected items
-  const calculateSelectedMetrics = () => {
-    let selectedItems: any[] = []
-    
-    if (activeLevel === 'campaigns') {
-      selectedItems = filteredData.filter(item => selectedCampaignIds.has(item.id))
-    } else if (activeLevel === 'adsets') {
-      selectedItems = filteredData.filter(item => selectedAdSetIds.has(item.id))
-    }
-    
-    if (selectedItems.length === 0) {
+  // Calculate aggregated metrics for filtered data or selected items
+  const calculateAggregatedMetrics = () => {
+    // If no data, return null
+    if (filteredData.length === 0) {
       return null
     }
 
-    const totals = selectedItems.reduce((acc, item) => ({
+    // Check if we have selected items
+    let itemsToAggregate: any[] = []
+    let isSelected = false
+    
+    if (activeLevel === 'campaigns') {
+      const selectedItems = filteredData.filter(item => selectedCampaignIds.has(item.id))
+      if (selectedItems.length > 0) {
+        itemsToAggregate = selectedItems
+        isSelected = true
+      }
+    } else if (activeLevel === 'adsets') {
+      const selectedItems = filteredData.filter(item => selectedAdSetIds.has(item.id))
+      if (selectedItems.length > 0) {
+        itemsToAggregate = selectedItems
+        isSelected = true
+      }
+    } else if (activeLevel === 'ads') {
+      const selectedItems = filteredData.filter(item => selectedAdIds.has(item.id))
+      if (selectedItems.length > 0) {
+        itemsToAggregate = selectedItems
+        isSelected = true
+      }
+    }
+    
+    // If no items selected, use all filtered data
+    if (!isSelected) {
+      itemsToAggregate = filteredData
+    }
+
+    const totals = itemsToAggregate.reduce((acc, item) => ({
       spend: acc.spend + (item.spend || 0),
       impressions: acc.impressions + (item.impressions || 0),
       clicks: acc.clicks + (item.clicks || 0),
@@ -452,7 +474,8 @@ export function PerformanceAgentDashboard() {
     const roas = totals.spend > 0 ? totals.revenue / totals.spend : 0
 
     return {
-      count: selectedItems.length,
+      count: itemsToAggregate.length,
+      isSelected,
       ...totals,
       ctr,
       cpc,
@@ -461,7 +484,7 @@ export function PerformanceAgentDashboard() {
     }
   }
 
-  const selectedMetrics = calculateSelectedMetrics()
+  const aggregatedMetrics = calculateAggregatedMetrics()
   
   const campaigns: CampaignWithInsights[] = campaignsData || []
   const weeklyObservations: WeeklyObservation[] = weeklyObservationsData.length > 0 ? weeklyObservationsData : [
@@ -1123,6 +1146,81 @@ export function PerformanceAgentDashboard() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      
+                      {/* Sticky Summary Row - Now inside the same table for perfect alignment */}
+                      {aggregatedMetrics && (
+                        <TableRow className="sticky bottom-0 bg-primary/10 hover:bg-primary/15 border-t-2 border-primary/20 backdrop-blur-sm z-10">
+                          <TableCell className="font-semibold bg-primary/5">
+                            <div className="flex items-center gap-2">
+                              {aggregatedMetrics.isSelected ? (
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                              ) : (
+                                <BarChart3 className="h-4 w-4 text-primary" />
+                              )}
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-sm">
+                                  {aggregatedMetrics.isSelected 
+                                    ? `${aggregatedMetrics.count} Selected` 
+                                    : `${aggregatedMetrics.count} Total`
+                                  } {activeLevel === 'campaigns' ? 'Campaigns' : activeLevel === 'adsets' ? 'Ad Sets' : 'Ads'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {aggregatedMetrics.isSelected ? 'Aggregated Results' : 'Filtered Results'}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right bg-primary/5">
+                            <Badge variant="secondary" className={
+                              aggregatedMetrics.isSelected 
+                                ? "bg-primary/20 text-primary border-primary/30" 
+                                : "bg-muted text-muted-foreground"
+                            }>
+                              {aggregatedMetrics.isSelected ? 'SELECTED' : 'ALL'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right bg-primary/5">
+                            <div className="flex items-center justify-end gap-1">
+                              <Target className="h-3 w-3 text-primary" />
+                              <span className="text-xs font-medium text-primary">
+                                Combined
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-spend">
+                            {formatCurrency(aggregatedMetrics.spend)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-impressions">
+                            {aggregatedMetrics.impressions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-clicks">
+                            {aggregatedMetrics.clicks.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-ctr">
+                            {aggregatedMetrics.ctr.toFixed(2)}%
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-cpc">
+                            {formatCurrency(aggregatedMetrics.cpc)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-cpm">
+                            {formatCurrency(aggregatedMetrics.cpm)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-purchases">
+                            {aggregatedMetrics.purchases.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5" data-testid="text-total-revenue">
+                            {formatCurrency(aggregatedMetrics.revenue)}
+                          </TableCell>
+                          <TableCell className="text-right bg-primary/5" data-testid="text-total-roas">
+                            <div className={`font-mono text-sm font-semibold ${
+                              aggregatedMetrics.roas >= 3 ? 'text-green-600' :
+                              aggregatedMetrics.roas >= 2 ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {aggregatedMetrics.roas.toFixed(2)}x
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -1138,78 +1236,6 @@ export function PerformanceAgentDashboard() {
                       {activeLevel === 'ads' && !selectedAdSetId && 'Select an ad set to view ads.'}
                       {activeLevel === 'ads' && selectedAdSetId && 'No ads found for the selected ad set.'}
                     </p>
-                  </div>
-                )}
-
-                {/* Sticky Summary Row for Selected Items */}
-                {selectedMetrics && (
-                  <div className="sticky bottom-0 bg-primary/5 border-t border-primary/20 backdrop-blur-sm">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableBody>
-                          <TableRow className="bg-primary/10 hover:bg-primary/15 border-b-0">
-                            <TableCell className="w-[300px] font-semibold">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-primary" />
-                                <div className="flex flex-col">
-                                  <span className="font-semibold text-sm">
-                                    {selectedMetrics.count} Selected {activeLevel === 'campaigns' ? 'Campaigns' : activeLevel === 'adsets' ? 'Ad Sets' : 'Ads'}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    Aggregated Results
-                                  </span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                                SELECTED
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Target className="h-3 w-3 text-primary" />
-                                <span className="text-xs font-medium text-primary">
-                                  Combined
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {formatCurrency(selectedMetrics.spend)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {selectedMetrics.impressions.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {selectedMetrics.clicks.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {selectedMetrics.ctr.toFixed(2)}%
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {formatCurrency(selectedMetrics.cpc)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {formatCurrency(selectedMetrics.cpm)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {selectedMetrics.purchases.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">
-                              {formatCurrency(selectedMetrics.revenue)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className={`font-mono text-sm font-semibold ${
-                                selectedMetrics.roas >= 3 ? 'text-green-600' :
-                                selectedMetrics.roas >= 2 ? 'text-yellow-600' : 'text-red-600'
-                              }`}>
-                                {selectedMetrics.roas.toFixed(2)}x
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
                   </div>
                 )}
               </CardContent>
