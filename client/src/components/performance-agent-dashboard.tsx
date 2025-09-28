@@ -286,12 +286,13 @@ export function PerformanceAgentDashboard() {
         // Show ads for the selected ad set (hierarchical navigation)
         // If a single ad set is selected for navigation, filter by that
         // Otherwise, if ad sets are checked via checkboxes, filter by those
+        // Default: show all ads when no specific selection
         if (selectedAdSetId) {
           return adsData.filter(ad => ad.adset_id === selectedAdSetId)
         } else if (selectedAdSetIds.size > 0) {
           return adsData.filter(ad => selectedAdSetIds.has(ad.adset_id))
         }
-        return []
+        return adsData
       default: return []
     }
   }
@@ -349,10 +350,11 @@ export function PerformanceAgentDashboard() {
     error: any;
   }
 
-  // Ads - load when account is selected and we're viewing ads (supports free navigation)
+  // Ads - load when account is selected and we're viewing ads (supports free navigation)  
+  const adsQueryEnabled = !!selectedAccount && activeLevel === 'ads'
   const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
     queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}${selectedAdSetId ? `&adSetId=${selectedAdSetId}` : ''}`],
-    enabled: !!selectedAccount && activeLevel === 'ads' && !!selectedAdSetId
+    enabled: adsQueryEnabled
   }) as {
     data: AdWithInsights[];
     isLoading: boolean;
