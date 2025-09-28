@@ -216,7 +216,7 @@ class MetaAdsServiceWithToken {
 
   async getAds(adAccountId: string, adSetId?: string, dateRange: string = 'last_30_days'): Promise<MetaAd[]> {
     const params: any = {
-      fields: 'id,name,status,adset_id,creative',
+      fields: 'id,name,status,adset_id,creative{id,thumbnail_url,object_story_spec,object_type,title,body,url_tags,image_url}',
       level: 'ad',
       time_range: JSON.stringify({ since: this.getDateRange(dateRange).since, until: this.getDateRange(dateRange).until }),
       limit: '100'
