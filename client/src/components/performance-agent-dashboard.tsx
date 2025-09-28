@@ -1146,9 +1146,9 @@ export function PerformanceAgentDashboard() {
                 )}
               </CardContent>
               
-              {/* Facebook Ads Manager Style Sticky Summary - Always visible at bottom */}
+              {/* Facebook Ads Manager Style Sticky Summary - Contained within Meta Ads Manager */}
               {aggregatedMetrics && (
-                <div className="fixed bottom-0 left-0 right-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-40 shadow-lg">
+                <div className="sticky bottom-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-30 shadow-lg">
                   <div className="max-w-full overflow-x-auto">
                     <div className="flex items-center py-3 px-6 min-w-[1200px]" style={{minWidth: '1200px'}}>
                       {/* Campaign/Ad Set/Ad Name - 300px to match table */}
