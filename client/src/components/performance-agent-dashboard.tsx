@@ -596,6 +596,43 @@ export function PerformanceAgentDashboard() {
     }).format(amount)
   }
 
+  // Extract thumbnail URL from ad creative data
+  const getAdThumbnailUrl = (item: any): string | null => {
+    if (!item.creative) return null
+    
+    // Check for direct thumbnail_url
+    if (item.creative.thumbnail_url) {
+      return item.creative.thumbnail_url
+    }
+    
+    // Check object_story_spec for different ad formats
+    if (item.creative.object_story_spec) {
+      const spec = item.creative.object_story_spec
+      
+      // Link ads
+      if (spec.link_data?.picture) {
+        return spec.link_data.picture
+      }
+      
+      // Photo ads
+      if (spec.photo_data?.url) {
+        return spec.photo_data.url
+      }
+      
+      // Video ads - check for image_url
+      if (spec.video_data?.image_url) {
+        return spec.video_data.image_url
+      }
+    }
+    
+    // Check for direct image_url on creative
+    if (item.creative.image_url) {
+      return item.creative.image_url
+    }
+    
+    return null
+  }
+
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num)
   }
@@ -1006,6 +1043,9 @@ export function PerformanceAgentDashboard() {
                           {activeLevel === 'adsets' && 'Ad Set'}
                           {activeLevel === 'ads' && 'Ad'}
                         </TableHead>
+                        {activeLevel === 'ads' && (
+                          <TableHead className="text-center w-[120px]">Preview</TableHead>
+                        )}
                         <TableHead className="text-right w-[80px]">Status</TableHead>
                         <TableHead className="text-right w-[90px]">Delivery</TableHead>
                         <TableHead className="text-right w-[100px]">Spend</TableHead>
@@ -1071,6 +1111,34 @@ export function PerformanceAgentDashboard() {
                               </div>
                             </div>
                           </TableCell>
+                          {activeLevel === 'ads' && (
+                            <TableCell className="text-center">
+                              {(() => {
+                                const thumbnailUrl = getAdThumbnailUrl(item)
+                                return thumbnailUrl ? (
+                                  <div className="flex items-center justify-center">
+                                    <img 
+                                      src={thumbnailUrl} 
+                                      alt={`Ad preview for ${item.name}`}
+                                      className="w-16 h-12 object-cover rounded-md border shadow-sm"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.style.display = 'none'
+                                        target.nextElementSibling!.classList.remove('hidden')
+                                      }}
+                                    />
+                                    <div className="hidden w-16 h-12 bg-muted rounded-md border flex items-center justify-center">
+                                      <span className="text-xs text-muted-foreground">No Image</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="w-16 h-12 bg-muted rounded-md border flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground">No Preview</span>
+                                  </div>
+                                )
+                              })()}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">
                             <Badge variant={
                               item.status === 'ACTIVE' ? 'default' : 
@@ -1158,6 +1226,11 @@ export function PerformanceAgentDashboard() {
                           Results from {aggregatedMetrics.count} {activeLevel === 'campaigns' ? 'campaigns' : activeLevel === 'adsets' ? 'ad sets' : 'ads'}
                         </span>
                       </div>
+                      
+                      {/* Preview column for ads - 120px */}
+                      {activeLevel === 'ads' && (
+                        <div className="w-[120px]"></div>
+                      )}
                       
                       {/* Status - 80px */}
                       <div className="w-[80px] text-xs text-muted-foreground text-center">
