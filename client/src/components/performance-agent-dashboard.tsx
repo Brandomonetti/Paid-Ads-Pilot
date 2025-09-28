@@ -273,15 +273,25 @@ export function PerformanceAgentDashboard() {
       case "campaigns": 
         return campaignsData
       case "adsets": 
-        // Only show ad sets for selected campaigns (hierarchical behavior)
-        return selectedCampaignIds.size > 0 
-          ? adSetsData.filter(adSet => selectedCampaignIds.has(adSet.campaign_id))
-          : []
+        // Show ad sets for the selected campaign (hierarchical navigation)
+        // If a single campaign is selected for navigation, filter by that
+        // Otherwise, if campaigns are checked via checkboxes, filter by those
+        if (selectedCampaignId) {
+          return adSetsData.filter(adSet => adSet.campaign_id === selectedCampaignId)
+        } else if (selectedCampaignIds.size > 0) {
+          return adSetsData.filter(adSet => selectedCampaignIds.has(adSet.campaign_id))
+        }
+        return []
       case "ads": 
-        // Only show ads for selected ad sets (hierarchical behavior)
-        return selectedAdSetIds.size > 0 
-          ? adsData.filter(ad => selectedAdSetIds.has(ad.adset_id))
-          : []
+        // Show ads for the selected ad set (hierarchical navigation)
+        // If a single ad set is selected for navigation, filter by that
+        // Otherwise, if ad sets are checked via checkboxes, filter by those
+        if (selectedAdSetId) {
+          return adsData.filter(ad => ad.adset_id === selectedAdSetId)
+        } else if (selectedAdSetIds.size > 0) {
+          return adsData.filter(ad => selectedAdSetIds.has(ad.adset_id))
+        }
+        return []
       default: return []
     }
   }
