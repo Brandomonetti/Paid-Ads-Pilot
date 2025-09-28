@@ -998,7 +998,7 @@ export function PerformanceAgentDashboard() {
               </div>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="w-full table-fixed">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="w-[300px]">
@@ -1006,17 +1006,17 @@ export function PerformanceAgentDashboard() {
                           {activeLevel === 'adsets' && 'Ad Set'}
                           {activeLevel === 'ads' && 'Ad'}
                         </TableHead>
-                        <TableHead className="text-right">Status</TableHead>
-                        <TableHead className="text-right">Delivery</TableHead>
-                        <TableHead className="text-right">Spend</TableHead>
-                        <TableHead className="text-right">Impressions</TableHead>
-                        <TableHead className="text-right">Clicks</TableHead>
-                        <TableHead className="text-right">CTR</TableHead>
-                        <TableHead className="text-right">CPC</TableHead>
-                        <TableHead className="text-right">CPM</TableHead>
-                        <TableHead className="text-right">Purchases</TableHead>
-                        <TableHead className="text-right">Revenue</TableHead>
-                        <TableHead className="text-right">ROAS</TableHead>
+                        <TableHead className="text-right w-[80px]">Status</TableHead>
+                        <TableHead className="text-right w-[90px]">Delivery</TableHead>
+                        <TableHead className="text-right w-[100px]">Spend</TableHead>
+                        <TableHead className="text-right w-[110px]">Impressions</TableHead>
+                        <TableHead className="text-right w-[80px]">Clicks</TableHead>
+                        <TableHead className="text-right w-[70px]">CTR</TableHead>
+                        <TableHead className="text-right w-[80px]">CPC</TableHead>
+                        <TableHead className="text-right w-[80px]">CPM</TableHead>
+                        <TableHead className="text-right w-[90px]">Purchases</TableHead>
+                        <TableHead className="text-right w-[100px]">Revenue</TableHead>
+                        <TableHead className="text-right w-[80px]">ROAS</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
