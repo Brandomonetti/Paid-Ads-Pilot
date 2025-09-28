@@ -428,11 +428,11 @@ export function PerformanceAgentDashboard() {
     const itemsToAggregate = filteredData
 
     const totals = itemsToAggregate.reduce((acc, item) => ({
-      spend: acc.spend + (item.spend || 0),
-      impressions: acc.impressions + (item.impressions || 0),
-      clicks: acc.clicks + (item.clicks || 0),
-      purchases: acc.purchases + (item.purchases || 0),
-      revenue: acc.revenue + (item.revenue || 0)
+      spend: acc.spend + (parseFloat(item.spend) || 0),
+      impressions: acc.impressions + (parseInt(item.impressions) || 0),
+      clicks: acc.clicks + (parseInt(item.clicks) || 0),
+      purchases: acc.purchases + (parseInt(item.purchases) || 0),
+      revenue: acc.revenue + (parseFloat(item.revenue) || 0)
     }), {
       spend: 0,
       impressions: 0,
@@ -1128,7 +1128,7 @@ export function PerformanceAgentDashboard() {
                       
                       {/* Meta Ads Manager Style Sticky Summary Row */}
                       {aggregatedMetrics && (
-                        <TableRow className="sticky bottom-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-10">
+                        <TableRow className="sticky bottom-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-20 shadow-lg">
                           <TableCell className="font-medium text-sm text-slate-600 dark:text-slate-400">
                             <div className="flex flex-col">
                               <span className="text-xs">Results from {aggregatedMetrics.count}</span>
