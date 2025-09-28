@@ -341,8 +341,8 @@ export function PerformanceAgentDashboard() {
 
   // Ads - load when account is selected and we're viewing ads (supports free navigation)
   const { data: adsData = [], isLoading: adsLoading, error: adsError } = useQuery({
-    queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}`],
-    enabled: !!selectedAccount && activeLevel === 'ads'
+    queryKey: [`/api/ads/${selectedAccount}?dateRange=${dateRange}${selectedAdSetId ? `&adSetId=${selectedAdSetId}` : ''}`],
+    enabled: !!selectedAccount && activeLevel === 'ads' && !!selectedAdSetId
   }) as {
     data: AdWithInsights[];
     isLoading: boolean;
