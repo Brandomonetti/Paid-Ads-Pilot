@@ -1070,9 +1070,9 @@ export function PerformanceAgentDashboard() {
                               return;
                             }
                             if (activeLevel === 'campaigns') {
-                              toggleCampaignSelection(item.id)
+                              handleCampaignSelect(item.id)
                             } else if (activeLevel === 'adsets') {
-                              toggleAdSetSelection(item.id)
+                              handleAdSetSelect(item.id)
                             }
                           }}
                           data-testid={`table-row-${activeLevel}-${item.id}`}
