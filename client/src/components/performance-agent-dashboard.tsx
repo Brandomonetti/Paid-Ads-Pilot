@@ -1126,53 +1126,6 @@ export function PerformanceAgentDashboard() {
                         </TableRow>
                       ))}
 
-                      {/* Sticky Summary Row - Sticky at bottom like Meta Ads Manager */}
-                      {aggregatedMetrics && (
-                        <TableRow className="sticky bottom-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-30 shadow-lg">
-                          <TableCell className="font-semibold text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calculator className="h-4 w-4" />
-                              Results from {aggregatedMetrics.count} {activeLevel === 'campaigns' ? 'campaigns' : activeLevel === 'adsets' ? 'ad sets' : 'ads'}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            Excludes deleted items
-                          </TableCell>
-                          <TableCell></TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-total-spend">
-                            {formatCurrency(aggregatedMetrics.totalSpend)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-total-impressions">
-                            {(aggregatedMetrics.totalImpressions || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-total-clicks">
-                            {(aggregatedMetrics.totalClicks || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-average-ctr">
-                            {aggregatedMetrics.averageCtr.toFixed(2)}%
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-average-cpc">
-                            {formatCurrency(aggregatedMetrics.averageCpc)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-average-cpm">
-                            {formatCurrency(aggregatedMetrics.averageCpm)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-total-purchases">
-                            {(aggregatedMetrics.totalPurchases || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-total-revenue">
-                            {formatCurrency(aggregatedMetrics.totalRevenue)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold" data-testid="text-average-roas">
-                            <span className={
-                              aggregatedMetrics.averageRoas >= 3 ? 'text-green-600' :
-                              aggregatedMetrics.averageRoas >= 2 ? 'text-yellow-600' : 'text-red-600'
-                            }>
-                              {aggregatedMetrics.averageRoas.toFixed(2)}x
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )}
                       
                     </TableBody>
                   </Table>
@@ -1192,6 +1145,99 @@ export function PerformanceAgentDashboard() {
                   </div>
                 )}
               </CardContent>
+              
+              {/* Facebook Ads Manager Style Sticky Summary - Always visible at bottom */}
+              {aggregatedMetrics && (
+                <div className="fixed bottom-0 left-0 right-0 bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700 z-40 shadow-lg">
+                  <div className="max-w-full overflow-x-auto">
+                    <div className="flex items-center py-3 px-6 min-w-[1200px]" style={{minWidth: '1200px'}}>
+                      {/* Campaign/Ad Set/Ad Name - 300px to match table */}
+                      <div className="w-[300px] flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        <span className="font-semibold text-sm">
+                          Results from {aggregatedMetrics.count} {activeLevel === 'campaigns' ? 'campaigns' : activeLevel === 'adsets' ? 'ad sets' : 'ads'}
+                        </span>
+                      </div>
+                      
+                      {/* Status - 80px */}
+                      <div className="w-[80px] text-xs text-muted-foreground text-center">
+                        Excludes deleted
+                      </div>
+                      
+                      {/* Delivery - 90px */}
+                      <div className="w-[90px]"></div>
+                      
+                      {/* Spend - 100px */}
+                      <div className="w-[100px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-total-spend">
+                          {formatCurrency(aggregatedMetrics.totalSpend)}
+                        </div>
+                      </div>
+                      
+                      {/* Impressions - 110px */}
+                      <div className="w-[110px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-total-impressions">
+                          {(aggregatedMetrics.totalImpressions || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      {/* Clicks - 80px */}
+                      <div className="w-[80px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-total-clicks">
+                          {(aggregatedMetrics.totalClicks || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      {/* CTR - 70px */}
+                      <div className="w-[70px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-average-ctr">
+                          {aggregatedMetrics.averageCtr.toFixed(2)}%
+                        </div>
+                      </div>
+                      
+                      {/* CPC (Per Action) - 80px */}
+                      <div className="w-[80px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-average-cpc">
+                          {formatCurrency(aggregatedMetrics.averageCpc)}
+                        </div>
+                      </div>
+                      
+                      {/* CPM - 80px */}
+                      <div className="w-[80px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-average-cpm">
+                          {formatCurrency(aggregatedMetrics.averageCpm)}
+                        </div>
+                      </div>
+                      
+                      {/* Purchases - 90px */}
+                      <div className="w-[90px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-total-purchases">
+                          {(aggregatedMetrics.totalPurchases || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      {/* Revenue - 100px */}
+                      <div className="w-[100px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-total-revenue">
+                          {formatCurrency(aggregatedMetrics.totalRevenue)}
+                        </div>
+                      </div>
+                      
+                      {/* ROAS - 80px */}
+                      <div className="w-[80px] text-right">
+                        <div className="font-mono text-sm font-semibold" data-testid="text-average-roas">
+                          <span className={
+                            aggregatedMetrics.averageRoas >= 3 ? 'text-green-600' :
+                            aggregatedMetrics.averageRoas >= 2 ? 'text-yellow-600' : 'text-red-600'
+                          }>
+                            {aggregatedMetrics.averageRoas.toFixed(2)}x
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
         </TabsContent>
 
