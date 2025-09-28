@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MetaConnectionCard } from "./meta-connection-card"
+import { SmartInsightsPanel } from "./ai-insight-panel"
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, Target, DollarSign,
   Eye, Zap, Pause, Play, Settings, Calendar, Users, MessageSquare, 
@@ -122,6 +123,7 @@ interface LevelFilters {
 }
 
 export function PerformanceAgentDashboard() {
+  const queryClient = useQueryClient()
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [dateRange, setDateRange] = useState<string>("last_30_days")
   const [selectedTab, setSelectedTab] = useState("overview")
@@ -888,17 +890,20 @@ export function PerformanceAgentDashboard() {
             </Breadcrumb>
           </div>
 
-          {/* Level-based Table Content with Tabs below filtering */}
-          <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Meta Ads Manager
-                </CardTitle>
-                <CardDescription>
-                  Use checkboxes to select campaigns/ad sets for filtering, or navigate freely between levels
-                </CardDescription>
-              </CardHeader>
+          {/* Two-Column Layout: Table + AI Insights */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Main Table Column */}
+            <div className="xl:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Meta Ads Manager
+                  </CardTitle>
+                  <CardDescription>
+                    Use checkboxes to select campaigns/ad sets for filtering, or navigate freely between levels
+                  </CardDescription>
+                </CardHeader>
               
               {/* Level-specific Filtering Bar */}
               <div className="px-6 pb-4 space-y-4 border-b">
@@ -1323,7 +1328,35 @@ export function PerformanceAgentDashboard() {
                   </div>
                 </div>
               )}
-            </Card>
+              </Card>
+            </div>
+            
+            {/* AI Insights Panel Column */}
+            <div className="xl:col-span-1">
+              <SmartInsightsPanel
+                data={filteredData}
+                entityType={activeLevel === 'campaigns' ? 'campaign' : activeLevel === 'adsets' ? 'adset' : 'ad'}
+                isLoading={isLoading}
+                onRefresh={() => {
+                  // Invalidate and refetch current level data with insights
+                  const queryKeys = []
+                  
+                  if (activeLevel === 'campaigns') {
+                    queryKeys.push([`/api/campaigns/${selectedAccount}?dateRange=${dateRange}`])
+                  } else if (activeLevel === 'adsets') {
+                    queryKeys.push([`/api/adsets/${selectedAccount}?dateRange=${dateRange}${selectedCampaignId ? `&campaignId=${selectedCampaignId}` : ''}`])
+                  } else if (activeLevel === 'ads') {
+                    queryKeys.push([`/api/ads/${selectedAccount}?dateRange=${dateRange}${selectedAdSetId ? `&adSetId=${selectedAdSetId}` : ''}`])
+                  }
+                  
+                  // Invalidate specific queries to refresh with new insights
+                  queryKeys.forEach(key => {
+                    queryClient.invalidateQueries({ queryKey: key })
+                  })
+                }}
+              />
+            </div>
+          </div>
         </TabsContent>
 
         {/* Creative Analysis Tab */}
