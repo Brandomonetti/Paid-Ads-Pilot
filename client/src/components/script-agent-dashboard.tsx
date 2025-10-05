@@ -211,7 +211,7 @@ export function ScriptAgentDashboard() {
       </div>
 
       {/* Knowledge Base Status */}
-      {kbError ? (
+      {kbError && (
         <Card className="border-destructive">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-destructive">
@@ -225,7 +225,7 @@ export function ScriptAgentDashboard() {
             </div>
           </CardContent>
         </Card>
-      ) : null}
+      )}
 
       {!knowledgeBase && !kbError && !kbLoading && (
         <Card className="border-yellow-300 dark:border-yellow-700">
