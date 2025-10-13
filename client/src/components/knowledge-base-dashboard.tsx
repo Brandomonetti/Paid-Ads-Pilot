@@ -275,12 +275,68 @@ export function KnowledgeBaseDashboard() {
             Share your brand intelligence to supercharge AI research
           </p>
         </div>
-        <Badge 
-          variant={isCompleted ? "default" : "secondary"} 
-          className={`px-3 py-1 ${isCompleted ? 'bg-green-600 text-white' : ''}`}
-        >
-          {Math.round(overallProgress)}% Complete
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge 
+            variant={isCompleted ? "default" : "secondary"} 
+            className={`px-3 py-1 ${isCompleted ? 'bg-green-600 text-white' : ''}`}
+          >
+            {Math.round(overallProgress)}% Complete
+          </Badge>
+          <Button 
+            onClick={async () => {
+              try {
+                // Upload all pending files before saving
+                const uploadPromises = [
+                  brandGuidelinesRef.current?.uploadPendingFiles(),
+                  customerFeedbackRef.current?.uploadPendingFiles(),
+                  marketResearchRef.current?.uploadPendingFiles(),
+                  competitorAnalysisRef.current?.uploadPendingFiles(),
+                  competitorAdsRef.current?.uploadPendingFiles(),
+                  adDataRef.current?.uploadPendingFiles(),
+                  analyticsRef.current?.uploadPendingFiles(),
+                  productPhotosRef.current?.uploadPendingFiles(),
+                  lifestyleImagesRef.current?.uploadPendingFiles(),
+                  videoContentRef.current?.uploadPendingFiles(),
+                ].filter(Boolean)
+
+                await Promise.all(uploadPromises)
+
+                // Save data after uploads complete
+                const updatedData = {
+                  ...knowledgeBase,
+                  completionPercentage: Math.round(overallProgress)
+                }
+                saveKB.mutate(updatedData, {
+                  onSuccess: () => {
+                    setSavedKnowledgeBase(updatedData)
+                    toast({
+                      description: "Progress saved successfully",
+                      duration: 2000,
+                    })
+                  },
+                  onError: () => {
+                    toast({
+                      title: "Save Failed",
+                      description: "Unable to save your progress. Please try again.",
+                      variant: "destructive"
+                    })
+                  }
+                })
+              } catch (error) {
+                toast({
+                  title: "Upload Failed",
+                  description: "Failed to upload files. Please try again.",
+                  variant: "destructive"
+                })
+              }
+            }}
+            disabled={!hasUnsavedChanges || saveKB.isPending}
+            data-testid="button-save"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {saveKB.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </div>
 
       {/* Overall Progress */}
@@ -911,8 +967,8 @@ export function KnowledgeBaseDashboard() {
             </div>
           )}
 
-          {/* Navigation and Save */}
-          <div className="flex items-center justify-between pt-6 border-t gap-4">
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-6 border-t">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -922,61 +978,6 @@ export function KnowledgeBaseDashboard() {
               data-testid="button-previous"
             >
               Previous
-            </Button>
-            
-            <Button 
-              onClick={async () => {
-                try {
-                  // Upload all pending files before saving
-                  const uploadPromises = [
-                    brandGuidelinesRef.current?.uploadPendingFiles(),
-                    customerFeedbackRef.current?.uploadPendingFiles(),
-                    marketResearchRef.current?.uploadPendingFiles(),
-                    competitorAnalysisRef.current?.uploadPendingFiles(),
-                    competitorAdsRef.current?.uploadPendingFiles(),
-                    adDataRef.current?.uploadPendingFiles(),
-                    analyticsRef.current?.uploadPendingFiles(),
-                    productPhotosRef.current?.uploadPendingFiles(),
-                    lifestyleImagesRef.current?.uploadPendingFiles(),
-                    videoContentRef.current?.uploadPendingFiles(),
-                  ].filter(Boolean)
-
-                  await Promise.all(uploadPromises)
-
-                  // Save data after uploads complete
-                  const updatedData = {
-                    ...knowledgeBase,
-                    completionPercentage: Math.round(overallProgress)
-                  }
-                  saveKB.mutate(updatedData, {
-                    onSuccess: () => {
-                      setSavedKnowledgeBase(updatedData)
-                      toast({
-                        description: "Progress saved successfully",
-                        duration: 2000,
-                      })
-                    },
-                    onError: () => {
-                      toast({
-                        title: "Save Failed",
-                        description: "Unable to save your progress. Please try again.",
-                        variant: "destructive"
-                      })
-                    }
-                  })
-                } catch (error) {
-                  toast({
-                    title: "Upload Failed",
-                    description: "Failed to upload files. Please try again.",
-                    variant: "destructive"
-                  })
-                }
-              }}
-              disabled={!hasUnsavedChanges || saveKB.isPending}
-              data-testid="button-save"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saveKB.isPending ? "Saving..." : "Save Changes"}
             </Button>
             
             <Button 
