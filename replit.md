@@ -109,6 +109,17 @@ The application uses **Drizzle ORM** with PostgreSQL as the primary database. Th
 - **React Hook Form**: Form state management and validation
 - **Zod**: Runtime type validation and schema definition
 
+### File Upload System
+- **Supabase Storage**: Cloud storage for knowledge base files (brand guidelines, research, media assets)
+- **Deferred Upload Pattern**: Files are stored locally as "pending" until explicitly uploaded via Next button
+- **Category-based Organization**: Files organized by category keys in JSONB structure: `{"category-key": [{name, url}]}`
+- **File Categories**: brand-guidelines, customer-feedback, market-research, competitor-analysis, competitor-ads, ad-data, analytics, product-photos, lifestyle-images, video-content
+- **Upload Flow**: 
+  1. User selects files → stored locally as "pending" (shown with yellow badge)
+  2. User clicks "Next" → all pending files upload to Supabase in parallel
+  3. After successful upload → form data saves to database
+- **Deletion Flow**: Files marked for deletion (shown with red "Will delete" badge) are removed when Next is clicked
+
 ### Planned Integrations
 - **OpenAI API**: For AI content generation across all agents
 - **Meta Ads API**: For real-time performance data analysis
