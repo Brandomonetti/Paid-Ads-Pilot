@@ -33,6 +33,8 @@ import {
 } from "lucide-react"
 
 import type { KnowledgeBase, UpdateKnowledgeBase } from "@shared/schema"
+import { FileUpload } from "@/components/file-upload"
+import type { UploadedFile } from "@/lib/supabase"
 
 interface KnowledgeBaseData {
   websiteUrl: string
@@ -52,6 +54,16 @@ interface KnowledgeBaseData {
   contentStyle: string
   salesTrends: string
   completionPercentage: number
+  brandGuidelinesFiles: UploadedFile[]
+  customerFeedbackFiles: UploadedFile[]
+  marketResearchFiles: UploadedFile[]
+  competitorAnalysisFiles: UploadedFile[]
+  competitorAdsFiles: UploadedFile[]
+  adDataFiles: UploadedFile[]
+  analyticsFiles: UploadedFile[]
+  productPhotosFiles: UploadedFile[]
+  lifestyleImagesFiles: UploadedFile[]
+  videoContentFiles: UploadedFile[]
 }
 
 export function KnowledgeBaseDashboard() {
@@ -73,7 +85,17 @@ export function KnowledgeBaseDashboard() {
     tiktokHandle: "",
     contentStyle: "",
     salesTrends: "",
-    completionPercentage: 0
+    completionPercentage: 0,
+    brandGuidelinesFiles: [],
+    customerFeedbackFiles: [],
+    marketResearchFiles: [],
+    competitorAnalysisFiles: [],
+    competitorAdsFiles: [],
+    adDataFiles: [],
+    analyticsFiles: [],
+    productPhotosFiles: [],
+    lifestyleImagesFiles: [],
+    videoContentFiles: []
   })
   
   const { toast } = useToast()
@@ -131,7 +153,17 @@ export function KnowledgeBaseDashboard() {
         tiktokHandle: existingKB.tiktokHandle || "",
         contentStyle: existingKB.contentStyle || "",
         salesTrends: existingKB.salesTrends || "",
-        completionPercentage: existingKB.completionPercentage || 0
+        completionPercentage: existingKB.completionPercentage || 0,
+        brandGuidelinesFiles: (existingKB.brandGuidelinesFiles as UploadedFile[]) || [],
+        customerFeedbackFiles: (existingKB.customerFeedbackFiles as UploadedFile[]) || [],
+        marketResearchFiles: (existingKB.marketResearchFiles as UploadedFile[]) || [],
+        competitorAnalysisFiles: (existingKB.competitorAnalysisFiles as UploadedFile[]) || [],
+        competitorAdsFiles: (existingKB.competitorAdsFiles as UploadedFile[]) || [],
+        adDataFiles: (existingKB.adDataFiles as UploadedFile[]) || [],
+        analyticsFiles: (existingKB.analyticsFiles as UploadedFile[]) || [],
+        productPhotosFiles: (existingKB.productPhotosFiles as UploadedFile[]) || [],
+        lifestyleImagesFiles: (existingKB.lifestyleImagesFiles as UploadedFile[]) || [],
+        videoContentFiles: (existingKB.videoContentFiles as UploadedFile[]) || []
       })
     }
   }, [existingKB])
@@ -419,13 +451,16 @@ export function KnowledgeBaseDashboard() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="brand-guidelines">Brand Guidelines</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-guidelines">
-                      Upload PDF/Doc
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Style guide, colors, fonts, tone</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.brandGuidelinesFiles}
+                    onFilesChange={(files) => updateField("brandGuidelinesFiles", files)}
+                    bucket="knowledge-base"
+                    folder="brand-guidelines"
+                    accept=".pdf,.doc,.docx"
+                    testId="button-upload-guidelines"
+                    label="Upload PDF/Doc"
+                    description="Style guide, colors, fonts, tone"
+                  />
                 </div>
               </div>
 
@@ -688,23 +723,29 @@ export function KnowledgeBaseDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Customer Feedback</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-feedback">
-                      Upload Reviews/Surveys
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Reviews, testimonials, survey results</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.customerFeedbackFiles}
+                    onFilesChange={(files) => updateField("customerFeedbackFiles", files)}
+                    bucket="knowledge-base"
+                    folder="customer-feedback"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+                    testId="button-upload-feedback"
+                    label="Upload Reviews/Surveys"
+                    description="Reviews, testimonials, survey results"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Market Research</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-research">
-                      Upload Research
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Market studies, audience insights</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.marketResearchFiles}
+                    onFilesChange={(files) => updateField("marketResearchFiles", files)}
+                    bucket="knowledge-base"
+                    folder="market-research"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+                    testId="button-upload-research"
+                    label="Upload Research"
+                    description="Market studies, audience insights"
+                  />
                 </div>
               </div>
             </div>
@@ -760,23 +801,29 @@ export function KnowledgeBaseDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Competitor Analysis</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Target className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-competitor-analysis">
-                      Upload Analysis
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Competitive analysis documents</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.competitorAnalysisFiles}
+                    onFilesChange={(files) => updateField("competitorAnalysisFiles", files)}
+                    bucket="knowledge-base"
+                    folder="competitor-analysis"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    testId="button-upload-competitor-analysis"
+                    label="Upload Analysis"
+                    description="Competitive analysis documents"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Competitor Ads</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Eye className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-competitor-ads">
-                      Upload Ad Examples
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Screenshots, videos of competitor ads</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.competitorAdsFiles}
+                    onFilesChange={(files) => updateField("competitorAdsFiles", files)}
+                    bucket="knowledge-base"
+                    folder="competitor-ads"
+                    accept="image/*,video/*"
+                    testId="button-upload-competitor-ads"
+                    label="Upload Ad Examples"
+                    description="Screenshots, videos of competitor ads"
+                  />
                 </div>
               </div>
             </div>
@@ -860,23 +907,29 @@ export function KnowledgeBaseDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Previous Ad Performance</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-ad-data">
-                      Upload Ad Data
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Meta Ads export, performance reports</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.adDataFiles}
+                    onFilesChange={(files) => updateField("adDataFiles", files)}
+                    bucket="knowledge-base"
+                    folder="ad-data"
+                    accept=".pdf,.csv,.xls,.xlsx"
+                    testId="button-upload-ad-data"
+                    label="Upload Ad Data"
+                    description="Meta Ads export, performance reports"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Website Analytics</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Globe className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-analytics">
-                      Upload Analytics
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Google Analytics reports, conversion data</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.analyticsFiles}
+                    onFilesChange={(files) => updateField("analyticsFiles", files)}
+                    bucket="knowledge-base"
+                    folder="analytics"
+                    accept=".pdf,.csv,.xls,.xlsx"
+                    testId="button-upload-analytics"
+                    label="Upload Analytics"
+                    description="Google Analytics reports, conversion data"
+                  />
                 </div>
               </div>
             </div>
@@ -888,33 +941,42 @@ export function KnowledgeBaseDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label>Product Photos *</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-product-photos">
-                      Upload Photos
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">High-res product shots, different angles</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.productPhotosFiles}
+                    onFilesChange={(files) => updateField("productPhotosFiles", files)}
+                    bucket="knowledge-base"
+                    folder="product-photos"
+                    accept="image/*"
+                    testId="button-upload-product-photos"
+                    label="Upload Photos"
+                    description="High-res product shots, different angles"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Lifestyle Images</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-lifestyle">
-                      Upload Images
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Product in use, customer photos</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.lifestyleImagesFiles}
+                    onFilesChange={(files) => updateField("lifestyleImagesFiles", files)}
+                    bucket="knowledge-base"
+                    folder="lifestyle-images"
+                    accept="image/*"
+                    testId="button-upload-lifestyle"
+                    label="Upload Images"
+                    description="Product in use, customer photos"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Video Content</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                    <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <Button variant="outline" size="sm" data-testid="button-upload-videos">
-                      Upload Videos
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">Product demos, testimonials, B-roll</p>
-                  </div>
+                  <FileUpload
+                    files={knowledgeBase.videoContentFiles}
+                    onFilesChange={(files) => updateField("videoContentFiles", files)}
+                    bucket="knowledge-base"
+                    folder="video-content"
+                    accept="video/*"
+                    testId="button-upload-videos"
+                    label="Upload Videos"
+                    description="Product demos, testimonials, B-roll"
+                  />
                 </div>
               </div>
 
