@@ -111,14 +111,38 @@ The application uses **Drizzle ORM** with PostgreSQL as the primary database. Th
 
 ### File Upload System
 - **Supabase Storage**: Cloud storage for knowledge base files (brand guidelines, research, media assets)
-- **Deferred Upload Pattern**: Files are stored locally as "pending" until explicitly uploaded via Next button
+- **Deferred Upload Pattern**: Files are stored locally as "pending" until explicitly uploaded via Save button
 - **Category-based Organization**: Files organized by category keys in JSONB structure: `{"category-key": [{name, url}]}`
 - **File Categories**: brand-guidelines, customer-feedback, market-research, competitor-analysis, competitor-ads, ad-data, analytics, product-photos, lifestyle-images, video-content
 - **Upload Flow**: 
   1. User selects files → stored locally as "pending" (shown with yellow badge)
-  2. User clicks "Next" → all pending files upload to Supabase in parallel
+  2. User clicks "Save Changes" → all pending files upload to Supabase in parallel
   3. After successful upload → form data saves to database
-- **Deletion Flow**: Files marked for deletion (shown with red "Will delete" badge) are removed when Next is clicked
+- **Deletion Flow**: Files marked for deletion (shown with red "Will delete" badge) are removed when Save is clicked
+
+### Save Workflow (Updated October 2025)
+The knowledge base dashboard implements a separated navigation and save workflow:
+
+**Button Behavior:**
+- **Previous/Next buttons**: Navigation only, disabled when there are unsaved changes
+- **Save button**: Handles file uploads and data persistence, disabled when there are no changes
+
+**Change Detection:**
+- Tracks unsaved changes by comparing current state with saved state using deep comparison
+- Saved state is initialized to empty baseline for new users
+- When existing data loads, both current and saved states are synchronized
+
+**Save Flow:**
+1. User makes changes to form fields or selects files
+2. Save button becomes enabled, Previous/Next buttons become disabled
+3. User clicks Save button
+4. All pending files are uploaded to Supabase in parallel
+5. Form data is saved to database via POST/PATCH request
+6. Saved state is updated to match current state
+7. Success toast notification is displayed
+8. Save button becomes disabled, Previous/Next buttons become enabled
+
+This workflow ensures users never lose data by preventing navigation when there are unsaved changes, while maintaining a clear separation between navigation and persistence actions.
 
 ### Planned Integrations
 - **OpenAI API**: For AI content generation across all agents
