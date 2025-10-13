@@ -260,53 +260,6 @@ export function KnowledgeBaseDashboard() {
       }
     })
   }, [knowledgeBase, overallProgress, saveKB, toast])
-  
-  // Autosave functionality with debouncing and guards
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (isAuthenticated && !saveKB.isPending && (existingKB || Object.values(knowledgeBase).some(field => 
-        typeof field === 'string' ? field.trim() : 
-        Array.isArray(field) ? field.length > 0 : 
-        false
-      ))) {
-        // Silent autosave - don't show toast
-        const updatedData = {
-          ...knowledgeBase,
-          completionPercentage: Math.round(overallProgress)
-        }
-        saveKB.mutate(updatedData, {
-          onSuccess: () => {
-            // Silent success - no toast for autosave
-          },
-          onError: () => {
-            // Silent error - no toast for autosave
-          }
-        })
-      }
-    }, 2000) // Auto-save after 2 seconds of no changes
-    
-    return () => clearTimeout(timeoutId)
-  }, [knowledgeBase, isAuthenticated, existingKB, overallProgress, saveKB])
-  
-  // Trigger one-time save when completion is achieved (silent)
-  const prevCompleted = React.useRef(false)
-  useEffect(() => {
-    if (isCompleted && !prevCompleted.current && isAuthenticated) {
-      prevCompleted.current = true
-      // Silent save when completion is achieved
-      const updatedData = {
-        ...knowledgeBase,
-        completionPercentage: Math.round(overallProgress)
-      }
-      saveKB.mutate(updatedData, {
-        onError: () => {
-          // Silent error - no toast for completion-triggered save
-        }
-      })
-    } else if (!isCompleted) {
-      prevCompleted.current = false
-    }
-  }, [isCompleted, isAuthenticated, knowledgeBase, overallProgress, saveKB])
 
   return (
     <div className="p-6 space-y-8">
@@ -981,11 +934,6 @@ export function KnowledgeBaseDashboard() {
               variant="outline" 
               onClick={() => {
                 setCurrentStep(Math.max(0, currentStep - 1))
-                // Show brief autosave reminder when navigating
-                toast({
-                  description: "💾 Changes auto-saved",
-                  duration: 2000,
-                })
               }}
               disabled={currentStep === 0}
               data-testid="button-previous"
@@ -994,17 +942,32 @@ export function KnowledgeBaseDashboard() {
             </Button>
             <Button 
               onClick={() => {
-                setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
-                // Show brief autosave reminder when navigating
-                toast({
-                  description: "💾 Changes auto-saved",
-                  duration: 2000,
+                // Save data before moving to next step
+                const updatedData = {
+                  ...knowledgeBase,
+                  completionPercentage: Math.round(overallProgress)
+                }
+                saveKB.mutate(updatedData, {
+                  onSuccess: () => {
+                    setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+                    toast({
+                      description: "Progress saved",
+                      duration: 2000,
+                    })
+                  },
+                  onError: () => {
+                    toast({
+                      title: "Save Failed",
+                      description: "Unable to save your progress. Please try again.",
+                      variant: "destructive"
+                    })
+                  }
                 })
               }}
-              disabled={currentStep === steps.length - 1}
+              disabled={currentStep === steps.length - 1 || saveKB.isPending}
               data-testid="button-next"
             >
-              Next
+              {saveKB.isPending ? "Saving..." : "Next"}
             </Button>
           </div>
         </CardContent>
