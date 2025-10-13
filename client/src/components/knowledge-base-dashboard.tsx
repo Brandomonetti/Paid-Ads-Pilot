@@ -239,27 +239,6 @@ export function KnowledgeBaseDashboard() {
     }))
   }
   
-  const handleSave = useCallback(() => {
-    const updatedData = {
-      ...knowledgeBase,
-      completionPercentage: Math.round(overallProgress)
-    }
-    saveKB.mutate(updatedData, {
-      onSuccess: () => {
-        toast({
-          title: "Progress Saved",
-          description: "Your knowledge base has been updated successfully."
-        })
-      },
-      onError: () => {
-        toast({
-          title: "Save Failed",
-          description: "Unable to save your progress. Please try again.",
-          variant: "destructive"
-        })
-      }
-    })
-  }, [knowledgeBase, overallProgress, saveKB, toast])
 
   return (
     <div className="p-6 space-y-8">
@@ -271,43 +250,12 @@ export function KnowledgeBaseDashboard() {
             Share your brand intelligence to supercharge AI research
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge 
-            variant={isCompleted ? "default" : "secondary"} 
-            className={`px-3 py-1 ${isCompleted ? 'bg-green-600 text-white' : ''}`}
-          >
-            {Math.round(overallProgress)}% Complete
-          </Badge>
-          <Button 
-            onClick={() => {
-              const updatedData = {
-                ...knowledgeBase,
-                completionPercentage: Math.round(overallProgress)
-              }
-              saveKB.mutate(updatedData, {
-                onSuccess: () => {
-                  toast({
-                    title: "Progress saved",
-                    description: "Your knowledge base has been updated."
-                  })
-                },
-                onError: () => {
-                  toast({
-                    title: "Save Failed",
-                    description: "Unable to save your progress. Please try again.",
-                    variant: "destructive"
-                  })
-                }
-              })
-            }} 
-            disabled={saveKB.isPending} 
-            variant="outline" 
-            data-testid="button-save-knowledge-base"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            {saveKB.isPending ? "Saving..." : "Save Now"}
-          </Button>
-        </div>
+        <Badge 
+          variant={isCompleted ? "default" : "secondary"} 
+          className={`px-3 py-1 ${isCompleted ? 'bg-green-600 text-white' : ''}`}
+        >
+          {Math.round(overallProgress)}% Complete
+        </Badge>
       </div>
 
       {/* Overall Progress */}
