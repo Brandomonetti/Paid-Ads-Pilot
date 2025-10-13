@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, FileText, Loader2, Image, Video, File } from 'lucide-react';
-import { uploadFile, deleteFile, type UploadedFile } from '@/lib/supabase';
+import { uploadFile, deleteFile, type UploadedFile, type UploadedFilesStructure } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
 interface FileUploadProps {
-  files: UploadedFile[];
-  onFilesChange: (files: UploadedFile[]) => void;
+  files: UploadedFilesStructure;
+  onFilesChange: (files: UploadedFilesStructure) => void;
   bucket: string;
   folder: string;
-  category: string;
+  categoryKey: string;
   accept?: string;
   multiple?: boolean;
   testId: string;
@@ -23,7 +23,7 @@ export function FileUpload({
   onFilesChange,
   bucket,
   folder,
-  category,
+  categoryKey,
   accept,
   multiple = true,
   testId,
@@ -33,8 +33,8 @@ export function FileUpload({
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  // Filter files to only show files for this category
-  const categoryFiles = files.filter(f => f.category === category);
+  // Get files for this specific category
+  const categoryFiles = files[categoryKey] || [];
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -45,11 +45,17 @@ export function FileUpload({
 
     try {
       for (const file of selectedFiles) {
-        const uploadedFile = await uploadFile(file, bucket, folder, category);
+        const uploadedFile = await uploadFile(file, bucket, folder);
         uploadedFiles.push(uploadedFile);
       }
 
-      onFilesChange([...files, ...uploadedFiles]);
+      // Update the files object with new uploads for this category
+      const updatedFiles = {
+        ...files,
+        [categoryKey]: [...categoryFiles, ...uploadedFiles]
+      };
+      onFilesChange(updatedFiles);
+      
       toast({
         title: "Success",
         description: `${uploadedFiles.length} file(s) uploaded successfully`
@@ -69,8 +75,15 @@ export function FileUpload({
   const handleRemoveFile = async (fileToRemove: UploadedFile) => {
     try {
       await deleteFile(bucket, fileToRemove.url);
-      const updatedFiles = files.filter(f => f.url !== fileToRemove.url);
+      
+      // Remove file from the category array
+      const updatedCategoryFiles = categoryFiles.filter(f => f.url !== fileToRemove.url);
+      const updatedFiles = {
+        ...files,
+        [categoryKey]: updatedCategoryFiles
+      };
       onFilesChange(updatedFiles);
+      
       toast({
         title: "Success",
         description: "File removed successfully"

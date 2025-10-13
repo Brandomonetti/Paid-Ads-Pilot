@@ -368,8 +368,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   // Performance Data
   salesTrends: text("sales_trends"),
   
-  // Uploaded Files (JSON: [{ name: string, url: string, category: string }])
-  uploadedFiles: jsonb("uploaded_files").notNull().default(sql`'[]'::jsonb`),
+  // Uploaded Files (JSON: { "category-key": [{ name: string, url: string }] })
+  uploadedFiles: jsonb("uploaded_files").notNull().default(sql`'{}'::jsonb`),
   
   // Completion tracking
   completionPercentage: integer("completion_percentage").notNull().default(0),

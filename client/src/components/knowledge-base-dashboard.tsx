@@ -34,7 +34,7 @@ import {
 
 import type { KnowledgeBase, UpdateKnowledgeBase } from "@shared/schema"
 import { FileUpload } from "@/components/file-upload"
-import type { UploadedFile } from "@/lib/supabase"
+import type { UploadedFilesStructure } from "@/lib/supabase"
 
 interface KnowledgeBaseData {
   websiteUrl: string
@@ -54,7 +54,7 @@ interface KnowledgeBaseData {
   contentStyle: string
   salesTrends: string
   completionPercentage: number
-  uploadedFiles: UploadedFile[]
+  uploadedFiles: UploadedFilesStructure
 }
 
 export function KnowledgeBaseDashboard() {
@@ -77,7 +77,7 @@ export function KnowledgeBaseDashboard() {
     contentStyle: "",
     salesTrends: "",
     completionPercentage: 0,
-    uploadedFiles: []
+    uploadedFiles: {}
   })
   
   const { toast } = useToast()
@@ -136,7 +136,7 @@ export function KnowledgeBaseDashboard() {
         contentStyle: existingKB.contentStyle || "",
         salesTrends: existingKB.salesTrends || "",
         completionPercentage: existingKB.completionPercentage || 0,
-        uploadedFiles: (existingKB.uploadedFiles as UploadedFile[]) || []
+        uploadedFiles: (existingKB.uploadedFiles as UploadedFilesStructure) || {}
       })
     }
   }, [existingKB])
@@ -429,7 +429,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="brand-guidelines"
-                    category="Brand Guidelines"
+                    categoryKey="brand-guidelines"
                     accept=".pdf,.doc,.docx"
                     testId="button-upload-guidelines"
                     label="Upload PDF/Doc"
@@ -702,7 +702,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="customer-feedback"
-                    category="Customer Feedback"
+                    categoryKey="customer-feedback"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
                     testId="button-upload-feedback"
                     label="Upload Reviews/Surveys"
@@ -716,7 +716,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="market-research"
-                    category="Market Research"
+                    categoryKey="market-research"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
                     testId="button-upload-research"
                     label="Upload Research"
@@ -782,7 +782,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="competitor-analysis"
-                    category="Competitor Analysis"
+                    categoryKey="competitor-analysis"
                     accept=".pdf,.doc,.docx,.xls,.xlsx"
                     testId="button-upload-competitor-analysis"
                     label="Upload Analysis"
@@ -796,7 +796,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="competitor-ads"
-                    category="Competitor Ads"
+                    categoryKey="competitor-ads"
                     accept="image/*,video/*"
                     testId="button-upload-competitor-ads"
                     label="Upload Ad Examples"
@@ -890,7 +890,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="ad-data"
-                    category="Ad Performance Data"
+                    categoryKey="ad-data"
                     accept=".pdf,.csv,.xls,.xlsx"
                     testId="button-upload-ad-data"
                     label="Upload Ad Data"
@@ -904,7 +904,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="analytics"
-                    category="Website Analytics"
+                    categoryKey="analytics"
                     accept=".pdf,.csv,.xls,.xlsx"
                     testId="button-upload-analytics"
                     label="Upload Analytics"
@@ -926,7 +926,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="product-photos"
-                    category="Product Photos"
+                    categoryKey="product-photos"
                     accept="image/*"
                     testId="button-upload-product-photos"
                     label="Upload Photos"
@@ -940,7 +940,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="lifestyle-images"
-                    category="Lifestyle Images"
+                    categoryKey="lifestyle-images"
                     accept="image/*"
                     testId="button-upload-lifestyle"
                     label="Upload Images"
@@ -954,7 +954,7 @@ export function KnowledgeBaseDashboard() {
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="video-content"
-                    category="Video Content"
+                    categoryKey="video-content"
                     accept="video/*"
                     testId="button-upload-videos"
                     label="Upload Videos"
