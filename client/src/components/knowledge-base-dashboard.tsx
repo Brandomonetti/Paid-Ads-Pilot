@@ -58,31 +58,33 @@ interface KnowledgeBaseData {
   uploadedFiles: UploadedFilesStructure
 }
 
+const initialKnowledgeBaseState: KnowledgeBaseData = {
+  websiteUrl: "",
+  brandVoice: "",
+  missionStatement: "",
+  brandValues: [],
+  productLinks: [],
+  pricingInfo: "",
+  keyBenefits: [],
+  usps: [],
+  currentPersonas: "",
+  demographics: "",
+  mainCompetitors: [],
+  instagramHandle: "",
+  facebookPage: "",
+  tiktokHandle: "",
+  contentStyle: "",
+  salesTrends: "",
+  completionPercentage: 0,
+  uploadedFiles: {}
+}
+
 export function KnowledgeBaseDashboard() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>({
-    websiteUrl: "",
-    brandVoice: "",
-    missionStatement: "",
-    brandValues: [],
-    productLinks: [],
-    pricingInfo: "",
-    keyBenefits: [],
-    usps: [],
-    currentPersonas: "",
-    demographics: "",
-    mainCompetitors: [],
-    instagramHandle: "",
-    facebookPage: "",
-    tiktokHandle: "",
-    contentStyle: "",
-    salesTrends: "",
-    completionPercentage: 0,
-    uploadedFiles: {}
-  })
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>(initialKnowledgeBaseState)
   
-  // Track the saved state to detect changes
-  const [savedKnowledgeBase, setSavedKnowledgeBase] = useState<KnowledgeBaseData | null>(null)
+  // Track the saved state to detect changes - initialize to empty state for new users
+  const [savedKnowledgeBase, setSavedKnowledgeBase] = useState<KnowledgeBaseData>(initialKnowledgeBaseState)
   
   const { toast } = useToast()
   const { user, isAuthenticated } = useAuth()
@@ -161,7 +163,6 @@ export function KnowledgeBaseDashboard() {
   
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
-    if (!savedKnowledgeBase) return false
     return JSON.stringify(knowledgeBase) !== JSON.stringify(savedKnowledgeBase)
   }, [knowledgeBase, savedKnowledgeBase])
 
