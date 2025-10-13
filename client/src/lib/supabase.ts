@@ -12,12 +12,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface UploadedFile {
   name: string;
   url: string;
+  category: string;
 }
 
 export async function uploadFile(
   file: File,
   bucket: string,
-  folder: string
+  folder: string,
+  category: string
 ): Promise<UploadedFile> {
   const fileExt = file.name.split('.').pop();
   const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
@@ -40,7 +42,8 @@ export async function uploadFile(
 
   return {
     name: file.name,
-    url: publicUrl
+    url: publicUrl,
+    category
   };
 }
 

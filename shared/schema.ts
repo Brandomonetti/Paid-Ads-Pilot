@@ -368,17 +368,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   // Performance Data
   salesTrends: text("sales_trends"),
   
-  // Uploaded Files (JSON: [{ name: string, url: string }])
-  brandGuidelinesFiles: jsonb("brand_guidelines_files").notNull().default(sql`'[]'::jsonb`),
-  customerFeedbackFiles: jsonb("customer_feedback_files").notNull().default(sql`'[]'::jsonb`),
-  marketResearchFiles: jsonb("market_research_files").notNull().default(sql`'[]'::jsonb`),
-  competitorAnalysisFiles: jsonb("competitor_analysis_files").notNull().default(sql`'[]'::jsonb`),
-  competitorAdsFiles: jsonb("competitor_ads_files").notNull().default(sql`'[]'::jsonb`),
-  adDataFiles: jsonb("ad_data_files").notNull().default(sql`'[]'::jsonb`),
-  analyticsFiles: jsonb("analytics_files").notNull().default(sql`'[]'::jsonb`),
-  productPhotosFiles: jsonb("product_photos_files").notNull().default(sql`'[]'::jsonb`),
-  lifestyleImagesFiles: jsonb("lifestyle_images_files").notNull().default(sql`'[]'::jsonb`),
-  videoContentFiles: jsonb("video_content_files").notNull().default(sql`'[]'::jsonb`),
+  // Uploaded Files (JSON: [{ name: string, url: string, category: string }])
+  uploadedFiles: jsonb("uploaded_files").notNull().default(sql`'[]'::jsonb`),
   
   // Completion tracking
   completionPercentage: integer("completion_percentage").notNull().default(0),

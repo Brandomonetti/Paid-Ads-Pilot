@@ -54,16 +54,7 @@ interface KnowledgeBaseData {
   contentStyle: string
   salesTrends: string
   completionPercentage: number
-  brandGuidelinesFiles: UploadedFile[]
-  customerFeedbackFiles: UploadedFile[]
-  marketResearchFiles: UploadedFile[]
-  competitorAnalysisFiles: UploadedFile[]
-  competitorAdsFiles: UploadedFile[]
-  adDataFiles: UploadedFile[]
-  analyticsFiles: UploadedFile[]
-  productPhotosFiles: UploadedFile[]
-  lifestyleImagesFiles: UploadedFile[]
-  videoContentFiles: UploadedFile[]
+  uploadedFiles: UploadedFile[]
 }
 
 export function KnowledgeBaseDashboard() {
@@ -86,16 +77,7 @@ export function KnowledgeBaseDashboard() {
     contentStyle: "",
     salesTrends: "",
     completionPercentage: 0,
-    brandGuidelinesFiles: [],
-    customerFeedbackFiles: [],
-    marketResearchFiles: [],
-    competitorAnalysisFiles: [],
-    competitorAdsFiles: [],
-    adDataFiles: [],
-    analyticsFiles: [],
-    productPhotosFiles: [],
-    lifestyleImagesFiles: [],
-    videoContentFiles: []
+    uploadedFiles: []
   })
   
   const { toast } = useToast()
@@ -154,16 +136,7 @@ export function KnowledgeBaseDashboard() {
         contentStyle: existingKB.contentStyle || "",
         salesTrends: existingKB.salesTrends || "",
         completionPercentage: existingKB.completionPercentage || 0,
-        brandGuidelinesFiles: (existingKB.brandGuidelinesFiles as UploadedFile[]) || [],
-        customerFeedbackFiles: (existingKB.customerFeedbackFiles as UploadedFile[]) || [],
-        marketResearchFiles: (existingKB.marketResearchFiles as UploadedFile[]) || [],
-        competitorAnalysisFiles: (existingKB.competitorAnalysisFiles as UploadedFile[]) || [],
-        competitorAdsFiles: (existingKB.competitorAdsFiles as UploadedFile[]) || [],
-        adDataFiles: (existingKB.adDataFiles as UploadedFile[]) || [],
-        analyticsFiles: (existingKB.analyticsFiles as UploadedFile[]) || [],
-        productPhotosFiles: (existingKB.productPhotosFiles as UploadedFile[]) || [],
-        lifestyleImagesFiles: (existingKB.lifestyleImagesFiles as UploadedFile[]) || [],
-        videoContentFiles: (existingKB.videoContentFiles as UploadedFile[]) || []
+        uploadedFiles: (existingKB.uploadedFiles as UploadedFile[]) || []
       })
     }
   }, [existingKB])
@@ -452,10 +425,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label htmlFor="brand-guidelines">Brand Guidelines</Label>
                   <FileUpload
-                    files={knowledgeBase.brandGuidelinesFiles}
-                    onFilesChange={(files) => updateField("brandGuidelinesFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="brand-guidelines"
+                    category="Brand Guidelines"
                     accept=".pdf,.doc,.docx"
                     testId="button-upload-guidelines"
                     label="Upload PDF/Doc"
@@ -724,10 +698,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Customer Feedback</Label>
                   <FileUpload
-                    files={knowledgeBase.customerFeedbackFiles}
-                    onFilesChange={(files) => updateField("customerFeedbackFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="customer-feedback"
+                    category="Customer Feedback"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
                     testId="button-upload-feedback"
                     label="Upload Reviews/Surveys"
@@ -737,10 +712,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Market Research</Label>
                   <FileUpload
-                    files={knowledgeBase.marketResearchFiles}
-                    onFilesChange={(files) => updateField("marketResearchFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="market-research"
+                    category="Market Research"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
                     testId="button-upload-research"
                     label="Upload Research"
@@ -802,10 +778,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Competitor Analysis</Label>
                   <FileUpload
-                    files={knowledgeBase.competitorAnalysisFiles}
-                    onFilesChange={(files) => updateField("competitorAnalysisFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="competitor-analysis"
+                    category="Competitor Analysis"
                     accept=".pdf,.doc,.docx,.xls,.xlsx"
                     testId="button-upload-competitor-analysis"
                     label="Upload Analysis"
@@ -815,10 +792,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Competitor Ads</Label>
                   <FileUpload
-                    files={knowledgeBase.competitorAdsFiles}
-                    onFilesChange={(files) => updateField("competitorAdsFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="competitor-ads"
+                    category="Competitor Ads"
                     accept="image/*,video/*"
                     testId="button-upload-competitor-ads"
                     label="Upload Ad Examples"
@@ -908,10 +886,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Previous Ad Performance</Label>
                   <FileUpload
-                    files={knowledgeBase.adDataFiles}
-                    onFilesChange={(files) => updateField("adDataFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="ad-data"
+                    category="Ad Performance Data"
                     accept=".pdf,.csv,.xls,.xlsx"
                     testId="button-upload-ad-data"
                     label="Upload Ad Data"
@@ -921,10 +900,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Website Analytics</Label>
                   <FileUpload
-                    files={knowledgeBase.analyticsFiles}
-                    onFilesChange={(files) => updateField("analyticsFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="analytics"
+                    category="Website Analytics"
                     accept=".pdf,.csv,.xls,.xlsx"
                     testId="button-upload-analytics"
                     label="Upload Analytics"
@@ -942,10 +922,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Product Photos *</Label>
                   <FileUpload
-                    files={knowledgeBase.productPhotosFiles}
-                    onFilesChange={(files) => updateField("productPhotosFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="product-photos"
+                    category="Product Photos"
                     accept="image/*"
                     testId="button-upload-product-photos"
                     label="Upload Photos"
@@ -955,10 +936,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Lifestyle Images</Label>
                   <FileUpload
-                    files={knowledgeBase.lifestyleImagesFiles}
-                    onFilesChange={(files) => updateField("lifestyleImagesFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="lifestyle-images"
+                    category="Lifestyle Images"
                     accept="image/*"
                     testId="button-upload-lifestyle"
                     label="Upload Images"
@@ -968,10 +950,11 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Video Content</Label>
                   <FileUpload
-                    files={knowledgeBase.videoContentFiles}
-                    onFilesChange={(files) => updateField("videoContentFiles", files)}
+                    files={knowledgeBase.uploadedFiles}
+                    onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
                     folder="video-content"
+                    category="Video Content"
                     accept="video/*"
                     testId="button-upload-videos"
                     label="Upload Videos"

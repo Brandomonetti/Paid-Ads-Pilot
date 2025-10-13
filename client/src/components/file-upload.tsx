@@ -10,6 +10,7 @@ interface FileUploadProps {
   onFilesChange: (files: UploadedFile[]) => void;
   bucket: string;
   folder: string;
+  category: string;
   accept?: string;
   multiple?: boolean;
   testId: string;
@@ -22,6 +23,7 @@ export function FileUpload({
   onFilesChange,
   bucket,
   folder,
+  category,
   accept,
   multiple = true,
   testId,
@@ -30,6 +32,9 @@ export function FileUpload({
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+
+  // Filter files to only show files for this category
+  const categoryFiles = files.filter(f => f.category === category);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -40,7 +45,7 @@ export function FileUpload({
 
     try {
       for (const file of selectedFiles) {
-        const uploadedFile = await uploadFile(file, bucket, folder);
+        const uploadedFile = await uploadFile(file, bucket, folder, category);
         uploadedFiles.push(uploadedFile);
       }
 
@@ -61,10 +66,10 @@ export function FileUpload({
     }
   };
 
-  const handleRemoveFile = async (fileToRemove: UploadedFile, index: number) => {
+  const handleRemoveFile = async (fileToRemove: UploadedFile) => {
     try {
       await deleteFile(bucket, fileToRemove.url);
-      const updatedFiles = files.filter((_, i) => i !== index);
+      const updatedFiles = files.filter(f => f.url !== fileToRemove.url);
       onFilesChange(updatedFiles);
       toast({
         title: "Success",
@@ -108,9 +113,9 @@ export function FileUpload({
 
   return (
     <div className="space-y-2">
-      {files.length > 0 && (
+      {categoryFiles.length > 0 && (
         <div className="space-y-2 mb-3">
-          {files.map((file, index) => {
+          {categoryFiles.map((file, index) => {
             const fileExt = getFileExtension(file.name);
             return (
               <div
@@ -142,7 +147,7 @@ export function FileUpload({
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => handleRemoveFile(file, index)}
+                  onClick={() => handleRemoveFile(file)}
                   data-testid={`button-remove-file-${index}`}
                 >
                   <X className="h-3 w-3" />
