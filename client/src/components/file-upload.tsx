@@ -126,8 +126,44 @@ export function FileUpload({
 
   return (
     <div className="space-y-2">
+      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+        <input
+          type="file"
+          id={testId}
+          accept={accept}
+          multiple={multiple}
+          onChange={handleFileChange}
+          className="hidden"
+          disabled={isUploading}
+        />
+        <label htmlFor={testId}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isUploading}
+            data-testid={testId}
+            asChild
+          >
+            <span>
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                label
+              )}
+            </span>
+          </Button>
+        </label>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
+
       {categoryFiles.length > 0 && (
-        <div className="space-y-2 mb-3">
+        <div className="space-y-2 mt-3">
           {categoryFiles.map((file, index) => {
             const fileExt = getFileExtension(file.name);
             return (
@@ -170,42 +206,6 @@ export function FileUpload({
           })}
         </div>
       )}
-      
-      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-        <input
-          type="file"
-          id={testId}
-          accept={accept}
-          multiple={multiple}
-          onChange={handleFileChange}
-          className="hidden"
-          disabled={isUploading}
-        />
-        <label htmlFor={testId}>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isUploading}
-            data-testid={testId}
-            asChild
-          >
-            <span>
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                label
-              )}
-            </span>
-          </Button>
-        </label>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-      </div>
     </div>
   );
 }
