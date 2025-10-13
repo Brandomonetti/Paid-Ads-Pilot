@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import React from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { queryClient, apiRequest } from "@/lib/queryClient"
@@ -33,7 +33,7 @@ import {
 } from "lucide-react"
 
 import type { KnowledgeBase, UpdateKnowledgeBase } from "@shared/schema"
-import { FileUpload } from "@/components/file-upload"
+import { FileUpload, type FileUploadHandle } from "@/components/file-upload"
 import type { UploadedFilesStructure } from "@/lib/supabase"
 
 interface KnowledgeBaseData {
@@ -82,6 +82,18 @@ export function KnowledgeBaseDashboard() {
   
   const { toast } = useToast()
   const { user, isAuthenticated } = useAuth()
+  
+  // File upload refs for all upload sections
+  const brandGuidelinesRef = useRef<FileUploadHandle>(null)
+  const customerFeedbackRef = useRef<FileUploadHandle>(null)
+  const marketResearchRef = useRef<FileUploadHandle>(null)
+  const competitorAnalysisRef = useRef<FileUploadHandle>(null)
+  const competitorAdsRef = useRef<FileUploadHandle>(null)
+  const adDataRef = useRef<FileUploadHandle>(null)
+  const analyticsRef = useRef<FileUploadHandle>(null)
+  const productPhotosRef = useRef<FileUploadHandle>(null)
+  const lifestyleImagesRef = useRef<FileUploadHandle>(null)
+  const videoContentRef = useRef<FileUploadHandle>(null)
   
   // Load existing knowledge base
   const { data: existingKB } = useQuery({
@@ -326,6 +338,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label htmlFor="brand-guidelines">Brand Guidelines</Label>
                   <FileUpload
+                    ref={brandGuidelinesRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -599,6 +612,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Customer Feedback</Label>
                   <FileUpload
+                    ref={customerFeedbackRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -613,6 +627,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Market Research</Label>
                   <FileUpload
+                    ref={marketResearchRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -679,6 +694,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Competitor Analysis</Label>
                   <FileUpload
+                    ref={competitorAnalysisRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -693,6 +709,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Competitor Ads</Label>
                   <FileUpload
+                    ref={competitorAdsRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -787,6 +804,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Previous Ad Performance</Label>
                   <FileUpload
+                    ref={adDataRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -801,6 +819,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Website Analytics</Label>
                   <FileUpload
+                    ref={analyticsRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -823,6 +842,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Product Photos *</Label>
                   <FileUpload
+                    ref={productPhotosRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -837,6 +857,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Lifestyle Images</Label>
                   <FileUpload
+                    ref={lifestyleImagesRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -851,6 +872,7 @@ export function KnowledgeBaseDashboard() {
                 <div className="space-y-2">
                   <Label>Video Content</Label>
                   <FileUpload
+                    ref={videoContentRef}
                     files={knowledgeBase.uploadedFiles}
                     onFilesChange={(files) => updateField("uploadedFiles", files)}
                     bucket="knowledge-base"
@@ -889,28 +911,52 @@ export function KnowledgeBaseDashboard() {
               Previous
             </Button>
             <Button 
-              onClick={() => {
-                // Save data before moving to next step
-                const updatedData = {
-                  ...knowledgeBase,
-                  completionPercentage: Math.round(overallProgress)
-                }
-                saveKB.mutate(updatedData, {
-                  onSuccess: () => {
-                    setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
-                    toast({
-                      description: "Progress saved",
-                      duration: 2000,
-                    })
-                  },
-                  onError: () => {
-                    toast({
-                      title: "Save Failed",
-                      description: "Unable to save your progress. Please try again.",
-                      variant: "destructive"
-                    })
+              onClick={async () => {
+                try {
+                  // Upload all pending files before saving
+                  const uploadPromises = [
+                    brandGuidelinesRef.current?.uploadPendingFiles(),
+                    customerFeedbackRef.current?.uploadPendingFiles(),
+                    marketResearchRef.current?.uploadPendingFiles(),
+                    competitorAnalysisRef.current?.uploadPendingFiles(),
+                    competitorAdsRef.current?.uploadPendingFiles(),
+                    adDataRef.current?.uploadPendingFiles(),
+                    analyticsRef.current?.uploadPendingFiles(),
+                    productPhotosRef.current?.uploadPendingFiles(),
+                    lifestyleImagesRef.current?.uploadPendingFiles(),
+                    videoContentRef.current?.uploadPendingFiles(),
+                  ].filter(Boolean)
+
+                  await Promise.all(uploadPromises)
+
+                  // Save data after uploads complete
+                  const updatedData = {
+                    ...knowledgeBase,
+                    completionPercentage: Math.round(overallProgress)
                   }
-                })
+                  saveKB.mutate(updatedData, {
+                    onSuccess: () => {
+                      setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+                      toast({
+                        description: "Progress saved",
+                        duration: 2000,
+                      })
+                    },
+                    onError: () => {
+                      toast({
+                        title: "Save Failed",
+                        description: "Unable to save your progress. Please try again.",
+                        variant: "destructive"
+                      })
+                    }
+                  })
+                } catch (error) {
+                  toast({
+                    title: "Upload Failed",
+                    description: "Failed to upload files. Please try again.",
+                    variant: "destructive"
+                  })
+                }
               }}
               disabled={currentStep === steps.length - 1 || saveKB.isPending}
               data-testid="button-next"
