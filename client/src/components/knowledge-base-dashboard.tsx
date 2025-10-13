@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import React from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { queryClient, apiRequest } from "@/lib/queryClient"
@@ -29,7 +29,8 @@ import {
   FileText,
   Link,
   Eye,
-  Zap
+  Zap,
+  Save
 } from "lucide-react"
 
 import type { KnowledgeBase, UpdateKnowledgeBase } from "@shared/schema"
@@ -79,6 +80,9 @@ export function KnowledgeBaseDashboard() {
     completionPercentage: 0,
     uploadedFiles: {}
   })
+  
+  // Track the saved state to detect changes
+  const [savedKnowledgeBase, setSavedKnowledgeBase] = useState<KnowledgeBaseData | null>(null)
   
   const { toast } = useToast()
   const { user, isAuthenticated } = useAuth()
@@ -130,7 +134,7 @@ export function KnowledgeBaseDashboard() {
   // Load existing data when available
   useEffect(() => {
     if (existingKB) {
-      setKnowledgeBase({
+      const loadedData = {
         websiteUrl: existingKB.websiteUrl || "",
         brandVoice: existingKB.brandVoice || "",
         missionStatement: existingKB.missionStatement || "",
@@ -149,9 +153,17 @@ export function KnowledgeBaseDashboard() {
         salesTrends: existingKB.salesTrends || "",
         completionPercentage: existingKB.completionPercentage || 0,
         uploadedFiles: (existingKB.uploadedFiles as UploadedFilesStructure) || {}
-      })
+      }
+      setKnowledgeBase(loadedData)
+      setSavedKnowledgeBase(loadedData)
     }
   }, [existingKB])
+  
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!savedKnowledgeBase) return false
+    return JSON.stringify(knowledgeBase) !== JSON.stringify(savedKnowledgeBase)
+  }, [knowledgeBase, savedKnowledgeBase])
 
   const steps = [
     { id: "brand", title: "Brand Fundamentals", icon: Palette, description: "Core brand identity and guidelines" },
@@ -898,18 +910,19 @@ export function KnowledgeBaseDashboard() {
             </div>
           )}
 
-          {/* Navigation */}
-          <div className="flex justify-between pt-6 border-t">
+          {/* Navigation and Save */}
+          <div className="flex items-center justify-between pt-6 border-t gap-4">
             <Button 
               variant="outline" 
               onClick={() => {
                 setCurrentStep(Math.max(0, currentStep - 1))
               }}
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 || hasUnsavedChanges}
               data-testid="button-previous"
             >
               Previous
             </Button>
+            
             <Button 
               onClick={async () => {
                 try {
@@ -936,9 +949,9 @@ export function KnowledgeBaseDashboard() {
                   }
                   saveKB.mutate(updatedData, {
                     onSuccess: () => {
-                      setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+                      setSavedKnowledgeBase(updatedData)
                       toast({
-                        description: "Progress saved",
+                        description: "Progress saved successfully",
                         duration: 2000,
                       })
                     },
@@ -958,10 +971,21 @@ export function KnowledgeBaseDashboard() {
                   })
                 }
               }}
-              disabled={currentStep === steps.length - 1 || saveKB.isPending}
+              disabled={!hasUnsavedChanges || saveKB.isPending}
+              data-testid="button-save"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saveKB.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+              }}
+              disabled={currentStep === steps.length - 1 || hasUnsavedChanges}
               data-testid="button-next"
             >
-              {saveKB.isPending ? "Saving..." : "Next"}
+              Next
             </Button>
           </div>
         </CardContent>
