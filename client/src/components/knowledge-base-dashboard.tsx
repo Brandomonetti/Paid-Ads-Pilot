@@ -1015,7 +1015,7 @@ export function KnowledgeBaseDashboard() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Auto-saved and ready to use</span>
+                  <span className="text-sm font-medium">Ready to use</span>
                 </div>
                 <Button className="w-full bg-green-600 hover:bg-green-700" data-testid="button-activate-agents">
                   <Zap className="h-4 w-4 mr-2" />
