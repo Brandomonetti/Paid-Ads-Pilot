@@ -28,6 +28,7 @@ import {
 import { Avatar, Concept, AvatarConcept, KnowledgeBase, insertAvatarSchema, insertConceptSchema, insertAvatarConceptSchema } from "@shared/schema"
 import type { z } from "zod"
 import { apiRequest, queryClient } from "@/lib/queryClient"
+import { useToast } from "@/hooks/use-toast"
 
 type AvatarInsert = z.infer<typeof insertAvatarSchema>
 type ConceptInsert = z.infer<typeof insertConceptSchema>
@@ -51,6 +52,7 @@ export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const { toast } = useToast()
 
 
   // Fetch avatars from backend
@@ -157,69 +159,63 @@ export function ResearchAgentDashboard() {
     console.log(`Concept ${id} ${status}:`, feedback[id])
   }
 
-  const generateNewAvatars = () => {
+  const generateNewAvatars = async () => {
+    if (!knowledgeBase) {
+      toast({
+        title: "Knowledge Base Required",
+        description: "Please complete your knowledge base setup first before generating avatars.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsGenerating(true)
-    //todo: remove mock functionality - integrate with OpenAI API
-    setTimeout(async () => {
-      const newAvatar: AvatarInsert = {
-        name: "Fitness Enthusiast",
-        ageRange: "22-40", 
-        demographics: "Gym members, active lifestyle, supplement users",
-        painPoint: "Struggling to meet protein goals with whole foods",
-        hooks: [
-          "Hit your macros without the math",
-          "Real food, real gains",
-          "Stop choking down protein powder"
-        ],
+    try {
+      const response = await apiRequest('POST', '/api/generate-avatar')
+      const generatedAvatar = await response.json()
+      
+      // Create the avatar in the database
+      await createAvatarMutation.mutateAsync({
+        name: generatedAvatar.name,
+        ageRange: generatedAvatar.demographics?.split(',')[0] || "25-45",
+        demographics: generatedAvatar.demographics,
+        painPoint: generatedAvatar.painPoints?.[0] || generatedAvatar.description,
+        hooks: generatedAvatar.painPoints || [],
         status: "pending"
-      }
-      try {
-        await createAvatarMutation.mutateAsync(newAvatar)
-      } catch (error) {
-        console.error('Failed to create avatar:', error)
-      }
+      })
+      
+      toast({
+        title: "Avatar Generated",
+        description: `Successfully generated ${generatedAvatar.name}`,
+      })
+    } catch (error) {
+      console.error('Failed to generate avatar:', error)
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate avatar. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
       setIsGenerating(false)
-    }, 2000)
+    }
   }
 
-  const generateNewConcepts = () => {
+  const generateNewConcepts = async () => {
     if (!selectedAvatar) return
     
-    setIsGenerating(true)
-    //todo: remove mock functionality - integrate with social media APIs
-    setTimeout(async () => {
-      const newConcept: ConceptInsert = {
-        title: "Day in My Life - Healthy Eating Edition",
-        format: "DIML Storytelling",
-        platform: "TikTok/Instagram Stories",
-        industry: "Health & Wellness",
-        performance: {
-          views: "1.2M",
-          engagement: "9.4%",
-          conversion: "3.1%"
-        },
-        insights: [
-          "DIML content creates parasocial connection",
-          "Healthy lifestyle documentation trending",
-          "Multiple touchpoints increase conversion"
-        ],
-        keyElements: [
-          "Morning routine showcase",
-          "Meal prep moments", 
-          "Product integration naturally",
-          "Authentic lifestyle documentation",
-          "Multiple story segments"
-        ],
-        status: "pending",
-        referenceUrl: "#"
-      }
-      try {
-        await createConceptMutation.mutateAsync(newConcept)
-      } catch (error) {
-        console.error('Failed to create concept:', error)
-      }
-      setIsGenerating(false)
-    }, 2000)
+    if (!knowledgeBase) {
+      toast({
+        title: "Knowledge Base Required",
+        description: "Please complete your knowledge base setup first before generating concepts.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    toast({
+      title: "Feature In Development",
+      description: "Concept generation will be available soon. This feature is being actively developed.",
+    })
   }
 
   const linkConcept = async (avatarId: string, conceptId: string) => {
