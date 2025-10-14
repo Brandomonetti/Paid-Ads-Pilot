@@ -51,7 +51,7 @@ export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
-  const [hasSeeded, setHasSeeded] = useState(false)
+
 
   // Fetch avatars from backend
   const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery<Avatar[]>({
@@ -134,189 +134,6 @@ export function ResearchAgentDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
     },
   })
-
-  // Seed database with initial data if avatars array is empty
-  const seedInitialData = async () => {
-    if (avatars.length === 0) {
-      const mockAvatars: AvatarInsert[] = [
-        {
-          name: "Busy Working Parent",
-          ageRange: "28-45",
-          demographics: "Working parents with young children, household income $50k-$100k",
-          painPoint: "No time to cook healthy meals for family, constantly stressed about nutrition",
-          hooks: [
-            "What if dinner could be ready in 10 minutes every night?",
-            "Stop feeling guilty about another takeout order",
-            "Your kids deserve better than processed food"
-          ],
-          sources: [
-            "Reddit: r/Parenting - 47 meal prep discussions",
-            "Facebook Groups: Working Parents United - 12 surveys",
-            "Article: 'The Modern Parent's Kitchen Struggle' - Parents Magazine",
-            "Survey: Family Dinner Trends 2024 - 2,500 respondents"
-          ],
-          angleIdeas: [
-            "Before/after kitchen transformation timelapse",
-            "Parent testimonial during chaotic dinner prep",
-            "Kids taste-testing healthy vs. fast food",
-            "Time comparison: homemade vs. takeout delivery",
-            "Real parent reaction to saving 30 mins daily"
-          ],
-          reasoning: "This avatar represents 34% of your target market based on demographic analysis. Research shows 89% of working parents struggle with meal prep, creating a massive addressable market. The pain point has high emotional intensity (stress + guilt) which drives purchase decisions. Reddit discussions show consistent language patterns around 'no time' and 'feeling guilty' - perfect for UGC authenticity.",
-          priority: "high",
-          dataConfidence: "0.91",
-          recommendationSource: "research",
-          status: "pending"
-        },
-        {
-          name: "Health-Conscious Millennial",
-          ageRange: "25-35",
-          demographics: "Urban professionals, health-focused lifestyle, disposable income",
-          painPoint: "Uncertain about food quality and ingredient sourcing",
-          hooks: [
-            "Finally, know exactly what's in your food",
-            "Organic doesn't have to break the bank", 
-            "Your body will thank you for this switch"
-          ],
-          sources: [
-            "Reddit: r/HealthyFood - 89 ingredient discussions",
-            "Medium: 'Clean Eating Trends Among Urban Millennials'",
-            "Instagram: #cleaneating hashtag analysis - 50K posts",
-            "Survey: Wellness Consumer Report 2024 - 3,200 participants"
-          ],
-          angleIdeas: [
-            "Ingredient label comparison shocking reveal",
-            "Day-in-life of clean eating millennial",
-            "Grocery store walkthrough - clean vs. processed",
-            "Before/after energy levels transformation",
-            "Budget breakdown: healthy eating economics"
-          ],
-          reasoning: "Performance agent identified this as your highest-converting avatar (4.2% conversion rate vs 2.1% average). Instagram hashtag analysis shows 2.3x higher engagement when this demographic is targeted with transparency angles. Their higher disposable income ($75K+ average) means better LTV. Recent wellness trends show 67% growth in 'clean label' searches among this group.",
-          priority: "high",
-          dataConfidence: "0.87",
-          recommendationSource: "performance_agent",
-          status: "approved"
-        },
-        {
-          name: "Time-Pressed Entrepreneur", 
-          ageRange: "30-50",
-          demographics: "Small business owners, high stress, value efficiency",
-          painPoint: "Too busy building business to focus on personal health",
-          hooks: [
-            "Success shouldn't cost you your health",
-            "Fuel your hustle with real nutrition",
-            "The meal prep solution for busy CEOs"
-          ],
-          sources: [
-            "LinkedIn: Entrepreneur Health Survey - 1,800 responses",
-            "Article: 'The Burnout Economy' - Harvard Business Review",
-            "Reddit: r/Entrepreneur - 125 nutrition-related posts",
-            "Podcast: 'Founder Stories' - 15 episodes on work-life balance"
-          ],
-          angleIdeas: [
-            "CEO morning routine transformation",
-            "Productivity before/after proper nutrition",
-            "Office kitchen setup for busy founders",
-            "Energy crash prevention testimonial",
-            "Time audit: cooking vs. ordering vs. meal prep"
-          ],
-          reasoning: "Untested segment with strong market signals. LinkedIn data shows 73% of entrepreneurs report health as #1 concern but 85% don't act on it (intention-action gap). Small but high-value audience - entrepreneurs typically have 3x higher spending power. B2B angle could unlock corporate sales. Recommendation for experimental testing to validate messaging fit.",
-          priority: "medium",
-          dataConfidence: "0.68",
-          recommendationSource: "research",
-          status: "pending"
-        }
-      ]
-
-      for (const avatar of mockAvatars) {
-        await createAvatarMutation.mutateAsync(avatar)
-      }
-    }
-
-    if (concepts.length === 0) {
-      const mockConcepts: ConceptInsert[] = [
-        {
-          title: "Raw UGC with Male Speaker - Weight Loss Transformation",
-          format: "Raw UGC Video",
-          platform: "TikTok/Instagram Reels",
-          industry: "Health & Wellness",
-          performance: {
-            views: "2.3M",
-            engagement: "8.7%",
-            conversion: "4.2%"
-          },
-          insights: [
-            "Male speakers convert 40% better in weight loss niche",
-            "Raw, unpolished aesthetic increases authenticity perception",
-            "Before/after reveals drive 85% completion rates"
-          ],
-          keyElements: [
-            "Male creator (25-35 years old)",
-            "Bathroom/bedroom setting (authentic)",
-            "Raw lighting (natural/phone)",
-            "Direct camera address",
-            "Before/after comparison"
-          ],
-          status: "approved",
-          referenceUrl: "#"
-        },
-        {
-          title: "POV Hook Format - Trendjacking Success",
-          format: "POV Storytelling",
-          platform: "TikTok",
-          industry: "Health & Wellness", 
-          performance: {
-            views: "1.8M",
-            engagement: "12.3%",
-            conversion: "3.8%"
-          },
-          insights: [
-            "'POV: You're a...' hooks average 2.3M+ views",
-            "Storytelling format increases emotional connection",
-            "Trendjacking current events boosts organic reach"
-          ],
-          keyElements: [
-            "POV hook opener",
-            "Relatable character setup",
-            "Problem-solution narrative",
-            "Trending audio/music",
-            "Text overlay guidance"
-          ],
-          status: "pending",
-          referenceUrl: "#"
-        },
-        {
-          title: "Kitchen Transformation - Quick Recipe Demo",
-          format: "Sped-up Process Video",
-          platform: "Instagram Reels",
-          industry: "Food & Nutrition",
-          performance: {
-            views: "950K",
-            engagement: "6.2%", 
-            conversion: "2.9%"
-          },
-          insights: [
-            "Kitchen content performs well in food/health niches",
-            "Sped-up transformations hold attention",
-            "Ingredient reveals create curiosity gap"
-          ],
-          keyElements: [
-            "Clean, well-lit kitchen",
-            "Ingredient mystery/reveal",
-            "Time-lapse cooking process",
-            "Final product showcase",
-            "Recipe/link in bio CTA"
-          ],
-          status: "pending",
-          referenceUrl: "#"
-        }
-      ]
-
-      for (const concept of mockConcepts) {
-        await createConceptMutation.mutateAsync(concept)
-      }
-    }
-  }
 
   const handleAvatarApproval = (id: string, status: "approved" | "rejected") => {
     updateAvatarMutation.mutate({
@@ -447,19 +264,6 @@ export function ResearchAgentDashboard() {
     }
   }
 
-  // Safe one-time seeding to prevent empty state issues
-  useEffect(() => {
-    const shouldSeed = !hasSeeded && 
-                     avatars.length === 0 && 
-                     !isLoadingAvatars && 
-                     !createAvatarMutation.isPending &&
-                     !createConceptMutation.isPending
-
-    if (shouldSeed) {
-      setHasSeeded(true) // Set flag immediately to prevent re-entry
-      seedInitialData()
-    }
-  }, [hasSeeded, avatars.length, isLoadingAvatars, createAvatarMutation.isPending, createConceptMutation.isPending])
 
   const isConceptLinked = (avatarId: string, conceptId: string) => {
     return avatarConcepts.some(link => 
