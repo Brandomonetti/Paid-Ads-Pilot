@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { 
   Brain, 
   ThumbsUp, 
@@ -396,15 +397,26 @@ export function ResearchAgentDashboard() {
               <Users className="h-5 w-5" />
               Customer Avatars
             </h2>
-            <Button 
-              onClick={generateNewAvatars}
-              disabled={isGenerating}
-              size="sm"
-              data-testid="button-generate-avatars"
-            >
-              {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-              {isGenerating ? "Generating..." : "Generate"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button 
+                    onClick={generateNewAvatars}
+                    disabled={isGenerating || !knowledgeBase}
+                    size="sm"
+                    data-testid="button-generate-avatars"
+                  >
+                    {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                    {isGenerating ? "Generating..." : "Generate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!knowledgeBase && (
+                <TooltipContent>
+                  <p>Complete your knowledge base setup first to generate avatars</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
           </div>
 
           {/* Compact Avatar List */}
@@ -925,15 +937,31 @@ export function ResearchAgentDashboard() {
                 </Badge>
               )}
             </h2>
-            <Button 
-              onClick={generateNewConcepts}
-              disabled={isGenerating || !selectedAvatar}
-              size="sm"
-              data-testid="button-generate-concepts"
-            >
-              {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
-              {isGenerating ? "Analyzing..." : "Find Concepts"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button 
+                    onClick={generateNewConcepts}
+                    disabled={isGenerating || !selectedAvatar || !knowledgeBase}
+                    size="sm"
+                    data-testid="button-generate-concepts"
+                  >
+                    {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
+                    {isGenerating ? "Analyzing..." : "Find Concepts"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {(!knowledgeBase || !selectedAvatar) && (
+                <TooltipContent>
+                  <p>
+                    {!knowledgeBase 
+                      ? "Complete your knowledge base setup first to generate concepts"
+                      : "Select an avatar first to generate concepts"
+                    }
+                  </p>
+                </TooltipContent>
+              )}
+            </Tooltip>
           </div>
           
           {!selectedAvatar ? (
