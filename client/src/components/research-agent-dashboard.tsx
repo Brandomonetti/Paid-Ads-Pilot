@@ -409,7 +409,36 @@ export function ResearchAgentDashboard() {
 
           {/* Compact Avatar List */}
           <div className="space-y-3">
-            {avatars.map((avatar) => (
+            {avatars.length === 0 ? (
+              <Card className="p-8 text-center" data-testid="empty-avatars">
+                <div className="flex flex-col items-center gap-4">
+                  <Users className="h-12 w-12 text-muted-foreground" />
+                  <div>
+                    <h3 className="font-medium mb-2">No Avatars Generated</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {!knowledgeBase 
+                        ? "Complete your knowledge base setup to generate customer avatars based on your brand information."
+                        : "Click the Generate button above to create customer avatars based on your knowledge base."
+                      }
+                    </p>
+                    {!knowledgeBase && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        asChild
+                        data-testid="button-go-to-knowledge-base"
+                      >
+                        <a href="/knowledge-base">
+                          <ArrowRight className="mr-2 h-4 w-4" />
+                          Complete Knowledge Base
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              avatars.map((avatar) => (
               <div key={avatar.id}>
                 {/* Compact Avatar Card */}
                 <Card 
@@ -880,7 +909,7 @@ export function ResearchAgentDashboard() {
                   </CardContent>
                 </Card>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 
