@@ -25,7 +25,7 @@ import {
   Search,
   Database
 } from "lucide-react"
-import { Avatar, Concept, AvatarConcept, insertAvatarSchema, insertConceptSchema, insertAvatarConceptSchema } from "@shared/schema"
+import { Avatar, Concept, AvatarConcept, KnowledgeBase, insertAvatarSchema, insertConceptSchema, insertAvatarConceptSchema } from "@shared/schema"
 import type { z } from "zod"
 import { apiRequest, queryClient } from "@/lib/queryClient"
 
@@ -67,6 +67,19 @@ export function ResearchAgentDashboard() {
   // Fetch avatar-concept links
   const { data: avatarConcepts = [] } = useQuery<AvatarConcept[]>({
     queryKey: ['/api/avatar-concepts'],
+  })
+
+  // Fetch knowledge base
+  const { data: knowledgeBase } = useQuery<KnowledgeBase | null>({
+    queryKey: ['/api/knowledge-base'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/knowledge-base')
+        return response.json() as Promise<KnowledgeBase>
+      } catch {
+        return null
+      }
+    },
   })
 
   // Create avatar mutation
