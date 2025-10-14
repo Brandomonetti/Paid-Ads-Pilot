@@ -85,6 +85,9 @@ export function ResearchAgentDashboard() {
     },
   })
 
+  // Check if knowledge base is completed
+  const isKnowledgeBaseCompleted = knowledgeBase && (knowledgeBase.completionPercentage || 0) >= 100
+
   // Create avatar mutation
   const createAvatarMutation = useMutation({
     mutationFn: (avatar: AvatarInsert) => apiRequest('POST', '/api/avatars', avatar),
@@ -161,7 +164,7 @@ export function ResearchAgentDashboard() {
   }
 
   const generateNewAvatars = async () => {
-    if (!knowledgeBase) {
+    if (!isKnowledgeBaseCompleted) {
       toast({
         title: "Knowledge Base Required",
         description: "Please complete your knowledge base setup first before generating avatars.",
@@ -204,7 +207,7 @@ export function ResearchAgentDashboard() {
   const generateNewConcepts = async () => {
     if (!selectedAvatar) return
     
-    if (!knowledgeBase) {
+    if (!isKnowledgeBaseCompleted) {
       toast({
         title: "Knowledge Base Required",
         description: "Please complete your knowledge base setup first before generating concepts.",
@@ -402,7 +405,7 @@ export function ResearchAgentDashboard() {
                 <span>
                   <Button 
                     onClick={generateNewAvatars}
-                    disabled={isGenerating || !knowledgeBase}
+                    disabled={isGenerating || !isKnowledgeBaseCompleted}
                     size="sm"
                     data-testid="button-generate-avatars"
                   >
@@ -411,7 +414,7 @@ export function ResearchAgentDashboard() {
                   </Button>
                 </span>
               </TooltipTrigger>
-              {!knowledgeBase && (
+              {!isKnowledgeBaseCompleted && (
                 <TooltipContent>
                   <p>Complete your knowledge base setup first to generate avatars</p>
                 </TooltipContent>
@@ -428,12 +431,12 @@ export function ResearchAgentDashboard() {
                   <div>
                     <h3 className="font-medium mb-2">No Avatars Generated</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {!knowledgeBase 
+                      {!isKnowledgeBaseCompleted 
                         ? "Complete your knowledge base setup to generate customer avatars based on your brand information."
                         : "Click the Generate button above to create customer avatars based on your knowledge base."
                       }
                     </p>
-                    {!knowledgeBase && (
+                    {!isKnowledgeBaseCompleted && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -942,7 +945,7 @@ export function ResearchAgentDashboard() {
                 <span>
                   <Button 
                     onClick={generateNewConcepts}
-                    disabled={isGenerating || !selectedAvatar || !knowledgeBase}
+                    disabled={isGenerating || !selectedAvatar || !isKnowledgeBaseCompleted}
                     size="sm"
                     data-testid="button-generate-concepts"
                   >
@@ -951,10 +954,10 @@ export function ResearchAgentDashboard() {
                   </Button>
                 </span>
               </TooltipTrigger>
-              {(!knowledgeBase || !selectedAvatar) && (
+              {(!isKnowledgeBaseCompleted || !selectedAvatar) && (
                 <TooltipContent>
                   <p>
-                    {!knowledgeBase 
+                    {!isKnowledgeBaseCompleted 
                       ? "Complete your knowledge base setup first to generate concepts"
                       : "Select an avatar first to generate concepts"
                     }
