@@ -78,6 +78,7 @@ export class ScrapeCreatorService {
         }
       );
 
+      console.log('Facebook API Response:', JSON.stringify(response.data, null, 2));
       return this.parseFacebookResponse(response.data);
     } catch (error) {
       console.error('Error fetching Facebook concepts:', error);
@@ -103,6 +104,7 @@ export class ScrapeCreatorService {
         }
       );
 
+      console.log('Instagram API Response:', JSON.stringify(response.data, null, 2));
       return this.parseInstagramResponse(response.data);
     } catch (error) {
       console.error('Error fetching Instagram concepts:', error);
@@ -130,6 +132,7 @@ export class ScrapeCreatorService {
         }
       );
 
+      console.log('TikTok API Response:', JSON.stringify(response.data, null, 2));
       return this.parseTikTokResponse(response.data);
     } catch (error) {
       console.error('Error fetching TikTok concepts:', error);
