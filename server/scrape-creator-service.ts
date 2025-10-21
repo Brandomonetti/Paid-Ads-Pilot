@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const SCRAPE_CREATOR_API_KEY = process.env.SCRAPE_CREATOR_API_KEY;
-const SCRAPE_CREATOR_BASE_URL = 'https://api.scrapecreator.com/v1';
+const SCRAPE_CREATOR_BASE_URL = 'https://api.scrapecreators.com/v1';
 
 export interface SocialMediaConcept {
   platform: 'facebook' | 'instagram' | 'tiktok';
