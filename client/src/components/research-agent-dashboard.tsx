@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { 
   Brain, 
@@ -53,6 +54,7 @@ export function ResearchAgentDashboard() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const { toast } = useToast()
 
 
@@ -163,7 +165,7 @@ export function ResearchAgentDashboard() {
     console.log(`Concept ${id} ${status}:`, feedback[id])
   }
 
-  const generateNewAvatars = async () => {
+  const handleGenerateClick = () => {
     if (!isKnowledgeBaseCompleted) {
       toast({
         title: "Knowledge Base Required",
@@ -173,18 +175,34 @@ export function ResearchAgentDashboard() {
       return
     }
 
+    // Show confirmation modal if avatars already exist
+    if (avatars.length > 0) {
+      setShowRegenerateConfirm(true)
+    } else {
+      // No existing data, generate directly
+      generateNewAvatars()
+    }
+  }
+
+  const generateNewAvatars = async () => {
+    setShowRegenerateConfirm(false)
     setIsGenerating(true)
     try {
-      // NEW WORKFLOW: Generate 4-5 avatars at once
+      // NEW WORKFLOW: Generate 4-5 avatars at once (deletes old data first)
       const response = await apiRequest('POST', '/api/generate-avatars')
       const result = await response.json()
       
       // Invalidate avatars query to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['/api/avatars'] })
       
+      // Show detailed deletion + generation message
+      const deletionInfo = result.deletedCount?.avatars > 0 
+        ? `Deleted ${result.deletedCount.avatars} old avatars, ${result.deletedCount.concepts} concepts, ${result.deletedCount.links} links. ` 
+        : ''
+      
       toast({
         title: "Avatars Generated",
-        description: `Successfully generated ${result.count} customer avatars. Now fetching concepts...`,
+        description: `${deletionInfo}Generated ${result.count} fresh customer avatars. Now fetching concepts...`,
       })
 
       // Automatically fetch concepts after avatar generation
@@ -438,13 +456,13 @@ export function ResearchAgentDashboard() {
               <TooltipTrigger asChild>
                 <span>
                   <Button 
-                    onClick={generateNewAvatars}
+                    onClick={handleGenerateClick}
                     disabled={isGenerating || !isKnowledgeBaseCompleted}
                     size="sm"
                     data-testid="button-generate-avatars"
                   >
                     {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                    {isGenerating ? "Generating..." : "Generate"}
+                    {isGenerating ? "Generating..." : avatars.length > 0 ? "Regenerate" : "Generate"}
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -1328,6 +1346,44 @@ export function ResearchAgentDashboard() {
           )}
         </div>
       </div>
+
+      {/* Regenerate Confirmation Dialog */}
+      <AlertDialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
+        <AlertDialogContent data-testid="dialog-regenerate-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete All Data & Regenerate?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>
+                Regenerating avatars will <strong>permanently delete</strong> all existing data:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>{avatars.length} customer avatars</li>
+                <li>All linked creative concepts</li>
+                <li>All avatar-concept mappings</li>
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                The system will generate 4-5 fresh avatars and fetch new platform-specific concepts from scratch.
+              </p>
+              <p className="font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-regenerate">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={generateNewAvatars}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-regenerate"
+            >
+              Delete & Regenerate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
