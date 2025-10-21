@@ -26,9 +26,17 @@ import { z } from "zod";
 /**
  * Intelligent concept-to-avatar linking
  * Links the best 2 concepts per platform to each avatar based on relevance scoring
+ * Prevents duplicate links by checking existing associations
  */
-async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[]): Promise<{ linkedCount: number }> {
+async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[]): Promise<{ linkedCount: number; skippedCount: number }> {
   let linkedCount = 0;
+  let skippedCount = 0;
+
+  // Get all existing avatar-concept links to avoid duplicates
+  const existingLinks = await storage.getAvatarConcepts();
+  const existingLinkSet = new Set(
+    existingLinks.map(link => `${link.avatarId}:${link.conceptId}`)
+  );
 
   // Group concepts by platform
   const conceptsByPlatform = {
@@ -54,8 +62,17 @@ async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[])
         .sort((a, b) => b.score - a.score)
         .slice(0, 2);
 
-      // Link the top 2 concepts to this avatar
+      // Link the top 2 concepts to this avatar (if not already linked)
       for (const { concept, score } of topConcepts) {
+        const linkKey = `${avatar.id}:${concept.id}`;
+        
+        // Check if this link already exists
+        if (existingLinkSet.has(linkKey)) {
+          skippedCount++;
+          console.log(`Skipping duplicate link: Avatar ${avatar.id} to Concept ${concept.id}`);
+          continue;
+        }
+
         try {
           await storage.createAvatarConcept({
             avatarId: avatar.id,
@@ -66,6 +83,7 @@ async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[])
             rationale: `Auto-linked: Top ${platform} concept with ${score.toFixed(1)}% relevance match`
           });
           linkedCount++;
+          existingLinkSet.add(linkKey); // Add to set to prevent duplicates within this batch
         } catch (error) {
           console.error(`Failed to link concept ${concept.id} to avatar ${avatar.id}:`, error);
         }
@@ -73,7 +91,7 @@ async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[])
     }
   }
 
-  return { linkedCount };
+  return { linkedCount, skippedCount };
 }
 
 /**
@@ -856,12 +874,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         concepts: savedConcepts,
         linkedCount: linkingResults.linkedCount,
+        skippedCount: linkingResults.skippedCount,
         platforms: {
           facebook: scrapedConcepts.facebook.length,
           instagram: scrapedConcepts.instagram.length,
           tiktok: scrapedConcepts.tiktok.length
         },
-        message: `Fetched ${savedConcepts.length} concepts and created ${linkingResults.linkedCount} avatar-concept links`
+        message: `Fetched ${savedConcepts.length} concepts and created ${linkingResults.linkedCount} new links (${linkingResults.skippedCount} duplicates skipped)`
       });
     } catch (error) {
       console.error("Concept generation error:", error);
