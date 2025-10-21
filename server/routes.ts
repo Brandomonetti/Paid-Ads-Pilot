@@ -847,6 +847,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...scrapedConcepts.tiktok
       ];
 
+      console.log(`Total concepts fetched: ${allConcepts.length} (FB: ${scrapedConcepts.facebook.length}, IG: ${scrapedConcepts.instagram.length}, TT: ${scrapedConcepts.tiktok.length})`);
+      console.log('First concept:', allConcepts[0]);
+
       // Save concepts to database
       const savedConcepts = await Promise.all(
         allConcepts.map(async (concept) => {
