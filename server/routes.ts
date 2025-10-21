@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScript, generateAvatar } from "./openai-service";
+import { generateScript, generateAvatar, generateMultipleAvatars } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
 import { metaOAuthService } from "./meta-oauth-service";
 import { startMetaOAuth, handleMetaCallback, checkLinkSessionStatus } from "./oauth-broker";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
+import { scrapeCreatorService } from "./scrape-creator-service";
 import {
   insertAvatarSchema,
   insertConceptSchema,
@@ -16,9 +17,144 @@ import {
   insertKnowledgeBaseSchema,
   updateKnowledgeBaseSchema,
   insertGeneratedScriptSchema,
-  updateGeneratedScriptSchema
+  updateGeneratedScriptSchema,
+  type Avatar,
+  type Concept
 } from "@shared/schema";
 import { z } from "zod";
+
+/**
+ * Intelligent concept-to-avatar linking
+ * Links the best 2 concepts per platform to each avatar based on relevance scoring
+ */
+async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[]): Promise<{ linkedCount: number }> {
+  let linkedCount = 0;
+
+  // Group concepts by platform
+  const conceptsByPlatform = {
+    facebook: concepts.filter(c => c.platform === 'facebook'),
+    instagram: concepts.filter(c => c.platform === 'instagram'),
+    tiktok: concepts.filter(c => c.platform === 'tiktok')
+  };
+
+  // For each avatar
+  for (const avatar of avatars) {
+    // For each platform, find the best 2 concepts
+    for (const [platform, platformConcepts] of Object.entries(conceptsByPlatform)) {
+      if (platformConcepts.length === 0) continue;
+
+      // Score each concept for this avatar
+      const scoredConcepts = platformConcepts.map(concept => ({
+        concept,
+        score: calculateConceptAvatarRelevance(avatar, concept)
+      }));
+
+      // Sort by score (descending) and take top 2
+      const topConcepts = scoredConcepts
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2);
+
+      // Link the top 2 concepts to this avatar
+      for (const { concept, score } of topConcepts) {
+        try {
+          await storage.createAvatarConcept({
+            avatarId: avatar.id,
+            conceptId: concept.id,
+            relevanceScore: (score / 100).toString(), // Convert to 0.00-1.00 scale
+            matchedHooks: extractMatchedHooks(avatar, concept),
+            matchedElements: extractMatchedElements(avatar, concept),
+            rationale: `Auto-linked: Top ${platform} concept with ${score.toFixed(1)}% relevance match`
+          });
+          linkedCount++;
+        } catch (error) {
+          console.error(`Failed to link concept ${concept.id} to avatar ${avatar.id}:`, error);
+        }
+      }
+    }
+  }
+
+  return { linkedCount };
+}
+
+/**
+ * Calculate relevance score between an avatar and a concept
+ */
+function calculateConceptAvatarRelevance(avatar: Avatar, concept: Concept): number {
+  let score = 50; // Base score
+
+  // Check for hook/pain point matches
+  const avatarHooks = avatar.hooks || [];
+  const conceptText = [
+    concept.title,
+    ...(concept.insights || []),
+    ...(concept.keyElements || [])
+  ].join(' ').toLowerCase();
+
+  let hookMatches = 0;
+  for (const hook of avatarHooks) {
+    if (conceptText.includes(hook.toLowerCase())) {
+      hookMatches++;
+    }
+  }
+  score += hookMatches * 10; // +10 points per hook match
+
+  // Check demographic alignment
+  const avatarDemographics = avatar.demographics?.toLowerCase() || '';
+  if (avatarDemographics && conceptText.includes(avatarDemographics)) {
+    score += 15;
+  }
+
+  // Factor in performance data
+  if (concept.performance && typeof concept.performance === 'object') {
+    const perfData = concept.performance as any;
+    const engagement = perfData.engagement || perfData.engagementScore || 0;
+    if (engagement > 0) {
+      score += Math.min(parseFloat(engagement.toString()) / 10, 10); // Max +10 points from performance
+    }
+  }
+
+  // Platform-specific boost (higher for video platforms)
+  if (concept.platform === 'tiktok' || concept.platform === 'instagram') {
+    score += 3;
+  }
+
+  return Math.min(score, 100); // Cap at 100
+}
+
+/**
+ * Extract hooks that matched between avatar and concept
+ */
+function extractMatchedHooks(avatar: Avatar, concept: Concept): string[] {
+  const avatarHooks = avatar.hooks || [];
+  const conceptText = [
+    concept.title,
+    ...(concept.insights || []),
+    ...(concept.keyElements || [])
+  ].join(' ').toLowerCase();
+
+  return avatarHooks.filter(hook => 
+    conceptText.includes(hook.toLowerCase())
+  );
+}
+
+/**
+ * Extract visual/copy elements that matched
+ */
+function extractMatchedElements(avatar: Avatar, concept: Concept): string[] {
+  const matched: string[] = [];
+
+  // Use keyElements from concept
+  if (concept.keyElements && concept.keyElements.length > 0) {
+    matched.push(...concept.keyElements.slice(0, 3));
+  }
+
+  // Use insights from concept
+  if (concept.insights && concept.insights.length > 0) {
+    matched.push(...concept.insights.slice(0, 2));
+  }
+
+  return matched;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Authentication
@@ -570,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Avatar generation route (protected)
+  // Avatar generation route (protected) - generates single avatar
   app.post("/api/generate-avatar", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -590,6 +726,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Avatar generation error:", error);
       res.status(500).json({ 
         error: "Failed to generate avatar", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Generate multiple avatars (4-5) at once - NEW WORKFLOW
+  app.post("/api/generate-avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      // Fetch the user's knowledge base
+      const knowledgeBase = await storage.getKnowledgeBase(userId);
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
+        return;
+      }
+
+      // Check if knowledge base is complete
+      if ((knowledgeBase.completionPercentage || 0) < 100) {
+        res.status(400).json({ error: "Please complete your knowledge base setup first before generating avatars." });
+        return;
+      }
+
+      // Generate 4-5 avatars using OpenAI
+      const generatedAvatars = await generateMultipleAvatars(knowledgeBase);
+      
+      // Save all avatars to database
+      const savedAvatars = await Promise.all(
+        generatedAvatars.map(async (avatar) => {
+          return await storage.createAvatar({
+            name: avatar.name,
+            ageRange: avatar.demographics?.split(',')[0]?.trim() || "25-45",
+            demographics: avatar.demographics,
+            painPoint: avatar.painPoints?.[0] || avatar.description,
+            hooks: avatar.painPoints || [],
+            sources: [],
+            angleIdeas: avatar.motivations || [],
+            reasoning: avatar.description,
+            priority: "medium",
+            dataConfidence: "0.8",
+            recommendationSource: "ai-generated",
+            status: "pending"
+          });
+        })
+      );
+      
+      res.json({ 
+        avatars: savedAvatars,
+        count: savedAvatars.length,
+        message: `Successfully generated ${savedAvatars.length} customer avatars`
+      });
+    } catch (error) {
+      console.error("Multiple avatars generation error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate avatars", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Generate concepts from social media platforms - NEW WORKFLOW
+  app.post("/api/generate-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      // Fetch the user's knowledge base
+      const knowledgeBase = await storage.getKnowledgeBase(userId);
+      if (!knowledgeBase) {
+        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
+        return;
+      }
+
+      // Check if knowledge base is complete
+      if ((knowledgeBase.completionPercentage || 0) < 100) {
+        res.status(400).json({ error: "Please complete your knowledge base setup first before generating concepts." });
+        return;
+      }
+
+      // Fetch all avatars to link concepts to
+      const avatars = await storage.getAvatars();
+      if (avatars.length === 0) {
+        res.status(400).json({ error: "Please generate avatars first before fetching concepts." });
+        return;
+      }
+
+      // Extract keywords from knowledge base
+      const keywords = [
+        ...(knowledgeBase.keyBenefits || []),
+        ...(knowledgeBase.brandValues || [])
+      ].filter(Boolean);
+
+      const niche = knowledgeBase.currentPersonas || 'general';
+
+      // Fetch concepts from all platforms using Scrape Creator API
+      const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(keywords, niche);
+      
+      // Combine all concepts from all platforms
+      const allConcepts = [
+        ...scrapedConcepts.facebook,
+        ...scrapedConcepts.instagram,
+        ...scrapedConcepts.tiktok
+      ];
+
+      // Save concepts to database
+      const savedConcepts = await Promise.all(
+        allConcepts.map(async (concept) => {
+          return await storage.createConcept({
+            title: concept.title,
+            format: concept.visualStyle || 'video',
+            platform: concept.platform,
+            industry: niche,
+            performance: {
+              engagement: concept.engagementScore || 0,
+              views: 'Unknown',
+              conversion: 'Unknown'
+            },
+            insights: [concept.description, concept.hook].filter(Boolean),
+            keyElements: [concept.cta, concept.visualStyle].filter(Boolean),
+            referenceUrl: concept.postUrl || undefined,
+            status: "pending"
+          });
+        })
+      );
+
+      // Auto-link best 2 concepts per platform to each avatar
+      const linkingResults = await linkBestConceptsToAvatars(avatars, savedConcepts);
+
+      res.json({
+        concepts: savedConcepts,
+        linkedCount: linkingResults.linkedCount,
+        platforms: {
+          facebook: scrapedConcepts.facebook.length,
+          instagram: scrapedConcepts.instagram.length,
+          tiktok: scrapedConcepts.tiktok.length
+        },
+        message: `Fetched ${savedConcepts.length} concepts and created ${linkingResults.linkedCount} avatar-concept links`
+      });
+    } catch (error) {
+      console.error("Concept generation error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate concepts", 
         message: error instanceof Error ? error.message : "Unknown error"
       });
     }

@@ -270,7 +270,6 @@ BRAND INFO:
 - Demographics: ${knowledgeBase.demographics}
 - Key Benefits: ${knowledgeBase.keyBenefits?.join(", ") || "N/A"}
 - Brand Values: ${knowledgeBase.brandValues?.join(", ") || "N/A"}
-- Product Category: ${knowledgeBase.productCategory || "N/A"}
 
 Create 4-5 distinct customer avatars with different:
 - Demographics (age, income, life stage)
