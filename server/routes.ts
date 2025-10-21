@@ -599,6 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate multiple avatars (4-5) at once - NEW WORKFLOW
+  // DESTRUCTIVE: Deletes all existing avatars, concepts, and links before regenerating
   app.post("/api/generate-avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -616,13 +617,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Generate 4-5 avatars using OpenAI
+      // DELETE ALL existing data for clean slate (links → concepts → avatars)
+      console.log(`[REGENERATE] Deleting all existing data for user ${userId}...`);
+      const deletedLinks = await storage.deleteAllAvatarConceptLinks(userId);
+      const deletedConcepts = await storage.deleteAllConcepts(userId);
+      const deletedAvatars = await storage.deleteAllAvatars(userId);
+      console.log(`[REGENERATE] Deleted: ${deletedAvatars} avatars, ${deletedConcepts} concepts, ${deletedLinks} links`);
+
+      // Generate 4-5 fresh avatars using OpenAI
       const generatedAvatars = await generateMultipleAvatars(knowledgeBase);
       
-      // Save all avatars to database
+      // Save all avatars to database with userId
       const savedAvatars = await Promise.all(
         generatedAvatars.map(async (avatar) => {
           return await storage.createAvatar({
+            userId,
             name: avatar.name,
             ageRange: avatar.demographics?.split(',')[0]?.trim() || "25-45",
             demographics: avatar.demographics,
@@ -642,7 +651,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         avatars: savedAvatars,
         count: savedAvatars.length,
-        message: `Successfully generated ${savedAvatars.length} customer avatars`
+        deletedCount: {
+          avatars: deletedAvatars,
+          concepts: deletedConcepts,
+          links: deletedLinks
+        },
+        message: `Successfully regenerated ${savedAvatars.length} customer avatars (deleted ${deletedAvatars} old avatars, ${deletedConcepts} concepts, ${deletedLinks} links)`
       });
     } catch (error) {
       console.error("Multiple avatars generation error:", error);
@@ -671,8 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Fetch all avatars to link concepts to
-      const avatars = await storage.getAvatars();
+      // Fetch all avatars for this user to link concepts to
+      const avatars = await storage.getAvatars(userId);
       if (avatars.length === 0) {
         res.status(400).json({ error: "Please generate avatars first before fetching concepts." });
         return;
@@ -710,10 +724,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`Avatar ${avatar.name}: fetched ${avatarConcepts.length} concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
 
-        // Save concepts to database
+        // Save concepts to database with userId
         const savedConcepts = await Promise.all(
           avatarConcepts.map(async (concept) => {
             return await storage.createConcept({
+              userId,
               title: concept.title,
               format: concept.visualStyle || 'video',
               platform: concept.platform,
@@ -732,13 +747,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         );
 
-        // Link all fetched concepts directly to this avatar
+        // Link all fetched concepts directly to this avatar using the helper method
         for (const concept of savedConcepts) {
           try {
             await storage.linkConceptToAvatar(avatar.id, concept.id, 85); // Fixed relevance score for avatar-specific concepts
             totalLinked++;
           } catch (error) {
-            // Duplicate link, skip
+            // Duplicate link, skip (link already exists)
             totalSkipped++;
           }
         }
