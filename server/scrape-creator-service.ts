@@ -73,7 +73,7 @@ export class ScrapeCreatorService {
             media_type: 'VIDEO'
           },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            'x-api-key': this.apiKey
           }
         }
       );
@@ -98,7 +98,7 @@ export class ScrapeCreatorService {
             query
           },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            'x-api-key': this.apiKey
           }
         }
       );
@@ -125,7 +125,7 @@ export class ScrapeCreatorService {
             sort_by: 'most-liked'
           },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            'x-api-key': this.apiKey
           }
         }
       );
