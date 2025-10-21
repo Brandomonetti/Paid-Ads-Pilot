@@ -175,28 +175,22 @@ export function ResearchAgentDashboard() {
 
     setIsGenerating(true)
     try {
-      const response = await apiRequest('POST', '/api/generate-avatar')
-      const generatedAvatar = await response.json()
+      // NEW WORKFLOW: Generate 4-5 avatars at once
+      const response = await apiRequest('POST', '/api/generate-avatars')
+      const result = await response.json()
       
-      // Create the avatar in the database
-      await createAvatarMutation.mutateAsync({
-        name: generatedAvatar.name,
-        ageRange: generatedAvatar.demographics?.split(',')[0] || "25-45",
-        demographics: generatedAvatar.demographics,
-        painPoint: generatedAvatar.painPoints?.[0] || generatedAvatar.description,
-        hooks: generatedAvatar.painPoints || [],
-        status: "pending"
-      })
+      // Invalidate avatars query to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] })
       
       toast({
-        title: "Avatar Generated",
-        description: `Successfully generated ${generatedAvatar.name}`,
+        title: "Avatars Generated",
+        description: `Successfully generated ${result.count} customer avatars based on your brand data.`,
       })
     } catch (error) {
-      console.error('Failed to generate avatar:', error)
+      console.error('Failed to generate avatars:', error)
       toast({
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate avatar. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate avatars. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -205,8 +199,6 @@ export function ResearchAgentDashboard() {
   }
 
   const generateNewConcepts = async () => {
-    if (!selectedAvatar) return
-    
     if (!isKnowledgeBaseCompleted) {
       toast({
         title: "Knowledge Base Required",
@@ -216,10 +208,39 @@ export function ResearchAgentDashboard() {
       return
     }
 
-    toast({
-      title: "Feature In Development",
-      description: "Concept generation will be available soon. This feature is being actively developed.",
-    })
+    if (avatars.length === 0) {
+      toast({
+        title: "Generate Avatars First",
+        description: "Please generate customer avatars before fetching concepts.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      // NEW WORKFLOW: Fetch concepts from social media platforms and auto-link to avatars
+      const response = await apiRequest('POST', '/api/generate-concepts')
+      const result = await response.json()
+      
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/avatar-concepts'] })
+      
+      toast({
+        title: "Concepts Generated",
+        description: `Fetched ${result.concepts.length} concepts from Facebook, Instagram, and TikTok. Created ${result.linkedCount} auto-links to your avatars.`,
+      })
+    } catch (error) {
+      console.error('Failed to generate concepts:', error)
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate concepts. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const linkConcept = async (avatarId: string, conceptId: string) => {
@@ -945,21 +966,21 @@ export function ResearchAgentDashboard() {
                 <span>
                   <Button 
                     onClick={generateNewConcepts}
-                    disabled={isGenerating || !selectedAvatar || !isKnowledgeBaseCompleted}
+                    disabled={isGenerating || avatars.length === 0 || !isKnowledgeBaseCompleted}
                     size="sm"
                     data-testid="button-generate-concepts"
                   >
                     {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
-                    {isGenerating ? "Analyzing..." : "Find Concepts"}
+                    {isGenerating ? "Fetching..." : "Find Concepts"}
                   </Button>
                 </span>
               </TooltipTrigger>
-              {(!isKnowledgeBaseCompleted || !selectedAvatar) && (
+              {(!isKnowledgeBaseCompleted || avatars.length === 0) && (
                 <TooltipContent>
                   <p>
                     {!isKnowledgeBaseCompleted 
-                      ? "Complete your knowledge base setup first to generate concepts"
-                      : "Select an avatar first to generate concepts"
+                      ? "Complete your knowledge base setup first to fetch concepts"
+                      : "Generate avatars first before fetching concepts from social media"
                     }
                   </p>
                 </TooltipContent>
