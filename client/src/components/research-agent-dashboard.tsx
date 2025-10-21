@@ -1087,13 +1087,40 @@ export function ResearchAgentDashboard() {
                     <CardContent className="space-y-4">
                       {/* Visual Preview Section */}
                       {concept.referenceUrl && (
-                        <div className="relative rounded-lg overflow-hidden bg-muted/20 border">
+                        <div className="relative rounded-lg overflow-hidden bg-muted/20 border group">
                           <div className="aspect-video w-full">
-                            {/* Video Embed for TikTok, YouTube, Instagram */}
-                            {(concept.referenceUrl.includes('tiktok.com') || 
+                            {/* Instagram - Show thumbnail image (no iframe embedding) */}
+                            {concept.referenceUrl.includes('instagram.com') ? (
+                              <a 
+                                href={concept.referenceUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block w-full h-full relative"
+                              >
+                                {(concept as any).thumbnailUrl ? (
+                                  <img 
+                                    src={(concept as any).thumbnailUrl} 
+                                    alt={concept.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                                    <div className="text-center p-6">
+                                      <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                                        <TrendingUp className="h-8 w-8 text-pink-600" />
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">Instagram Reel</p>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <ExternalLink className="h-8 w-8 text-white" />
+                                </div>
+                              </a>
+                            ) : (concept.referenceUrl.includes('tiktok.com') || 
                               concept.referenceUrl.includes('youtube.com') || 
-                              concept.referenceUrl.includes('youtu.be') ||
-                              concept.referenceUrl.includes('instagram.com')) ? (
+                              concept.referenceUrl.includes('youtu.be')) ? (
+                              /* TikTok/YouTube - Try iframe embed */
                               <iframe
                                 src={getEmbedUrl(concept.referenceUrl)}
                                 className="w-full h-full"

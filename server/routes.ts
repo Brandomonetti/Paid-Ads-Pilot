@@ -726,6 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               insights: [concept.description, concept.hook].filter(Boolean),
               keyElements: [concept.cta, concept.visualStyle].filter(Boolean),
               referenceUrl: concept.postUrl || undefined,
+              thumbnailUrl: concept.thumbnailUrl || undefined,
               status: "pending"
             });
           })

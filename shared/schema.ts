@@ -72,6 +72,7 @@ export const concepts = pgTable("concepts", {
   keyElements: text("key_elements").array().notNull(),
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   referenceUrl: text("reference_url"),
+  thumbnailUrl: text("thumbnail_url"), // Thumbnail image URL for social media posts
   feedback: text("feedback"),
   createdAt: timestamp("created_at").defaultNow()
 });
