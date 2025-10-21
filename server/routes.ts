@@ -23,157 +23,6 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
-/**
- * Intelligent concept-to-avatar linking
- * Links the best 2 concepts per platform to each avatar based on relevance scoring
- * Prevents duplicate links by checking existing associations
- */
-async function linkBestConceptsToAvatars(avatars: Avatar[], concepts: Concept[]): Promise<{ linkedCount: number; skippedCount: number }> {
-  let linkedCount = 0;
-  let skippedCount = 0;
-
-  // Get all existing avatar-concept links to avoid duplicates
-  const existingLinks = await storage.getAvatarConcepts();
-  const existingLinkSet = new Set(
-    existingLinks.map(link => `${link.avatarId}:${link.conceptId}`)
-  );
-
-  // Group concepts by platform
-  const conceptsByPlatform = {
-    facebook: concepts.filter(c => c.platform === 'facebook'),
-    instagram: concepts.filter(c => c.platform === 'instagram'),
-    tiktok: concepts.filter(c => c.platform === 'tiktok')
-  };
-
-  // For each avatar
-  for (const avatar of avatars) {
-    // For each platform, find the best 2 concepts
-    for (const [platform, platformConcepts] of Object.entries(conceptsByPlatform)) {
-      if (platformConcepts.length === 0) continue;
-
-      // Score each concept for this avatar
-      const scoredConcepts = platformConcepts.map(concept => ({
-        concept,
-        score: calculateConceptAvatarRelevance(avatar, concept)
-      }));
-
-      // Sort by score (descending) and take top 2
-      const topConcepts = scoredConcepts
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 2);
-
-      // Link the top 2 concepts to this avatar (if not already linked)
-      for (const { concept, score } of topConcepts) {
-        const linkKey = `${avatar.id}:${concept.id}`;
-        
-        // Check if this link already exists
-        if (existingLinkSet.has(linkKey)) {
-          skippedCount++;
-          console.log(`Skipping duplicate link: Avatar ${avatar.id} to Concept ${concept.id}`);
-          continue;
-        }
-
-        try {
-          await storage.createAvatarConcept({
-            avatarId: avatar.id,
-            conceptId: concept.id,
-            relevanceScore: (score / 100).toString(), // Convert to 0.00-1.00 scale
-            matchedHooks: extractMatchedHooks(avatar, concept),
-            matchedElements: extractMatchedElements(avatar, concept),
-            rationale: `Auto-linked: Top ${platform} concept with ${score.toFixed(1)}% relevance match`
-          });
-          linkedCount++;
-          existingLinkSet.add(linkKey); // Add to set to prevent duplicates within this batch
-        } catch (error) {
-          console.error(`Failed to link concept ${concept.id} to avatar ${avatar.id}:`, error);
-        }
-      }
-    }
-  }
-
-  return { linkedCount, skippedCount };
-}
-
-/**
- * Calculate relevance score between an avatar and a concept
- */
-function calculateConceptAvatarRelevance(avatar: Avatar, concept: Concept): number {
-  let score = 50; // Base score
-
-  // Check for hook/pain point matches
-  const avatarHooks = avatar.hooks || [];
-  const conceptText = [
-    concept.title,
-    ...(concept.insights || []),
-    ...(concept.keyElements || [])
-  ].join(' ').toLowerCase();
-
-  let hookMatches = 0;
-  for (const hook of avatarHooks) {
-    if (conceptText.includes(hook.toLowerCase())) {
-      hookMatches++;
-    }
-  }
-  score += hookMatches * 10; // +10 points per hook match
-
-  // Check demographic alignment
-  const avatarDemographics = avatar.demographics?.toLowerCase() || '';
-  if (avatarDemographics && conceptText.includes(avatarDemographics)) {
-    score += 15;
-  }
-
-  // Factor in performance data
-  if (concept.performance && typeof concept.performance === 'object') {
-    const perfData = concept.performance as any;
-    const engagement = perfData.engagement || perfData.engagementScore || 0;
-    if (engagement > 0) {
-      score += Math.min(parseFloat(engagement.toString()) / 10, 10); // Max +10 points from performance
-    }
-  }
-
-  // Platform-specific boost (higher for video platforms)
-  if (concept.platform === 'tiktok' || concept.platform === 'instagram') {
-    score += 3;
-  }
-
-  return Math.min(score, 100); // Cap at 100
-}
-
-/**
- * Extract hooks that matched between avatar and concept
- */
-function extractMatchedHooks(avatar: Avatar, concept: Concept): string[] {
-  const avatarHooks = avatar.hooks || [];
-  const conceptText = [
-    concept.title,
-    ...(concept.insights || []),
-    ...(concept.keyElements || [])
-  ].join(' ').toLowerCase();
-
-  return avatarHooks.filter(hook => 
-    conceptText.includes(hook.toLowerCase())
-  );
-}
-
-/**
- * Extract visual/copy elements that matched
- */
-function extractMatchedElements(avatar: Avatar, concept: Concept): string[] {
-  const matched: string[] = [];
-
-  // Use keyElements from concept
-  if (concept.keyElements && concept.keyElements.length > 0) {
-    matched.push(...concept.keyElements.slice(0, 3));
-  }
-
-  // Use insights from concept
-  if (concept.insights && concept.insights.length > 0) {
-    matched.push(...concept.insights.slice(0, 2));
-  }
-
-  return matched;
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Authentication
   await setupAuth(app);
@@ -829,61 +678,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Extract keywords from knowledge base
-      const keywords = [
-        ...(knowledgeBase.keyBenefits || []),
-        ...(knowledgeBase.brandValues || [])
-      ].filter(Boolean);
-
       const niche = knowledgeBase.currentPersonas || 'general';
+      let allSavedConcepts: any[] = [];
+      let totalLinked = 0;
+      let totalSkipped = 0;
 
-      // Fetch concepts from all platforms using Scrape Creator API
-      const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(keywords, niche);
-      
-      // Combine all concepts from all platforms
-      const allConcepts = [
-        ...scrapedConcepts.facebook,
-        ...scrapedConcepts.instagram,
-        ...scrapedConcepts.tiktok
-      ];
+      // For each avatar, fetch specific concepts based on their pain points/hooks
+      for (const avatar of avatars) {
+        // Extract avatar-specific keywords from hooks and pain points
+        const avatarKeywords = [
+          ...avatar.hooks,
+          avatar.painPoint,
+          avatar.demographics
+        ].filter(Boolean);
 
-      console.log(`Total concepts fetched: ${allConcepts.length} (FB: ${scrapedConcepts.facebook.length}, IG: ${scrapedConcepts.instagram.length}, TT: ${scrapedConcepts.tiktok.length})`);
-      console.log('First concept:', allConcepts[0]);
+        console.log(`Fetching concepts for avatar: ${avatar.name} with keywords:`, avatarKeywords.slice(0, 3));
 
-      // Save concepts to database
-      const savedConcepts = await Promise.all(
-        allConcepts.map(async (concept) => {
-          return await storage.createConcept({
-            title: concept.title,
-            format: concept.visualStyle || 'video',
-            platform: concept.platform,
-            industry: niche,
-            performance: {
-              engagement: concept.engagementScore || 0,
-              views: 'Unknown',
-              conversion: 'Unknown'
-            },
-            insights: [concept.description, concept.hook].filter(Boolean),
-            keyElements: [concept.cta, concept.visualStyle].filter(Boolean),
-            referenceUrl: concept.postUrl || undefined,
-            status: "pending"
-          });
-        })
-      );
+        // Fetch concepts from all platforms specific to this avatar
+        const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(avatarKeywords, niche);
+        
+        // Limit to 2 concepts per platform for this avatar
+        const facebookConcepts = scrapedConcepts.facebook.slice(0, 2);
+        const instagramConcepts = scrapedConcepts.instagram.slice(0, 2);
+        const tiktokConcepts = scrapedConcepts.tiktok.slice(0, 2);
 
-      // Auto-link best 2 concepts per platform to each avatar
-      const linkingResults = await linkBestConceptsToAvatars(avatars, savedConcepts);
+        const avatarConcepts = [
+          ...facebookConcepts,
+          ...instagramConcepts,
+          ...tiktokConcepts
+        ];
+
+        console.log(`Avatar ${avatar.name}: fetched ${avatarConcepts.length} concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
+
+        // Save concepts to database
+        const savedConcepts = await Promise.all(
+          avatarConcepts.map(async (concept) => {
+            return await storage.createConcept({
+              title: concept.title,
+              format: concept.visualStyle || 'video',
+              platform: concept.platform,
+              industry: niche,
+              performance: {
+                engagement: concept.engagementScore || 0,
+                views: 'Unknown',
+                conversion: 'Unknown'
+              },
+              insights: [concept.description, concept.hook].filter(Boolean),
+              keyElements: [concept.cta, concept.visualStyle].filter(Boolean),
+              referenceUrl: concept.postUrl || undefined,
+              status: "pending"
+            });
+          })
+        );
+
+        // Link all fetched concepts directly to this avatar
+        for (const concept of savedConcepts) {
+          try {
+            await storage.linkConceptToAvatar(avatar.id, concept.id, 85); // Fixed relevance score for avatar-specific concepts
+            totalLinked++;
+          } catch (error) {
+            // Duplicate link, skip
+            totalSkipped++;
+          }
+        }
+
+        allSavedConcepts.push(...savedConcepts);
+      }
 
       res.json({
-        concepts: savedConcepts,
-        linkedCount: linkingResults.linkedCount,
-        skippedCount: linkingResults.skippedCount,
-        platforms: {
-          facebook: scrapedConcepts.facebook.length,
-          instagram: scrapedConcepts.instagram.length,
-          tiktok: scrapedConcepts.tiktok.length
-        },
-        message: `Fetched ${savedConcepts.length} concepts and created ${linkingResults.linkedCount} new links (${linkingResults.skippedCount} duplicates skipped)`
+        concepts: allSavedConcepts,
+        linkedCount: totalLinked,
+        skippedCount: totalSkipped,
+        avatarsProcessed: avatars.length,
+        conceptsPerAvatar: Math.floor(allSavedConcepts.length / avatars.length),
+        message: `Fetched ${allSavedConcepts.length} concepts for ${avatars.length} avatars (${Math.floor(allSavedConcepts.length / avatars.length)} per avatar) and created ${totalLinked} links`
       });
     } catch (error) {
       console.error("Concept generation error:", error);

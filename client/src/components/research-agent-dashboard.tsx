@@ -229,7 +229,7 @@ export function ResearchAgentDashboard() {
       
       toast({
         title: "Concepts Generated",
-        description: `Fetched ${result.concepts.length} concepts from Facebook, Instagram, and TikTok. Created ${result.linkedCount} auto-links to your avatars.`,
+        description: `Fetched ${result.concepts.length} avatar-specific concepts (${result.conceptsPerAvatar} per avatar). Created ${result.linkedCount} links across ${result.avatarsProcessed} avatars.`,
       })
     } catch (error) {
       console.error('Failed to generate concepts:', error)
