@@ -144,18 +144,19 @@ export class ScrapeCreatorService {
    * Parse Facebook API response into SocialMediaConcept format
    */
   private parseFacebookResponse(data: any): SocialMediaConcept[] {
-    if (!data?.ads || !Array.isArray(data.ads)) return [];
+    const ads = data?.ads || data?.data || data;
+    if (!Array.isArray(ads)) return [];
     
-    return data.ads.map((ad: any) => ({
+    return ads.slice(0, 20).map((ad: any) => ({
       platform: 'facebook' as const,
-      title: ad.headline || ad.title || 'Facebook Ad Concept',
-      description: ad.description || ad.body || '',
-      hook: this.extractHook(ad.body || ad.description || ''),
-      visualStyle: ad.creative_type || 'video',
-      cta: ad.call_to_action?.value || ad.cta || 'Learn More',
-      engagementScore: this.calculateEngagementScore(ad),
-      thumbnailUrl: ad.thumbnail_url || ad.image_url,
-      postUrl: ad.ad_url || ad.link,
+      title: ad.page_name || ad.headline || ad.title || 'Facebook Ad Concept',
+      description: ad.ad_creative_bodies?.[0] || ad.body || ad.description || '',
+      hook: this.extractHook(ad.ad_creative_bodies?.[0] || ad.body || ''),
+      visualStyle: 'video',
+      cta: ad.ad_creative_link_captions?.[0] || ad.cta || 'Learn More',
+      engagementScore: 75,
+      thumbnailUrl: ad.snapshot_url || ad.thumbnail_url,
+      postUrl: ad.ad_archive_id ? `https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}` : ad.link,
       rawData: ad
     }));
   }
@@ -164,19 +165,20 @@ export class ScrapeCreatorService {
    * Parse Instagram API response into SocialMediaConcept format
    */
   private parseInstagramResponse(data: any): SocialMediaConcept[] {
-    if (!data?.posts || !Array.isArray(data.posts)) return [];
+    const reels = data?.reels || data?.data || data;
+    if (!Array.isArray(reels)) return [];
     
-    return data.posts.map((post: any) => ({
+    return reels.slice(0, 20).map((reel: any) => ({
       platform: 'instagram' as const,
-      title: post.caption?.split('\n')[0] || 'Instagram Post Concept',
-      description: post.caption || '',
-      hook: this.extractHook(post.caption || ''),
-      visualStyle: post.media_type || 'image',
-      cta: this.extractCTA(post.caption || ''),
-      engagementScore: this.calculateEngagementScore(post),
-      thumbnailUrl: post.thumbnail_url || post.media_url,
-      postUrl: post.permalink,
-      rawData: post
+      title: reel.caption?.split('\n')[0]?.substring(0, 60) || 'Instagram Reel Concept',
+      description: reel.caption || '',
+      hook: this.extractHook(reel.caption || ''),
+      visualStyle: 'reel',
+      cta: this.extractCTA(reel.caption || ''),
+      engagementScore: this.calculateInstagramEngagement(reel),
+      thumbnailUrl: reel.thumbnail_src || reel.display_url,
+      postUrl: reel.url,
+      rawData: reel
     }));
   }
 
@@ -184,18 +186,19 @@ export class ScrapeCreatorService {
    * Parse TikTok API response into SocialMediaConcept format
    */
   private parseTikTokResponse(data: any): SocialMediaConcept[] {
-    if (!data?.videos || !Array.isArray(data.videos)) return [];
+    const videos = data?.videos || data?.data || data;
+    if (!Array.isArray(videos)) return [];
     
-    return data.videos.map((video: any) => ({
+    return videos.slice(0, 20).map((video: any) => ({
       platform: 'tiktok' as const,
-      title: video.description?.substring(0, 50) || 'TikTok Video Concept',
-      description: video.description || '',
-      hook: this.extractHook(video.description || ''),
+      title: video.desc?.substring(0, 60) || video.description?.substring(0, 60) || 'TikTok Video Concept',
+      description: video.desc || video.description || '',
+      hook: this.extractHook(video.desc || video.description || ''),
       visualStyle: 'short-form video',
-      cta: this.extractCTA(video.description || ''),
-      engagementScore: this.calculateEngagementScore(video),
-      thumbnailUrl: video.cover_url || video.thumbnail_url,
-      postUrl: video.share_url || video.video_url,
+      cta: this.extractCTA(video.desc || video.description || ''),
+      engagementScore: this.calculateTikTokEngagement(video),
+      thumbnailUrl: video.video?.cover?.url_list?.[0] || video.cover_url,
+      postUrl: video.url || `https://www.tiktok.com/@${video.author?.unique_id}/video/${video.aweme_id}`,
       rawData: video
     }));
   }
@@ -243,6 +246,32 @@ export class ScrapeCreatorService {
     const views = item.views || item.view_count || 1;
 
     const engagementRate = ((likes + comments * 2 + shares * 3) / views) * 100;
+    return Math.min(Math.round(engagementRate * 10) / 10, 100);
+  }
+
+  /**
+   * Calculate TikTok-specific engagement score
+   */
+  private calculateTikTokEngagement(video: any): number {
+    const stats = video.statistics || {};
+    const likes = stats.digg_count || 0;
+    const comments = stats.comment_count || 0;
+    const shares = stats.share_count || 0;
+    const views = stats.play_count || 1;
+
+    const engagementRate = ((likes + comments * 2 + shares * 3) / views) * 100;
+    return Math.min(Math.round(engagementRate * 10) / 10, 100);
+  }
+
+  /**
+   * Calculate Instagram-specific engagement score
+   */
+  private calculateInstagramEngagement(reel: any): number {
+    const likes = reel.like_count || 0;
+    const comments = reel.comment_count || 0;
+    const views = reel.video_view_count || reel.video_play_count || 1;
+
+    const engagementRate = ((likes + comments * 2) / views) * 100;
     return Math.min(Math.round(engagementRate * 10) / 10, 100);
   }
 }
