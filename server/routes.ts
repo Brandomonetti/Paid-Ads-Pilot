@@ -195,9 +195,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Avatar routes (protected)
-  app.get("/api/avatars", isAuthenticated, async (req, res) => {
+  app.get("/api/avatars", isAuthenticated, async (req: any, res) => {
     try {
-      const avatars = await storage.getAvatars();
+      const userId = req.user.claims.sub;
+      const avatars = await storage.getAvatars(userId);
       res.json(avatars);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch avatars" });
@@ -233,10 +234,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Concept routes (protected)
-  app.get("/api/concepts/:avatarId", isAuthenticated, async (req, res) => {
+  app.get("/api/concepts", isAuthenticated, async (req: any, res) => {
     try {
-      const { avatarId } = req.params;
-      const concepts = await storage.getConcepts(avatarId);
+      const userId = req.user.claims.sub;
+      const avatarId = req.query.avatarId as string | undefined;
+      const concepts = await storage.getConcepts(avatarId, userId);
       res.json(concepts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch concepts" });
@@ -272,12 +274,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Avatar-Concept linking routes (protected)
-  app.get("/api/avatar-concepts", isAuthenticated, async (req, res) => {
+  app.get("/api/avatar-concepts", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { avatarId, conceptId } = req.query;
       const avatarConcepts = await storage.getAvatarConcepts(
         avatarId as string,
-        conceptId as string
+        conceptId as string,
+        userId
       );
       res.json(avatarConcepts);
     } catch (error) {
@@ -464,8 +468,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Fetch approved avatars from Research Agent
-      const approvedAvatars = await storage.getAvatars();
+      // Fetch approved avatars from Research Agent for this user
+      const approvedAvatars = await storage.getAvatars(userId);
       const userApprovedAvatars = approvedAvatars.filter(avatar => avatar.status === "approved");
       
       if (userApprovedAvatars.length === 0) {

@@ -40,7 +40,7 @@ export interface IStorage {
   deleteAllConcepts(userId: string): Promise<number>;
   
   // Avatar-Concept linking methods
-  getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]>;
+  getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]>;
   getAvatarConcept(id: string): Promise<AvatarConcept | undefined>;
   createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
   updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
@@ -181,6 +181,15 @@ export class MemStorage implements IStorage {
     
     if (!avatarId) return allConcepts;
     
+    // Security: Verify the avatar belongs to the requesting user before returning concepts
+    if (userId) {
+      const avatar = this.avatars.get(avatarId);
+      if (!avatar || avatar.userId !== userId) {
+        // Avatar doesn't exist or doesn't belong to this user - return empty
+        return [];
+      }
+    }
+    
     // If avatarId provided, return ALL concepts but sorted by relevance for that avatar
     // Concepts with existing links should be sorted by their stored relevance score
     // Concepts without links should appear after linked ones
@@ -234,8 +243,16 @@ export class MemStorage implements IStorage {
   }
 
   // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]> {
-    const allLinks = Array.from(this.avatarConcepts.values());
+  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
+    let allLinks = Array.from(this.avatarConcepts.values());
+    
+    // Filter by userId by checking if the avatar belongs to the user
+    if (userId) {
+      const userAvatarIds = Array.from(this.avatars.values())
+        .filter(avatar => avatar.userId === userId)
+        .map(avatar => avatar.id);
+      allLinks = allLinks.filter(link => userAvatarIds.includes(link.avatarId));
+    }
     
     return allLinks.filter(link => 
       (!avatarId || link.avatarId === avatarId) &&
@@ -524,8 +541,17 @@ export class PgStorage implements IStorage {
       return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
     }
     
+    // Security: If avatarId AND userId are provided, verify avatar belongs to user
+    if (avatarId && userId) {
+      const avatar = await this.db.select().from(avatars).where(eq(avatars.id, avatarId)).limit(1);
+      if (!avatar[0] || avatar[0].userId !== userId) {
+        // Avatar doesn't exist or doesn't belong to this user - return empty
+        return [];
+      }
+    }
+    
     // Get concepts sorted by relevance for the avatar
-    const conceptsWithRelevance = await this.db
+    let query = this.db
       .select({
         id: concepts.id,
         userId: concepts.userId,
@@ -550,6 +576,11 @@ export class PgStorage implements IStorage {
         eq(avatarConcepts.status, "linked")
       ))
       .orderBy(avatarConcepts.relevanceScore);
+    
+    // Add userId filter if provided
+    const conceptsWithRelevance = userId 
+      ? await query.where(eq(concepts.userId, userId))
+      : await query;
     
     return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
   }
@@ -579,16 +610,33 @@ export class PgStorage implements IStorage {
   }
 
   // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]> {
-    if (avatarId && conceptId) {
-      return await this.db.select().from(avatarConcepts).where(and(
-        eq(avatarConcepts.avatarId, avatarId),
-        eq(avatarConcepts.conceptId, conceptId)
-      ));
-    } else if (avatarId) {
-      return await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.avatarId, avatarId));
-    } else if (conceptId) {
-      return await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.conceptId, conceptId));
+  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
+    // Build where conditions
+    const conditions = [];
+    if (avatarId) conditions.push(eq(avatarConcepts.avatarId, avatarId));
+    if (conceptId) conditions.push(eq(avatarConcepts.conceptId, conceptId));
+    
+    // If userId provided, join with avatars to filter by user
+    if (userId) {
+      const result = await this.db
+        .select({
+          id: avatarConcepts.id,
+          avatarId: avatarConcepts.avatarId,
+          conceptId: avatarConcepts.conceptId,
+          relevanceScore: avatarConcepts.relevanceScore,
+          status: avatarConcepts.status,
+          feedback: avatarConcepts.feedback,
+          createdAt: avatarConcepts.createdAt
+        })
+        .from(avatarConcepts)
+        .innerJoin(avatars, eq(avatarConcepts.avatarId, avatars.id))
+        .where(conditions.length > 0 ? and(eq(avatars.userId, userId), ...conditions) : eq(avatars.userId, userId));
+      return result;
+    }
+    
+    // No userId filter - return based on other conditions
+    if (conditions.length > 0) {
+      return await this.db.select().from(avatarConcepts).where(and(...conditions));
     }
     
     return await this.db.select().from(avatarConcepts);
