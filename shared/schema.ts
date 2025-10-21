@@ -36,6 +36,7 @@ export type User = typeof users.$inferSelect;
 // Customer Avatar schema
 export const avatars = pgTable("avatars", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   ageRange: text("age_range").notNull(),
   demographics: text("demographics").notNull(),
@@ -63,6 +64,7 @@ export type Avatar = typeof avatars.$inferSelect;
 // Creative Concept schema
 export const concepts = pgTable("concepts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   format: text("format").notNull(), // "Raw UGC Video", "Testimonial", etc.
   platform: text("platform").notNull(), // "TikTok/Instagram Reels", etc.

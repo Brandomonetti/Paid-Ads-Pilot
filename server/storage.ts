@@ -15,7 +15,7 @@ import {
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -26,22 +26,26 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Avatar methods
-  getAvatars(): Promise<Avatar[]>;
+  getAvatars(userId?: string): Promise<Avatar[]>;
   getAvatar(id: string): Promise<Avatar | undefined>;
   createAvatar(avatar: InsertAvatar): Promise<Avatar>;
   updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined>;
+  deleteAllAvatars(userId: string): Promise<number>;
   
   // Concept methods
-  getConcepts(avatarId?: string): Promise<Concept[]>;
+  getConcepts(avatarId?: string, userId?: string): Promise<Concept[]>;
   getConcept(id: string): Promise<Concept | undefined>;
   createConcept(concept: InsertConcept): Promise<Concept>;
   updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined>;
+  deleteAllConcepts(userId: string): Promise<number>;
   
   // Avatar-Concept linking methods
   getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]>;
   getAvatarConcept(id: string): Promise<AvatarConcept | undefined>;
   createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
   updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
+  deleteAllAvatarConceptLinks(userId: string): Promise<number>;
+  linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept>;
   
   // Platform Settings methods
   getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
@@ -122,8 +126,10 @@ export class MemStorage implements IStorage {
   }
 
   // Avatar methods
-  async getAvatars(): Promise<Avatar[]> {
-    return Array.from(this.avatars.values());
+  async getAvatars(userId?: string): Promise<Avatar[]> {
+    const allAvatars = Array.from(this.avatars.values());
+    if (!userId) return allAvatars;
+    return allAvatars.filter(avatar => avatar.userId === userId);
   }
 
   async getAvatar(id: string): Promise<Avatar | undefined> {
@@ -158,9 +164,20 @@ export class MemStorage implements IStorage {
     return updatedAvatar;
   }
 
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const avatarsToDelete = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
+    avatarsToDelete.forEach(avatar => this.avatars.delete(avatar.id));
+    return avatarsToDelete.length;
+  }
+
   // Concept methods
-  async getConcepts(avatarId?: string): Promise<Concept[]> {
-    const allConcepts = Array.from(this.concepts.values());
+  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
+    let allConcepts = Array.from(this.concepts.values());
+    
+    // Filter by userId if provided
+    if (userId) {
+      allConcepts = allConcepts.filter(concept => concept.userId === userId);
+    }
     
     if (!avatarId) return allConcepts;
     
@@ -194,6 +211,7 @@ export class MemStorage implements IStorage {
       status: insertConcept.status || "pending",
       feedback: insertConcept.feedback || null,
       referenceUrl: insertConcept.referenceUrl || null,
+      thumbnailUrl: insertConcept.thumbnailUrl || null,
       createdAt: new Date()
     };
     this.concepts.set(id, concept);
@@ -207,6 +225,12 @@ export class MemStorage implements IStorage {
     const updatedConcept = { ...concept, ...updates };
     this.concepts.set(id, updatedConcept);
     return updatedConcept;
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const conceptsToDelete = Array.from(this.concepts.values()).filter(concept => concept.userId === userId);
+    conceptsToDelete.forEach(concept => this.concepts.delete(concept.id));
+    return conceptsToDelete.length;
   }
 
   // Avatar-Concept linking methods
@@ -245,6 +269,37 @@ export class MemStorage implements IStorage {
     const updatedAvatarConcept = { ...avatarConcept, ...updates };
     this.avatarConcepts.set(id, updatedAvatarConcept);
     return updatedAvatarConcept;
+  }
+
+  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
+    // Get all avatars for this user to find their links
+    const userAvatars = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
+    const userAvatarIds = new Set(userAvatars.map(avatar => avatar.id));
+    
+    const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => userAvatarIds.has(link.avatarId));
+    linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
+    return linksToDelete.length;
+  }
+
+  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
+    // Check if link already exists
+    const existingLink = Array.from(this.avatarConcepts.values()).find(
+      link => link.avatarId === avatarId && link.conceptId === conceptId
+    );
+    
+    if (existingLink) {
+      throw new Error('Link already exists');
+    }
+
+    return await this.createAvatarConcept({
+      avatarId,
+      conceptId,
+      relevanceScore: relevanceScore.toString(),
+      matchedHooks: [],
+      matchedElements: [],
+      rationale: "Auto-linked based on avatar-specific concept fetch",
+      status: "linked"
+    });
   }
 
   // Platform Settings methods
@@ -428,8 +483,11 @@ export class PgStorage implements IStorage {
   }
 
   // Avatar methods
-  async getAvatars(): Promise<Avatar[]> {
-    return await this.db.select().from(avatars);
+  async getAvatars(userId?: string): Promise<Avatar[]> {
+    if (!userId) {
+      return await this.db.select().from(avatars);
+    }
+    return await this.db.select().from(avatars).where(eq(avatars.userId, userId));
   }
 
   async getAvatar(id: string): Promise<Avatar | undefined> {
@@ -451,16 +509,26 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const result = await this.db.delete(avatars).where(eq(avatars.userId, userId)).returning();
+    return result.length;
+  }
+
   // Concept methods
-  async getConcepts(avatarId?: string): Promise<Concept[]> {
-    if (!avatarId) {
+  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
+    if (!avatarId && !userId) {
       return await this.db.select().from(concepts);
+    }
+    
+    if (!avatarId && userId) {
+      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
     }
     
     // Get concepts sorted by relevance for the avatar
     const conceptsWithRelevance = await this.db
       .select({
         id: concepts.id,
+        userId: concepts.userId,
         title: concepts.title,
         format: concepts.format,
         platform: concepts.platform,
@@ -470,6 +538,7 @@ export class PgStorage implements IStorage {
         keyElements: concepts.keyElements,
         status: concepts.status,
         referenceUrl: concepts.referenceUrl,
+        thumbnailUrl: concepts.thumbnailUrl,
         feedback: concepts.feedback,
         createdAt: concepts.createdAt,
         relevanceScore: avatarConcepts.relevanceScore
@@ -477,7 +546,7 @@ export class PgStorage implements IStorage {
       .from(concepts)
       .leftJoin(avatarConcepts, and(
         eq(avatarConcepts.conceptId, concepts.id),
-        eq(avatarConcepts.avatarId, avatarId),
+        eq(avatarConcepts.avatarId, avatarId!),
         eq(avatarConcepts.status, "linked")
       ))
       .orderBy(avatarConcepts.relevanceScore);
@@ -502,6 +571,11 @@ export class PgStorage implements IStorage {
       .where(eq(concepts.id, id))
       .returning();
     return result[0];
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const result = await this.db.delete(concepts).where(eq(concepts.userId, userId)).returning();
+    return result.length;
   }
 
   // Avatar-Concept linking methods
@@ -537,6 +611,47 @@ export class PgStorage implements IStorage {
       .where(eq(avatarConcepts.id, id))
       .returning();
     return result[0];
+  }
+
+  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
+    // Get all avatar IDs for this user
+    const userAvatars = await this.db.select({ id: avatars.id }).from(avatars).where(eq(avatars.userId, userId));
+    const userAvatarIds = userAvatars.map(a => a.id);
+    
+    if (userAvatarIds.length === 0) return 0;
+    
+    // Delete all links for these avatars
+    const result = await this.db
+      .delete(avatarConcepts)
+      .where(inArray(avatarConcepts.avatarId, userAvatarIds))
+      .returning();
+    return result.length;
+  }
+
+  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
+    // Check if link already exists
+    const existing = await this.db
+      .select()
+      .from(avatarConcepts)
+      .where(and(
+        eq(avatarConcepts.avatarId, avatarId),
+        eq(avatarConcepts.conceptId, conceptId)
+      ))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      throw new Error('Link already exists');
+    }
+
+    return await this.createAvatarConcept({
+      avatarId,
+      conceptId,
+      relevanceScore: relevanceScore.toString(),
+      matchedHooks: [],
+      matchedElements: [],
+      rationale: "Auto-linked based on avatar-specific concept fetch",
+      status: "linked"
+    });
   }
 
   // Platform Settings methods
