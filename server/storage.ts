@@ -110,6 +110,9 @@ export class MemStorage implements IStorage {
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
+        metaAccessToken: userData.metaAccessToken || null,
+        metaAccountId: userData.metaAccountId || null,
+        metaConnectedAt: userData.metaConnectedAt || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -503,20 +506,18 @@ export class PgStorage implements IStorage {
 
   // Avatar-Concept linking methods
   async getAvatarConcepts(avatarId?: string, conceptId?: string): Promise<AvatarConcept[]> {
-    let query = this.db.select().from(avatarConcepts);
-    
     if (avatarId && conceptId) {
-      query = query.where(and(
+      return await this.db.select().from(avatarConcepts).where(and(
         eq(avatarConcepts.avatarId, avatarId),
         eq(avatarConcepts.conceptId, conceptId)
       ));
     } else if (avatarId) {
-      query = query.where(eq(avatarConcepts.avatarId, avatarId));
+      return await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.avatarId, avatarId));
     } else if (conceptId) {
-      query = query.where(eq(avatarConcepts.conceptId, conceptId));
+      return await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.conceptId, conceptId));
     }
     
-    return await query;
+    return await this.db.select().from(avatarConcepts);
   }
 
   async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
