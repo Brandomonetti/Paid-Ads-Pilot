@@ -63,18 +63,17 @@ export class ScrapeCreatorService {
    */
   private async fetchFacebookConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const response = await axios.post(
-        `${SCRAPE_CREATOR_BASE_URL}/facebook/ads`,
+      const query = keywords.join(' ');
+      const response = await axios.get(
+        `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
         {
-          keywords,
-          niche,
-          limit: 20,
-          sort_by: 'engagement'
-        },
-        {
+          params: {
+            query,
+            status: 'ACTIVE',
+            media_type: 'VIDEO'
+          },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${this.apiKey}`
           }
         }
       );
@@ -91,18 +90,15 @@ export class ScrapeCreatorService {
    */
   private async fetchInstagramConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const response = await axios.post(
-        `${SCRAPE_CREATOR_BASE_URL}/instagram/posts`,
+      const query = keywords.join(' ');
+      const response = await axios.get(
+        `${SCRAPE_CREATOR_BASE_URL}/instagram/reels/search`,
         {
-          keywords,
-          niche,
-          limit: 20,
-          sort_by: 'engagement'
-        },
-        {
+          params: {
+            query
+          },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${this.apiKey}`
           }
         }
       );
@@ -119,18 +115,17 @@ export class ScrapeCreatorService {
    */
   private async fetchTikTokConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const response = await axios.post(
-        `${SCRAPE_CREATOR_BASE_URL}/tiktok/videos`,
+      const query = keywords.join(' ');
+      const response = await axios.get(
+        `${SCRAPE_CREATOR_BASE_URL}/tiktok/search/top`,
         {
-          keywords,
-          niche,
-          limit: 20,
-          sort_by: 'engagement'
-        },
-        {
+          params: {
+            query,
+            publish_time: 'last-3-months',
+            sort_by: 'most-liked'
+          },
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${this.apiKey}`
           }
         }
       );
