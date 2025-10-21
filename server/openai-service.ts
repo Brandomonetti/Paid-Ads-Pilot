@@ -250,3 +250,69 @@ Create a detailed customer avatar JSON with:
     throw new Error("Failed to generate avatar");
   }
 }
+
+/**
+ * Generate multiple customer avatars (4-5) based on knowledge base
+ */
+export async function generateMultipleAvatars(knowledgeBase: KnowledgeBase): Promise<Array<{
+  name: string;
+  description: string;
+  painPoints: string[];
+  motivations: string[];
+  demographics: string;
+}>> {
+  try {
+    const prompt = `
+Based on this brand information, generate 4-5 diverse customer avatars that represent different segments of the target market:
+
+BRAND INFO:
+- Target Audience: ${knowledgeBase.currentPersonas}
+- Demographics: ${knowledgeBase.demographics}
+- Key Benefits: ${knowledgeBase.keyBenefits?.join(", ") || "N/A"}
+- Brand Values: ${knowledgeBase.brandValues?.join(", ") || "N/A"}
+- Product Category: ${knowledgeBase.productCategory || "N/A"}
+
+Create 4-5 distinct customer avatars with different:
+- Demographics (age, income, life stage)
+- Psychographics (values, lifestyle, priorities)
+- Pain points and motivations
+- Buying behaviors and decision factors
+
+Return a JSON object with an "avatars" array:
+{
+  "avatars": [
+    {
+      "name": "Avatar name (e.g., 'Busy Working Mom')",
+      "description": "2-3 sentence detailed description",
+      "painPoints": ["specific pain point 1", "specific pain point 2", "specific pain point 3"],
+      "motivations": ["motivation 1", "motivation 2", "motivation 3"],
+      "demographics": "Age, income, location, lifestyle details"
+    }
+  ]
+}
+
+Make each avatar DISTINCT and specific - avoid generic descriptions.
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert market researcher who creates detailed customer avatars for eCommerce brands. Create psychographically rich, specific, and DIVERSE avatars that represent different market segments. Each avatar should be distinct with unique characteristics, pain points, and motivations."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    return result.avatars || [];
+  } catch (error) {
+    console.error("Error generating multiple avatars:", error);
+    throw new Error("Failed to generate avatars");
+  }
+}
