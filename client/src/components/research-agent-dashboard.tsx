@@ -184,13 +184,26 @@ export function ResearchAgentDashboard() {
       
       toast({
         title: "Avatars Generated",
-        description: `Successfully generated ${result.count} customer avatars based on your brand data.`,
+        description: `Successfully generated ${result.count} customer avatars. Now fetching concepts...`,
+      })
+
+      // Automatically fetch concepts after avatar generation
+      const conceptsResponse = await apiRequest('POST', '/api/generate-concepts')
+      const conceptsResult = await conceptsResponse.json()
+      
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/avatar-concepts'] })
+      
+      toast({
+        title: "Workflow Complete",
+        description: `Generated ${result.count} avatars and fetched ${conceptsResult.concepts.length} concepts (${conceptsResult.conceptsPerAvatar} per avatar). Created ${conceptsResult.linkedCount} links.`,
       })
     } catch (error) {
       console.error('Failed to generate avatars:', error)
       toast({
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate avatars. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate avatars and concepts. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -970,8 +983,8 @@ export function ResearchAgentDashboard() {
                     size="sm"
                     data-testid="button-generate-concepts"
                   >
-                    {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
-                    {isGenerating ? "Fetching..." : "Find Concepts"}
+                    {isGenerating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {isGenerating ? "Fetching..." : "Refresh Concepts"}
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -979,8 +992,8 @@ export function ResearchAgentDashboard() {
                 <TooltipContent>
                   <p>
                     {!isKnowledgeBaseCompleted 
-                      ? "Complete your knowledge base setup first to fetch concepts"
-                      : "Generate avatars first before fetching concepts from social media"
+                      ? "Complete your knowledge base setup first to refresh concepts"
+                      : "Generate avatars first. Concepts are auto-fetched but you can refresh manually."
                     }
                   </p>
                 </TooltipContent>
