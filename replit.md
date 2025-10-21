@@ -144,8 +144,60 @@ The knowledge base dashboard implements a separated navigation and save workflow
 
 This workflow ensures users never lose data by preventing navigation when there are unsaved changes, while maintaining a clear separation between navigation and persistence actions.
 
+### AI & Content Generation
+- **OpenAI GPT-4**: For AI content generation across all agents
+  - Generates 4-5 diverse customer avatars at once based on knowledge base data
+  - Analyzes brand positioning, demographics, and pain points
+  - Creates targeted messaging and hooks for each avatar segment
+- **Scrape Creator API**: For fetching real-world creative concepts from social media platforms
+  - Fetches trending ad concepts from Facebook, Instagram, and TikTok
+  - Provides engagement metrics, creative elements, and performance data
+  - Integration key stored securely in Replit Secrets
+
+### Research Agent Workflow (Updated October 2025)
+The Research Agent implements an intelligent three-phase workflow for generating customer avatars and matching them with high-performing social media concepts:
+
+**Phase 1: Avatar Generation**
+- User clicks "Generate Avatars" button
+- System generates 4-5 diverse customer avatars using OpenAI GPT-4
+- Avatars are created based on knowledge base data (brand guidelines, customer feedback, market research)
+- Each avatar includes: name, age range, demographics, pain points, and hooks
+- All avatars saved to database and displayed in UI
+
+**Phase 2: Concept Discovery**
+- User clicks "Find Concepts" button (enabled only after avatars exist)
+- System fetches trending ad concepts from three platforms via Scrape Creator API:
+  - Facebook ads (includes engagement metrics, creative elements)
+  - Instagram ads (includes platform-specific performance data)
+  - TikTok ads (includes viral metrics and creative hooks)
+- Concepts saved to database with full metadata
+
+**Phase 3: Intelligent Auto-Linking**
+- System automatically scores concept-to-avatar relevance using weighted algorithm:
+  - Hook Matching (40%): Compares concept hooks with avatar pain points
+  - Demographics Alignment (30%): Matches target audience characteristics
+  - Performance Metrics (30%): Factors in engagement scores and reach
+- Top 2 concepts per platform automatically linked to each avatar (6 total links per avatar)
+- Deduplication logic prevents duplicate links on repeated workflow runs
+- Relevance scores stored for ranking and filtering in UI
+
+**User Interface Features:**
+- Avatar cards with expandable details and approval workflow
+- Concept cards filtered by selected avatar, ranked by relevance score
+- Visual indicators for platform type (Facebook, Instagram, TikTok)
+- Manual linking/unlinking capability with feedback collection
+- Toast notifications showing counts of generated avatars, fetched concepts, and created links
+
+**Data Flow:**
+1. Knowledge Base → Avatar Generation (OpenAI)
+2. Avatar Hooks → Concept Fetching (Scrape Creator API)
+3. Concepts + Avatars → Intelligent Scoring Algorithm
+4. Scored Matches → Auto-Linking (with deduplication)
+5. Linked Results → UI Display (filtered and ranked)
+
+This automated workflow eliminates manual research time and provides data-driven insights for targeted marketing campaigns.
+
 ### Planned Integrations
-- **OpenAI API**: For AI content generation across all agents
 - **Meta Ads API**: For real-time performance data analysis
 - **Third-party Asset Libraries**: For creative asset recommendations
 - **Authentication Services**: For enhanced user management
