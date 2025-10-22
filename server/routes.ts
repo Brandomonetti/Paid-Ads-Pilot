@@ -716,7 +716,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalDeletedConcepts = 0;
 
       // Delete old concepts for the avatars we're processing
+      // Security: Only delete concepts for avatars that belong to this user (already verified above)
       for (const avatar of avatars) {
+        // Double-check ownership before deletion (defense in depth)
+        if (avatar.userId !== userId) {
+          console.error(`Ownership violation: Avatar ${avatar.id} does not belong to user ${userId}`);
+          res.status(403).json({ error: "You don't have permission to delete concepts for this avatar." });
+          return;
+        }
+        
         const deletedCount = await storage.deleteConceptsByAvatarId(avatar.id);
         totalDeletedConcepts += deletedCount;
         if (deletedCount > 0) {

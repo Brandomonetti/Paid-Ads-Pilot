@@ -1042,6 +1042,20 @@ export function ResearchAgentDashboard() {
                 </div>
               </div>
             </Card>
+          ) : isLoadingConcepts || isGenerating ? (
+            <div className="space-y-4">
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <RefreshCw className="h-12 w-12 text-muted-foreground animate-spin" />
+                  <div>
+                    <h3 className="font-medium mb-2">Loading Concepts...</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Fetching creative concepts for {avatars.find(a => a.id === selectedAvatar)?.name}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
           ) : (
             <div className="space-y-4">
               {/* Enhanced Selection CTA */}
