@@ -190,22 +190,8 @@ export class MemStorage implements IStorage {
       }
     }
     
-    // If avatarId provided, return ALL concepts but sorted by relevance for that avatar
-    // Concepts with existing links should be sorted by their stored relevance score
-    // Concepts without links should appear after linked ones
-    const avatarConceptLinks = Array.from(this.avatarConcepts.values())
-      .filter(link => link.avatarId === avatarId && link.status === "linked");
-    
-    const linkedConceptIds = new Set(avatarConceptLinks.map(link => link.conceptId));
-    const linkedConcepts = avatarConceptLinks
-      .sort((a, b) => parseFloat(b.relevanceScore) - parseFloat(a.relevanceScore))
-      .map(link => this.concepts.get(link.conceptId))
-      .filter((concept): concept is Concept => concept !== undefined);
-    
-    const unlinkedConcepts = allConcepts.filter(concept => !linkedConceptIds.has(concept.id));
-    
-    // Return linked concepts first (sorted by relevance), then unlinked concepts
-    return [...linkedConcepts, ...unlinkedConcepts];
+    // Filter by avatarId column in concepts table (concepts fetched FOR this avatar)
+    return allConcepts.filter(concept => concept.avatarId === avatarId);
   }
 
   async getConcept(id: string): Promise<Concept | undefined> {
@@ -217,6 +203,7 @@ export class MemStorage implements IStorage {
     const concept: Concept = { 
       ...insertConcept,
       id,
+      avatarId: insertConcept.avatarId || null,
       status: insertConcept.status || "pending",
       feedback: insertConcept.feedback || null,
       referenceUrl: insertConcept.referenceUrl || null,
@@ -537,8 +524,8 @@ export class PgStorage implements IStorage {
       return await this.db.select().from(concepts);
     }
     
-    // When avatarId is provided (with or without userId), return ALL concepts for the user
-    // Users will manually link concepts to avatars via the UI
+    // When avatarId is provided, return concepts fetched FOR that avatar
+    // Filter by avatarId column in concepts table (NOT the junction table)
     if (avatarId && userId) {
       // Security: Verify avatar belongs to user
       const avatar = await this.db.select().from(avatars).where(eq(avatars.id, avatarId)).limit(1);
@@ -547,44 +534,23 @@ export class PgStorage implements IStorage {
         return [];
       }
       
-      // Return ALL concepts for this user (manual linking workflow)
-      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
+      // Return concepts that were fetched for this specific avatar
+      return await this.db.select().from(concepts).where(
+        and(
+          eq(concepts.userId, userId),
+          eq(concepts.avatarId, avatarId)
+        )
+      );
     }
     
-    // Just userId, no avatarId
+    // Just avatarId, no userId - filter by avatarId column
+    if (avatarId) {
+      return await this.db.select().from(concepts).where(eq(concepts.avatarId, avatarId));
+    }
+    
+    // Just userId, no avatarId - return all concepts for user
     if (userId) {
       return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
-    }
-    
-    // Fallback: just avatarId without userId (return all linked concepts for backward compatibility)
-    if (avatarId) {
-      const conceptsWithRelevance = await this.db
-        .select({
-          id: concepts.id,
-          userId: concepts.userId,
-          title: concepts.title,
-          format: concepts.format,
-          platform: concepts.platform,
-          industry: concepts.industry,
-          performance: concepts.performance,
-          insights: concepts.insights,
-          keyElements: concepts.keyElements,
-          status: concepts.status,
-          referenceUrl: concepts.referenceUrl,
-          thumbnailUrl: concepts.thumbnailUrl,
-          feedback: concepts.feedback,
-          createdAt: concepts.createdAt,
-          relevanceScore: avatarConcepts.relevanceScore
-        })
-        .from(concepts)
-        .innerJoin(avatarConcepts, and(
-          eq(avatarConcepts.conceptId, concepts.id),
-          eq(avatarConcepts.avatarId, avatarId),
-          eq(avatarConcepts.status, "linked")
-        ))
-        .orderBy(avatarConcepts.relevanceScore);
-      
-      return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
     }
     
     return [];

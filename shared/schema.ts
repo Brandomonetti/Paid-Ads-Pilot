@@ -65,6 +65,7 @@ export type Avatar = typeof avatars.$inferSelect;
 export const concepts = pgTable("concepts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
+  avatarId: varchar("avatar_id").references(() => avatars.id), // Which avatar this concept was fetched for (nullable for general concepts)
   title: text("title").notNull(),
   format: text("format").notNull(), // "Raw UGC Video", "Testimonial", etc.
   platform: text("platform").notNull(), // "TikTok/Instagram Reels", etc.

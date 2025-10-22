@@ -741,11 +741,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`Avatar ${avatar.name}: fetched ${avatarConcepts.length} concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
 
-        // Save concepts to database with userId (NO auto-linking - users will manually link)
+        // Save concepts to database with userId AND avatarId (track which avatar they were fetched for)
         const savedConcepts = await Promise.all(
           avatarConcepts.map(async (concept) => {
             return await storage.createConcept({
               userId,
+              avatarId: avatar.id, // Track which avatar this concept was fetched for
               title: concept.title,
               format: concept.visualStyle || 'video',
               platform: concept.platform,
