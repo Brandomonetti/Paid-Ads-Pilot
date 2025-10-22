@@ -78,10 +78,17 @@ export class ScrapeCreatorService {
         }
       );
 
-      console.log('Facebook API Response:', JSON.stringify(response.data, null, 2));
+      console.log('[Facebook API] Response type:', typeof response.data);
+      console.log('[Facebook API] Is HTML?', typeof response.data === 'string' && response.data.includes('<html'));
+      console.log('[Facebook API] Response keys:', Object.keys(response.data || {}));
+      
       return this.parseFacebookResponse(response.data);
     } catch (error) {
       console.error('Error fetching Facebook concepts:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('[Facebook API] Status:', error.response?.status);
+        console.error('[Facebook API] Response:', error.response?.data);
+      }
       return [];
     }
   }
@@ -104,10 +111,17 @@ export class ScrapeCreatorService {
         }
       );
 
-      console.log('Instagram API Response:', JSON.stringify(response.data, null, 2));
+      console.log('[Instagram API] Response type:', typeof response.data);
+      console.log('[Instagram API] Is HTML?', typeof response.data === 'string' && response.data.includes('<html'));
+      console.log('[Instagram API] Response keys:', Object.keys(response.data || {}));
+      
       return this.parseInstagramResponse(response.data);
     } catch (error) {
       console.error('Error fetching Instagram concepts:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('[Instagram API] Status:', error.response?.status);
+        console.error('[Instagram API] Response:', error.response?.data);
+      }
       return [];
     }
   }
@@ -132,10 +146,18 @@ export class ScrapeCreatorService {
         }
       );
 
-      console.log('TikTok API Response:', JSON.stringify(response.data, null, 2));
+      console.log('[TikTok API] Response type:', typeof response.data);
+      console.log('[TikTok API] Is HTML?', typeof response.data === 'string' && response.data.includes('<html'));
+      console.log('[TikTok API] Response keys:', Object.keys(response.data || {}));
+      console.log('[TikTok API] First 500 chars:', JSON.stringify(response.data).substring(0, 500));
+      
       return this.parseTikTokResponse(response.data);
     } catch (error) {
       console.error('Error fetching TikTok concepts:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('[TikTok API] Status:', error.response?.status);
+        console.error('[TikTok API] Response:', error.response?.data);
+      }
       return [];
     }
   }
