@@ -65,7 +65,7 @@ export function ResearchAgentDashboard() {
 
   // Fetch concepts filtered by selected avatar 
   const { data: concepts = [], isLoading: isLoadingConcepts } = useQuery<Concept[]>({
-    queryKey: ['/api/concepts', selectedAvatar],
+    queryKey: selectedAvatar ? [`/api/concepts?avatarId=${selectedAvatar}`] : ['/api/concepts'],
     enabled: !!selectedAvatar,
   })
 
