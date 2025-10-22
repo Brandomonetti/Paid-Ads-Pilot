@@ -624,6 +624,9 @@ export class PgStorage implements IStorage {
           avatarId: avatarConcepts.avatarId,
           conceptId: avatarConcepts.conceptId,
           relevanceScore: avatarConcepts.relevanceScore,
+          matchedHooks: avatarConcepts.matchedHooks,
+          matchedElements: avatarConcepts.matchedElements,
+          rationale: avatarConcepts.rationale,
           status: avatarConcepts.status,
           feedback: avatarConcepts.feedback,
           createdAt: avatarConcepts.createdAt

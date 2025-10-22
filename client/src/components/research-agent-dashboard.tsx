@@ -220,7 +220,7 @@ export function ResearchAgentDashboard() {
       
       toast({
         title: "Workflow Complete",
-        description: `Generated ${result.count} avatars and fetched ${conceptsResult.concepts.length} concepts (${conceptsResult.conceptsPerAvatar} per avatar). Created ${conceptsResult.linkedCount} links.`,
+        description: `Generated ${result.count} avatars and fetched ${conceptsResult.count} concepts. Review and manually link concepts to avatars.`,
       })
     } catch (error) {
       console.error('Failed to generate avatars:', error)
@@ -268,10 +268,10 @@ export function ResearchAgentDashboard() {
       const avatarName = selectedAvatar ? avatars.find(a => a.id === selectedAvatar)?.name : 'all avatars'
       
       toast({
-        title: "Concepts Generated",
+        title: "Concepts Fetched",
         description: selectedAvatar 
-          ? `Fetched ${result.concepts.length} concepts for ${avatarName}. Created ${result.linkedCount} links.`
-          : `Fetched ${result.concepts.length} concepts (${result.conceptsPerAvatar} per avatar). Created ${result.linkedCount} links across ${result.avatarsProcessed} avatars.`,
+          ? `Fetched ${result.count} concepts for ${avatarName}. Review and manually link to avatars.`
+          : `Fetched ${result.count} concepts for ${result.avatarsProcessed} avatar(s). Review and manually link them.`,
       })
     } catch (error) {
       console.error('Failed to generate concepts:', error)

@@ -713,8 +713,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const niche = knowledgeBase.currentPersonas || 'general';
       let allSavedConcepts: any[] = [];
-      let totalLinked = 0;
-      let totalSkipped = 0;
 
       // For each avatar, fetch specific concepts based on their pain points/hooks
       for (const avatar of avatars) {
@@ -743,7 +741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`Avatar ${avatar.name}: fetched ${avatarConcepts.length} concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
 
-        // Save concepts to database with userId
+        // Save concepts to database with userId (NO auto-linking - users will manually link)
         const savedConcepts = await Promise.all(
           avatarConcepts.map(async (concept) => {
             return await storage.createConcept({
@@ -766,27 +764,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         );
 
-        // Link all fetched concepts directly to this avatar using the helper method
-        for (const concept of savedConcepts) {
-          try {
-            await storage.linkConceptToAvatar(avatar.id, concept.id, 0.85); // relevanceScore as decimal 0.00-1.00
-            totalLinked++;
-          } catch (error) {
-            console.error(`Failed to link concept ${concept.id} to avatar ${avatar.id}:`, error);
-            totalSkipped++;
-          }
-        }
-
         allSavedConcepts.push(...savedConcepts);
       }
 
       res.json({
         concepts: allSavedConcepts,
-        linkedCount: totalLinked,
-        skippedCount: totalSkipped,
+        count: allSavedConcepts.length,
         avatarsProcessed: avatars.length,
         conceptsPerAvatar: Math.floor(allSavedConcepts.length / avatars.length),
-        message: `Fetched ${allSavedConcepts.length} concepts for ${avatars.length} avatars (${Math.floor(allSavedConcepts.length / avatars.length)} per avatar) and created ${totalLinked} links`
+        message: `Fetched ${allSavedConcepts.length} concepts for ${avatars.length} avatar(s). Review and manually link concepts to avatars.`
       });
     } catch (error) {
       console.error("Concept generation error:", error);
