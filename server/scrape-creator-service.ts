@@ -169,7 +169,7 @@ export class ScrapeCreatorService {
     console.log('[Facebook Parser] Raw data keys:', Object.keys(data || {}));
     
     // Try multiple possible response structures
-    let ads = data?.ads || data?.data || [];
+    let ads = data?.searchResults || data?.ads || data?.data || [];
     
     if (Array.isArray(data)) {
       ads = data;
@@ -237,8 +237,8 @@ export class ScrapeCreatorService {
     console.log('[TikTok Parser] Raw data keys:', Object.keys(data || {}));
     console.log('[TikTok Parser] Data structure:', JSON.stringify(data).substring(0, 500));
     
-    // Try multiple possible response structures
-    let videos = data?.videos || data?.data || data?.aweme_list || [];
+    // Try multiple possible response structures - API returns data in 'items' field
+    let videos = data?.items || data?.videos || data?.data || data?.aweme_list || [];
     
     // If data is an array itself
     if (Array.isArray(data)) {
