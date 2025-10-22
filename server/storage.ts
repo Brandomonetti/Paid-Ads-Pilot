@@ -550,7 +550,7 @@ export class PgStorage implements IStorage {
       }
     }
     
-    // Get concepts sorted by relevance for the avatar
+    // Get ONLY concepts linked to this specific avatar (INNER JOIN)
     let query = this.db
       .select({
         id: concepts.id,
@@ -570,7 +570,7 @@ export class PgStorage implements IStorage {
         relevanceScore: avatarConcepts.relevanceScore
       })
       .from(concepts)
-      .leftJoin(avatarConcepts, and(
+      .innerJoin(avatarConcepts, and(
         eq(avatarConcepts.conceptId, concepts.id),
         eq(avatarConcepts.avatarId, avatarId!),
         eq(avatarConcepts.status, "linked")
