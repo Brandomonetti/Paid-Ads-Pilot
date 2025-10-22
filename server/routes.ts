@@ -677,6 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const specificAvatarId = req.body.avatarId as string | undefined; // Optional: fetch for specific avatar only
 
       // Fetch the user's knowledge base
       const knowledgeBase = await storage.getKnowledgeBase(userId);
@@ -691,11 +692,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Fetch all avatars for this user to link concepts to
-      const avatars = await storage.getAvatars(userId);
-      if (avatars.length === 0) {
-        res.status(400).json({ error: "Please generate avatars first before fetching concepts." });
-        return;
+      // Fetch avatars: either specific one or all
+      let avatars;
+      if (specificAvatarId) {
+        const avatar = await storage.getAvatar(specificAvatarId);
+        if (!avatar || avatar.userId !== userId) {
+          res.status(404).json({ error: "Avatar not found or doesn't belong to you." });
+          return;
+        }
+        avatars = [avatar];
+        console.log(`Fetching concepts for specific avatar: ${avatar.name}`);
+      } else {
+        avatars = await storage.getAvatars(userId);
+        if (avatars.length === 0) {
+          res.status(400).json({ error: "Please generate avatars first before fetching concepts." });
+          return;
+        }
+        console.log(`Fetching concepts for all ${avatars.length} avatars`);
       }
 
       const niche = knowledgeBase.currentPersonas || 'general';

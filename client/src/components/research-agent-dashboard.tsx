@@ -250,17 +250,23 @@ export function ResearchAgentDashboard() {
 
     setIsGenerating(true)
     try {
-      // NEW WORKFLOW: Fetch concepts from social media platforms and auto-link to avatars
-      const response = await apiRequest('POST', '/api/generate-concepts')
+      // If an avatar is selected, fetch concepts ONLY for that avatar
+      // Otherwise, fetch for ALL avatars
+      const requestBody = selectedAvatar ? { avatarId: selectedAvatar } : {}
+      const response = await apiRequest('POST', '/api/generate-concepts', requestBody)
       const result = await response.json()
       
       // Invalidate queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] })
       queryClient.invalidateQueries({ queryKey: ['/api/avatar-concepts'] })
       
+      const avatarName = selectedAvatar ? avatars.find(a => a.id === selectedAvatar)?.name : 'all avatars'
+      
       toast({
         title: "Concepts Generated",
-        description: `Fetched ${result.concepts.length} avatar-specific concepts (${result.conceptsPerAvatar} per avatar). Created ${result.linkedCount} links across ${result.avatarsProcessed} avatars.`,
+        description: selectedAvatar 
+          ? `Fetched ${result.concepts.length} concepts for ${avatarName}. Created ${result.linkedCount} links.`
+          : `Fetched ${result.concepts.length} concepts (${result.conceptsPerAvatar} per avatar). Created ${result.linkedCount} links across ${result.avatarsProcessed} avatars.`,
       })
     } catch (error) {
       console.error('Failed to generate concepts:', error)
