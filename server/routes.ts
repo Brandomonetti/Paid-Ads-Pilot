@@ -754,10 +754,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Link all fetched concepts directly to this avatar using the helper method
         for (const concept of savedConcepts) {
           try {
-            await storage.linkConceptToAvatar(avatar.id, concept.id, 85); // Fixed relevance score for avatar-specific concepts
+            await storage.linkConceptToAvatar(avatar.id, concept.id, 0.85); // relevanceScore as decimal 0.00-1.00
             totalLinked++;
           } catch (error) {
-            // Duplicate link, skip (link already exists)
+            console.error(`Failed to link concept ${concept.id} to avatar ${avatar.id}:`, error);
             totalSkipped++;
           }
         }
