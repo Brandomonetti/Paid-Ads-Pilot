@@ -713,6 +713,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const niche = knowledgeBase.currentPersonas || 'general';
       let allSavedConcepts: any[] = [];
+      let totalDeletedConcepts = 0;
+
+      // Delete old concepts for the avatars we're processing
+      for (const avatar of avatars) {
+        const deletedCount = await storage.deleteConceptsByAvatarId(avatar.id);
+        totalDeletedConcepts += deletedCount;
+        if (deletedCount > 0) {
+          console.log(`Deleted ${deletedCount} old concepts for avatar: ${avatar.name}`);
+        }
+      }
 
       // For each avatar, fetch specific concepts based on their pain points/hooks
       for (const avatar of avatars) {
@@ -771,9 +781,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         concepts: allSavedConcepts,
         count: allSavedConcepts.length,
+        deletedCount: totalDeletedConcepts,
         avatarsProcessed: avatars.length,
         conceptsPerAvatar: Math.floor(allSavedConcepts.length / avatars.length),
-        message: `Fetched ${allSavedConcepts.length} concepts for ${avatars.length} avatar(s). Review and manually link concepts to avatars.`
+        message: `Fetched ${allSavedConcepts.length} new concepts for ${avatars.length} avatar(s)${totalDeletedConcepts > 0 ? ` (replaced ${totalDeletedConcepts} old concepts)` : ''}. Review and manually link concepts to avatars.`
       });
     } catch (error) {
       console.error("Concept generation error:", error);
