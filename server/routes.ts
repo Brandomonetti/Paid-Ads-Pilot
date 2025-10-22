@@ -717,6 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete old concepts for the avatars we're processing
       // Security: Only delete concepts for avatars that belong to this user (already verified above)
+      // IMPORTANT: Delete links FIRST to avoid foreign key constraint violations
       for (const avatar of avatars) {
         // Double-check ownership before deletion (defense in depth)
         if (avatar.userId !== userId) {
@@ -725,6 +726,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Step 1: Delete avatar-concept links first
+        const deletedLinks = await storage.deleteAvatarConceptLinksByAvatarId(avatar.id);
+        if (deletedLinks > 0) {
+          console.log(`Deleted ${deletedLinks} concept links for avatar: ${avatar.name}`);
+        }
+        
+        // Step 2: Now safe to delete the concepts
         const deletedCount = await storage.deleteConceptsByAvatarId(avatar.id);
         totalDeletedConcepts += deletedCount;
         if (deletedCount > 0) {

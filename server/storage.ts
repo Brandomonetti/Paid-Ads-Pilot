@@ -46,6 +46,7 @@ export interface IStorage {
   createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
   updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
   deleteAllAvatarConceptLinks(userId: string): Promise<number>;
+  deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number>;
   linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept>;
   
   // Platform Settings methods
@@ -288,6 +289,12 @@ export class MemStorage implements IStorage {
     const userAvatarIds = new Set(userAvatars.map(avatar => avatar.id));
     
     const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => userAvatarIds.has(link.avatarId));
+    linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
+    return linksToDelete.length;
+  }
+
+  async deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number> {
+    const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => link.avatarId === avatarId);
     linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
     return linksToDelete.length;
   }
@@ -658,6 +665,14 @@ export class PgStorage implements IStorage {
     const result = await this.db
       .delete(avatarConcepts)
       .where(inArray(avatarConcepts.avatarId, userAvatarIds))
+      .returning();
+    return result.length;
+  }
+
+  async deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number> {
+    const result = await this.db
+      .delete(avatarConcepts)
+      .where(eq(avatarConcepts.avatarId, avatarId))
       .returning();
     return result.length;
   }
