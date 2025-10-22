@@ -144,8 +144,21 @@ export class ScrapeCreatorService {
    * Parse Facebook API response into SocialMediaConcept format
    */
   private parseFacebookResponse(data: any): SocialMediaConcept[] {
-    const ads = data?.ads || data?.data || data;
-    if (!Array.isArray(ads)) return [];
+    console.log('[Facebook Parser] Raw data keys:', Object.keys(data || {}));
+    
+    // Try multiple possible response structures
+    let ads = data?.ads || data?.data || [];
+    
+    if (Array.isArray(data)) {
+      ads = data;
+    }
+    
+    if (!Array.isArray(ads)) {
+      console.log('[Facebook Parser] Ads is not an array, type:', typeof ads);
+      return [];
+    }
+    
+    console.log('[Facebook Parser] Found', ads.length, 'ads');
     
     return ads.slice(0, 20).map((ad: any) => ({
       platform: 'facebook' as const,
@@ -165,8 +178,21 @@ export class ScrapeCreatorService {
    * Parse Instagram API response into SocialMediaConcept format
    */
   private parseInstagramResponse(data: any): SocialMediaConcept[] {
-    const reels = data?.reels || data?.data || data;
-    if (!Array.isArray(reels)) return [];
+    console.log('[Instagram Parser] Raw data keys:', Object.keys(data || {}));
+    
+    // Try multiple possible response structures
+    let reels = data?.reels || data?.data || data?.items || [];
+    
+    if (Array.isArray(data)) {
+      reels = data;
+    }
+    
+    if (!Array.isArray(reels)) {
+      console.log('[Instagram Parser] Reels is not an array, type:', typeof reels);
+      return [];
+    }
+    
+    console.log('[Instagram Parser] Found', reels.length, 'reels');
     
     return reels.slice(0, 20).map((reel: any) => ({
       platform: 'instagram' as const,
@@ -186,21 +212,41 @@ export class ScrapeCreatorService {
    * Parse TikTok API response into SocialMediaConcept format
    */
   private parseTikTokResponse(data: any): SocialMediaConcept[] {
-    const videos = data?.videos || data?.data || data;
-    if (!Array.isArray(videos)) return [];
+    console.log('[TikTok Parser] Raw data keys:', Object.keys(data || {}));
+    console.log('[TikTok Parser] Data structure:', JSON.stringify(data).substring(0, 500));
     
-    return videos.slice(0, 20).map((video: any) => ({
-      platform: 'tiktok' as const,
-      title: video.desc?.substring(0, 60) || video.description?.substring(0, 60) || 'TikTok Video Concept',
-      description: video.desc || video.description || '',
-      hook: this.extractHook(video.desc || video.description || ''),
-      visualStyle: 'short-form video',
-      cta: this.extractCTA(video.desc || video.description || ''),
-      engagementScore: this.calculateTikTokEngagement(video),
-      thumbnailUrl: video.video?.cover?.url_list?.[0] || video.cover_url,
-      postUrl: video.url || `https://www.tiktok.com/@${video.author?.unique_id}/video/${video.aweme_id}`,
-      rawData: video
-    }));
+    // Try multiple possible response structures
+    let videos = data?.videos || data?.data || data?.aweme_list || [];
+    
+    // If data is an array itself
+    if (Array.isArray(data)) {
+      videos = data;
+    }
+    
+    if (!Array.isArray(videos)) {
+      console.log('[TikTok Parser] Videos is not an array, type:', typeof videos);
+      return [];
+    }
+    
+    console.log('[TikTok Parser] Found', videos.length, 'videos');
+    
+    return videos.slice(0, 20).map((video: any) => {
+      const desc = video.desc || video.description || video.video_description || '';
+      const title = desc.substring(0, 60) || 'TikTok Video Concept';
+      
+      return {
+        platform: 'tiktok' as const,
+        title,
+        description: desc,
+        hook: this.extractHook(desc),
+        visualStyle: 'short-form video',
+        cta: this.extractCTA(desc),
+        engagementScore: this.calculateTikTokEngagement(video),
+        thumbnailUrl: video.video?.cover?.url_list?.[0] || video.cover?.url_list?.[0] || video.thumbnail_url || video.cover_url,
+        postUrl: video.url || (video.author?.unique_id && video.aweme_id ? `https://www.tiktok.com/@${video.author.unique_id}/video/${video.aweme_id}` : ''),
+        rawData: video
+      };
+    });
   }
 
   /**
