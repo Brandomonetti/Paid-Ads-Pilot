@@ -537,52 +537,57 @@ export class PgStorage implements IStorage {
       return await this.db.select().from(concepts);
     }
     
-    if (!avatarId && userId) {
-      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
-    }
-    
-    // Security: If avatarId AND userId are provided, verify avatar belongs to user
+    // When avatarId is provided (with or without userId), return ALL concepts for the user
+    // Users will manually link concepts to avatars via the UI
     if (avatarId && userId) {
+      // Security: Verify avatar belongs to user
       const avatar = await this.db.select().from(avatars).where(eq(avatars.id, avatarId)).limit(1);
       if (!avatar[0] || avatar[0].userId !== userId) {
         // Avatar doesn't exist or doesn't belong to this user - return empty
         return [];
       }
+      
+      // Return ALL concepts for this user (manual linking workflow)
+      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
     }
     
-    // Get ONLY concepts linked to this specific avatar (INNER JOIN)
-    let query = this.db
-      .select({
-        id: concepts.id,
-        userId: concepts.userId,
-        title: concepts.title,
-        format: concepts.format,
-        platform: concepts.platform,
-        industry: concepts.industry,
-        performance: concepts.performance,
-        insights: concepts.insights,
-        keyElements: concepts.keyElements,
-        status: concepts.status,
-        referenceUrl: concepts.referenceUrl,
-        thumbnailUrl: concepts.thumbnailUrl,
-        feedback: concepts.feedback,
-        createdAt: concepts.createdAt,
-        relevanceScore: avatarConcepts.relevanceScore
-      })
-      .from(concepts)
-      .innerJoin(avatarConcepts, and(
-        eq(avatarConcepts.conceptId, concepts.id),
-        eq(avatarConcepts.avatarId, avatarId!),
-        eq(avatarConcepts.status, "linked")
-      ))
-      .orderBy(avatarConcepts.relevanceScore);
+    // Just userId, no avatarId
+    if (userId) {
+      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
+    }
     
-    // Add userId filter if provided
-    const conceptsWithRelevance = userId 
-      ? await query.where(eq(concepts.userId, userId))
-      : await query;
+    // Fallback: just avatarId without userId (return all linked concepts for backward compatibility)
+    if (avatarId) {
+      const conceptsWithRelevance = await this.db
+        .select({
+          id: concepts.id,
+          userId: concepts.userId,
+          title: concepts.title,
+          format: concepts.format,
+          platform: concepts.platform,
+          industry: concepts.industry,
+          performance: concepts.performance,
+          insights: concepts.insights,
+          keyElements: concepts.keyElements,
+          status: concepts.status,
+          referenceUrl: concepts.referenceUrl,
+          thumbnailUrl: concepts.thumbnailUrl,
+          feedback: concepts.feedback,
+          createdAt: concepts.createdAt,
+          relevanceScore: avatarConcepts.relevanceScore
+        })
+        .from(concepts)
+        .innerJoin(avatarConcepts, and(
+          eq(avatarConcepts.conceptId, concepts.id),
+          eq(avatarConcepts.avatarId, avatarId),
+          eq(avatarConcepts.status, "linked")
+        ))
+        .orderBy(avatarConcepts.relevanceScore);
+      
+      return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
+    }
     
-    return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
+    return [];
   }
 
   async getConcept(id: string): Promise<Concept | undefined> {
