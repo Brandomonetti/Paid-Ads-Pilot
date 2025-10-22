@@ -37,6 +37,24 @@ export class ScrapeCreatorService {
   }
 
   /**
+   * Extract key search terms from keywords (2-4 most important words)
+   */
+  private extractKeyTerms(keywords: string[]): string[] {
+    // Extract key nouns/adjectives from each keyword phrase
+    const allWords = keywords.join(' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => 
+        word.length > 3 && // Filter out short words like "and", "the", "for"
+        !['from', 'with', 'that', 'this', 'their', 'about', 'into', 'when', 'where'].includes(word)
+      );
+    
+    // Take unique words and limit to 4 most relevant
+    const uniqueWords = [...new Set(allWords)];
+    return uniqueWords.slice(0, 4);
+  }
+
+  /**
    * Fetch concepts from all platforms based on brand/niche keywords
    */
   async fetchConceptsForBrand(keywords: string[], niche: string): Promise<ScrapedConceptsResponse> {
@@ -63,7 +81,13 @@ export class ScrapeCreatorService {
    */
   private async fetchFacebookConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const query = keywords.join(' ');
+      // Use simplified search terms for better results
+      const searchTerms = this.extractKeyTerms(keywords);
+      const query = searchTerms.join(' ');
+      
+      console.log(`[Facebook API] Original keywords:`, keywords);
+      console.log(`[Facebook API] Simplified query: "${query}"`);
+      
       const response = await axios.get(
         `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
         {
@@ -98,7 +122,13 @@ export class ScrapeCreatorService {
    */
   private async fetchInstagramConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const query = keywords.join(' ');
+      // Use simplified search terms for better results
+      const searchTerms = this.extractKeyTerms(keywords);
+      const query = searchTerms.join(' ');
+      
+      console.log(`[Instagram API] Original keywords:`, keywords);
+      console.log(`[Instagram API] Simplified query: "${query}"`);
+      
       const response = await axios.get(
         `${SCRAPE_CREATOR_BASE_URL}/instagram/reels/search`,
         {
