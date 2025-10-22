@@ -238,7 +238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const avatarId = req.query.avatarId as string | undefined;
+      console.log(`GET /api/concepts - userId: ${userId}, avatarId: ${avatarId || 'none'}`);
       const concepts = await storage.getConcepts(avatarId, userId);
+      console.log(`Returning ${concepts.length} concepts for avatarId: ${avatarId || 'all'}`);
       res.json(concepts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch concepts" });
