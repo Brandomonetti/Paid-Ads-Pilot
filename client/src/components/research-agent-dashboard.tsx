@@ -65,7 +65,12 @@ export function ResearchAgentDashboard() {
 
   // Fetch concepts filtered by selected avatar 
   const { data: concepts = [], isLoading: isLoadingConcepts } = useQuery<Concept[]>({
-    queryKey: selectedAvatar ? [`/api/concepts?avatarId=${selectedAvatar}`] : ['/api/concepts'],
+    queryKey: ['/api/concepts', selectedAvatar],
+    queryFn: async () => {
+      const url = selectedAvatar ? `/api/concepts?avatarId=${selectedAvatar}` : '/api/concepts'
+      const response = await apiRequest('GET', url)
+      return response.json() as Promise<Concept[]>
+    },
     enabled: !!selectedAvatar,
   })
 
