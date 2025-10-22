@@ -92,9 +92,7 @@ export class ScrapeCreatorService {
         `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
         {
           params: {
-            query,
-            status: 'ACTIVE',
-            media_type: 'VIDEO'
+            query
           },
           headers: {
             'x-api-key': this.apiKey
