@@ -81,12 +81,13 @@ export class ScrapeCreatorService {
    */
   private async fetchFacebookConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      // Use simplified search terms for better results
+      // For Facebook Ad Library, use broader single keyword for better results
+      // Extract just the first key term instead of combining multiple
       const searchTerms = this.extractKeyTerms(keywords);
-      const query = searchTerms.join(' ');
+      const query = searchTerms[0] || niche; // Use just the first term or niche
       
       console.log(`[Facebook API] Original keywords:`, keywords);
-      console.log(`[Facebook API] Simplified query: "${query}"`);
+      console.log(`[Facebook API] Broader single-term query: "${query}"`);
       
       const response = await axios.get(
         `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
