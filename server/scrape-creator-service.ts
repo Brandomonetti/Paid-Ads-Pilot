@@ -92,7 +92,8 @@ export class ScrapeCreatorService {
         `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
         {
           params: {
-            query
+            query,
+            limit: 20
           },
           headers: {
             'x-api-key': this.apiKey
