@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScript, generateAvatar, generateMultipleAvatars } from "./openai-service";
+import { generateScript, generateAvatar, generateMultipleAvatars, selectBestConcepts } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
 import { metaOAuthService } from "./meta-oauth-service";
@@ -754,10 +754,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fetch concepts from all platforms specific to this avatar
         const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(avatarKeywords, niche);
         
-        // Limit to 2 concepts per platform for this avatar
-        const facebookConcepts = scrapedConcepts.facebook.slice(0, 2);
-        const instagramConcepts = scrapedConcepts.instagram.slice(0, 2);
-        const tiktokConcepts = scrapedConcepts.tiktok.slice(0, 2);
+        // Get up to 10 concepts per platform for analysis
+        const facebookCandidates = scrapedConcepts.facebook.slice(0, 10);
+        const instagramCandidates = scrapedConcepts.instagram.slice(0, 10);
+        const tiktokCandidates = scrapedConcepts.tiktok.slice(0, 10);
+
+        console.log(`Avatar ${avatar.name}: analyzing ${facebookCandidates.length + instagramCandidates.length + tiktokCandidates.length} concepts (FB: ${facebookCandidates.length}, IG: ${instagramCandidates.length}, TT: ${tiktokCandidates.length})`);
+
+        // Use OpenAI to analyze and select the 2 best posts per platform
+        const [facebookConcepts, instagramConcepts, tiktokConcepts] = await Promise.all([
+          selectBestConcepts(facebookCandidates, avatar, 2),
+          selectBestConcepts(instagramCandidates, avatar, 2),
+          selectBestConcepts(tiktokCandidates, avatar, 2)
+        ]);
 
         const avatarConcepts = [
           ...facebookConcepts,
@@ -765,7 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...tiktokConcepts
         ];
 
-        console.log(`Avatar ${avatar.name}: fetched ${avatarConcepts.length} concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
+        console.log(`Avatar ${avatar.name}: selected ${avatarConcepts.length} best concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
 
         // Save concepts to database with userId AND avatarId (track which avatar they were fetched for)
         const savedConcepts = await Promise.all(
