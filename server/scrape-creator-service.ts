@@ -104,6 +104,8 @@ export class ScrapeCreatorService {
       console.log('[Facebook API] Response type:', typeof response.data);
       console.log('[Facebook API] Is HTML?', typeof response.data === 'string' && response.data.includes('<html'));
       console.log('[Facebook API] Response keys:', Object.keys(response.data || {}));
+      console.log('[Facebook API] searchResultsCount:', response.data?.searchResultsCount);
+      console.log('[Facebook API] Actual results returned:', response.data?.searchResults?.length || 0);
       
       return this.parseFacebookResponse(response.data);
     } catch (error) {
