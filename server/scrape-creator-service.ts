@@ -50,7 +50,7 @@ export class ScrapeCreatorService {
       );
     
     // Take unique words and limit to 4 most relevant
-    const uniqueWords = [...new Set(allWords)];
+    const uniqueWords = Array.from(new Set(allWords));
     return uniqueWords.slice(0, 4);
   }
 
