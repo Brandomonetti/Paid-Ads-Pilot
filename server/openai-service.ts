@@ -331,13 +331,20 @@ export async function selectBestConcepts(
   }
 
   try {
+    // Extract avatar data with proper field names
+    const painPoint = avatar.painPoint || 'Not specified';
+    const demographics = avatar.demographics || 'Not specified';
+    const hooks = Array.isArray(avatar.hooks) ? avatar.hooks.join(', ') : 'Not specified';
+    const ageRange = avatar.ageRange || 'Not specified';
+
     const prompt = `You are an expert marketing strategist analyzing social media content for relevance to a specific customer avatar.
 
 CUSTOMER AVATAR:
 Name: ${avatar.name}
-Pain Points: ${avatar.painPoint || 'Not specified'}
-Demographics: ${avatar.demographics || 'Not specified'}
-Hooks/Motivations: ${avatar.hooks?.join(', ') || 'Not specified'}
+Age Range: ${ageRange}
+Demographics: ${demographics}
+Primary Pain Point: ${painPoint}
+Hooks/Messaging Angles: ${hooks}
 
 SOCIAL MEDIA CONCEPTS TO ANALYZE:
 ${concepts.map((concept, idx) => `
@@ -353,30 +360,35 @@ Concept ${idx + 1}:
 
 TASK:
 Analyze each concept and score its relevance to this avatar based on:
-1. **Pain Point Match (40%)**: How well does the content address the avatar's pain points?
-2. **Demographic Fit (30%)**: Does the content style/messaging align with the avatar's demographics?
-3. **Hook Alignment (20%)**: Does the hook resonate with the avatar's motivations?
+1. **Pain Point Match (40%)**: How well does the content address the avatar's pain point?
+2. **Demographic Fit (30%)**: Does the content style/messaging align with the avatar's age and demographics?
+3. **Hook Alignment (20%)**: Does the hook resonate with the avatar's messaging angles?
 4. **Engagement Quality (10%)**: Does it have strong engagement metrics?
 
-Return a JSON object with concept indices ranked by relevance score:
+Return a JSON object with concept indices ranked by relevance score (MUST return exactly ${topN} rankings):
 {
   "rankings": [
     {
       "index": 0,
       "relevanceScore": 95,
       "reasoning": "Brief explanation of why this concept is highly relevant"
+    },
+    {
+      "index": 3,
+      "relevanceScore": 88,
+      "reasoning": "Brief explanation"
     }
   ]
 }
 
-Only include the top ${topN} most relevant concepts in your rankings.`;
+IMPORTANT: You MUST return exactly ${topN} rankings, choosing the ${topN} most relevant concepts from the list.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-5",
       messages: [
         {
           role: "system",
-          content: "You are an expert marketing analyst who evaluates social media content relevance to target customer avatars. Provide objective, data-driven rankings based on strategic fit."
+          content: "You are an expert marketing analyst who evaluates social media content relevance to target customer avatars. Provide objective, data-driven rankings based on strategic fit. Always return the exact number of rankings requested."
         },
         {
           role: "user",
@@ -390,10 +402,19 @@ Only include the top ${topN} most relevant concepts in your rankings.`;
     const rankings = result.rankings || [];
 
     // Map rankings back to actual concepts
-    const selectedConcepts = rankings
+    let selectedConcepts = rankings
       .slice(0, topN)
       .map((ranking: any) => concepts[ranking.index])
       .filter(Boolean);
+
+    // Fallback: If OpenAI returned fewer than topN, supplement with remaining concepts
+    if (selectedConcepts.length < topN) {
+      console.log(`[OpenAI] Warning: Got ${selectedConcepts.length} rankings, expected ${topN}. Supplementing with remaining concepts.`);
+      const selectedIndices = new Set(rankings.map((r: any) => r.index));
+      const remainingConcepts = concepts.filter((_, idx) => !selectedIndices.has(idx));
+      const needed = topN - selectedConcepts.length;
+      selectedConcepts = [...selectedConcepts, ...remainingConcepts.slice(0, needed)];
+    }
 
     console.log(`[OpenAI] Selected ${selectedConcepts.length} best concepts for ${avatar.name} (${concepts[0]?.platform || 'unknown platform'})`);
 
