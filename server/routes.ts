@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScript, generateAvatar, generateMultipleAvatars, selectBestConcepts } from "./openai-service";
+import { generateScript, generateAvatar, generateMultipleAvatars, selectBestConcepts, calculateRelevanceScore } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
 import { metaOAuthService } from "./meta-oauth-service";
@@ -316,6 +316,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(avatarConcept);
     } catch (error) {
       res.status(500).json({ error: "Failed to update avatar-concept link" });
+    }
+  });
+
+  // AI-powered relevance score calculation
+  app.post("/api/calculate-relevance", isAuthenticated, async (req: any, res) => {
+    try {
+      const { avatarId, conceptId } = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Fetch avatar and concept from database
+      const avatar = await storage.getAvatar(avatarId);
+      const concepts = await storage.getConcepts(undefined, userId);
+      const concept = concepts.find(c => c.id === conceptId);
+      
+      if (!avatar || !concept) {
+        res.status(404).json({ error: "Avatar or concept not found" });
+        return;
+      }
+      
+      // Verify ownership
+      if (avatar.userId !== userId || concept.userId !== userId) {
+        res.status(403).json({ error: "Unauthorized" });
+        return;
+      }
+      
+      // Calculate AI-powered relevance score
+      const relevanceScore = await calculateRelevanceScore(avatar, concept);
+      
+      res.json({ relevanceScore });
+    } catch (error) {
+      console.error("Error calculating relevance score:", error);
+      res.status(500).json({ 
+        error: "Failed to calculate relevance score",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

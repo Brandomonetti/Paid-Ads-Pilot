@@ -292,7 +292,7 @@ export function ResearchAgentDashboard() {
     if (!avatar || !concept) return
     
     const { matchedHooks, matchedElements } = getMatchedElements(avatar, concept)
-    const relevanceScore = computeRelevanceScore(avatar, concept)
+    const relevanceScore = await computeRelevanceScore(avatar, concept) // Now async!
     
     const linkData: AvatarConceptInsert = {
       avatarId,
@@ -300,7 +300,7 @@ export function ResearchAgentDashboard() {
       relevanceScore: relevanceScore.toString(),
       matchedHooks,
       matchedElements,
-      rationale: `This concept matches ${avatar.name} with ${Math.round(relevanceScore * 100)}% relevance based on matching hooks and creative elements.`,
+      rationale: `This concept matches ${avatar.name} with ${Math.round(relevanceScore * 100)}% relevance based on AI analysis of pain points, demographics, and creative elements.`,
       status: "linked"
     }
     
@@ -342,33 +342,32 @@ export function ResearchAgentDashboard() {
       .map(link => link.conceptId)
   }
 
-  const computeRelevanceScore = (avatar: Avatar, concept: Concept): number => {
-    // Simple relevance scoring based on industry match and hook similarity
-    let score = 0.5 // base score
-    
-    // Industry/demographic relevance
-    if (concept.industry.toLowerCase().includes('health') && 
-        (avatar.demographics.toLowerCase().includes('health') || 
-         avatar.painPoint.toLowerCase().includes('health'))) {
-      score += 0.3
+  // AI-powered relevance score calculation
+  const computeRelevanceScore = async (avatar: Avatar, concept: Concept): Promise<number> => {
+    try {
+      const response = await fetch('/api/calculate-relevance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          avatarId: avatar.id,
+          conceptId: concept.id
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to calculate relevance score');
+      }
+      
+      const data = await response.json();
+      return data.relevanceScore;
+    } catch (error) {
+      console.error('Error calculating AI relevance score:', error);
+      // Fallback to neutral score if API fails
+      return 0.50;
     }
-    
-    // Hook matching (simplified semantic similarity)
-    const conceptKeywords = [...concept.keyElements, ...concept.insights].join(' ').toLowerCase()
-    const avatarKeywords = avatar.hooks.join(' ').toLowerCase()
-    const commonWords = conceptKeywords.split(' ').filter(word => 
-      avatarKeywords.includes(word) && word.length > 3
-    )
-    
-    score += Math.min(commonWords.length * 0.1, 0.2)
-    
-    // Boost score for certain combinations
-    if (avatar.name.includes('Parent') && concept.keyElements.some(el => 
-        el.toLowerCase().includes('kitchen') || el.toLowerCase().includes('meal'))) {
-      score += 0.15
-    }
-    
-    return Math.min(score, 1.0)
   }
 
   const getMatchedElements = (avatar: Avatar, concept: Concept): { matchedHooks: string[]; matchedElements: string[] } => {
@@ -414,6 +413,38 @@ export function ResearchAgentDashboard() {
     return url
   }
 
+  // Use state to cache AI-calculated relevance scores
+  const [conceptScores, setConceptScores] = useState<Record<string, number>>({})
+  
+  // Calculate scores when avatar or concepts change
+  useEffect(() => {
+    if (!selectedAvatar || concepts.length === 0) return
+    
+    const avatar = avatars.find(a => a.id === selectedAvatar)
+    if (!avatar) return
+    
+    // Calculate scores for all concepts in parallel
+    Promise.all(
+      concepts.map(async (concept) => {
+        const key = `${selectedAvatar}-${concept.id}`
+        // Only calculate if not already cached
+        if (conceptScores[key] === undefined) {
+          const score = await computeRelevanceScore(avatar, concept)
+          return { key, score }
+        }
+        return null
+      })
+    ).then((results) => {
+      const newScores = { ...conceptScores }
+      results.forEach((result) => {
+        if (result) {
+          newScores[result.key] = result.score
+        }
+      })
+      setConceptScores(newScores)
+    })
+  }, [selectedAvatar, concepts, avatars])
+  
   const getFilteredConcepts = (): ConceptWithRelevance[] => {
     if (!selectedAvatar) return []
     
@@ -424,7 +455,7 @@ export function ResearchAgentDashboard() {
       .map(concept => ({
         ...concept,
         performance: concept.performance as PerformanceMetrics,
-        relevanceScore: computeRelevanceScore(avatar, concept)
+        relevanceScore: conceptScores[`${selectedAvatar}-${concept.id}`] || 0.50 // Use cached score or default
       }))
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
   }

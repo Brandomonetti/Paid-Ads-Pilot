@@ -426,3 +426,66 @@ IMPORTANT: You MUST return exactly ${topN} rankings, choosing the ${topN} most r
     return concepts.slice(0, topN);
   }
 }
+
+/**
+ * Calculate AI-powered relevance score between an avatar and concept
+ */
+export async function calculateRelevanceScore(avatar: any, concept: any): Promise<number> {
+  try {
+    const prompt = `Analyze the relevance between this customer avatar and social media concept, then provide a precise relevance score.
+
+CUSTOMER AVATAR:
+- Name: ${avatar.name}
+- Demographics: ${avatar.demographics}
+- Age Range: ${avatar.ageRange}
+- Primary Pain Point: ${avatar.painPoint}
+- Hooks: ${avatar.hooks.join(', ')}
+
+SOCIAL MEDIA CONCEPT:
+- Platform: ${concept.platform}
+- Title: ${concept.title}
+- Format: ${concept.format}
+- Key Elements: ${concept.keyElements?.join(', ') || 'N/A'}
+- Insights: ${concept.insights?.join(', ') || 'N/A'}
+- Performance: Views=${concept.performance?.views}, Engagement=${concept.performance?.engagement}
+
+SCORING CRITERIA:
+1. Pain Point Match (40%): How well do the concept's messaging/elements address this avatar's primary pain point?
+2. Demographic Fit (30%): Does the concept's style, tone, and platform align with this avatar's demographics and age range?
+3. Hook Alignment (20%): Do the concept's creative elements resonate with the avatar's psychological hooks?
+4. Engagement Quality (10%): Does the concept's performance metrics indicate proven effectiveness?
+
+Return ONLY a JSON object with:
+{
+  "relevanceScore": <number between 0.00 and 1.00 with 2 decimal places>,
+  "reasoning": "<brief 1-sentence explanation>"
+}
+
+Be precise and nuanced - avoid round numbers. Consider subtle differences that make scores like 0.73, 0.84, or 0.91 more accurate than 0.70, 0.80, or 0.90.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert marketing analyst who calculates precise relevance scores between customer avatars and social media concepts. Provide nuanced, data-driven scores based on strategic fit. Avoid round numbers - be specific."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const score = parseFloat(result.relevanceScore) || 0.50;
+    
+    // Ensure score is between 0 and 1
+    return Math.max(0, Math.min(1, score));
+  } catch (error) {
+    console.error("Error calculating relevance score:", error);
+    // Fallback to a neutral score
+    return 0.50;
+  }
+}
