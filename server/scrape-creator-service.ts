@@ -246,7 +246,7 @@ export class ScrapeCreatorService {
     
     return reels.map((reel: any) => ({
       platform: 'instagram' as const,
-      title: reel.caption?.split('\n')[0]?.substring(0, 60) || 'Instagram Reel Concept',
+      title: reel.caption?.split('\n')[0] || 'Instagram Reel Concept',
       description: reel.caption || '',
       hook: this.extractHook(reel.caption || ''),
       visualStyle: 'reel',
@@ -282,7 +282,7 @@ export class ScrapeCreatorService {
     
     return videos.map((video: any) => {
       const desc = video.desc || video.description || video.video_description || '';
-      const title = desc.substring(0, 60) || 'TikTok Video Concept';
+      const title = desc || 'TikTok Video Concept';
       
       return {
         platform: 'tiktok' as const,
