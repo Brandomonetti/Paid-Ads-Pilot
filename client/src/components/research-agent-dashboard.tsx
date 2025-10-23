@@ -1145,8 +1145,9 @@ export function ResearchAgentDashboard() {
                       {concept.referenceUrl && (
                         <div className="relative rounded-lg overflow-hidden bg-muted/20 border group">
                           <div className="aspect-video w-full">
-                            {/* Instagram - Show thumbnail image (no iframe embedding) */}
-                            {concept.referenceUrl.includes('instagram.com') ? (
+                            {/* Instagram & Facebook - Show thumbnail image with click-to-view */}
+                            {(concept.referenceUrl.includes('instagram.com') || 
+                              concept.referenceUrl.includes('facebook.com')) ? (
                               <a 
                                 href={concept.referenceUrl} 
                                 target="_blank" 
@@ -1158,17 +1159,29 @@ export function ResearchAgentDashboard() {
                                     src={(concept as any).thumbnailUrl} 
                                     alt={concept.title}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // Fallback if image fails to load
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const fallback = target.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
                                   />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 flex items-center justify-center">
-                                    <div className="text-center p-6">
-                                      <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                                        <TrendingUp className="h-8 w-8 text-pink-600" />
-                                      </div>
-                                      <p className="text-xs text-muted-foreground">Instagram Reel</p>
+                                ) : null}
+                                <div 
+                                  className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center"
+                                  style={{ display: (concept as any).thumbnailUrl ? 'none' : 'flex' }}
+                                >
+                                  <div className="text-center p-6">
+                                    <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                      <TrendingUp className="h-8 w-8 text-blue-600" />
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {concept.referenceUrl.includes('instagram.com') ? 'Instagram Reel' : 'Facebook Ad'}
+                                    </p>
+                                    <p className="text-xs font-medium mt-1">Click to view</p>
                                   </div>
-                                )}
+                                </div>
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                   <ExternalLink className="h-8 w-8 text-white" />
                                 </div>
@@ -1176,7 +1189,7 @@ export function ResearchAgentDashboard() {
                             ) : (concept.referenceUrl.includes('tiktok.com') || 
                               concept.referenceUrl.includes('youtube.com') || 
                               concept.referenceUrl.includes('youtu.be')) ? (
-                              /* TikTok/YouTube - Try iframe embed */
+                              /* TikTok/YouTube - iframe embed */
                               <iframe
                                 src={getEmbedUrl(concept.referenceUrl)}
                                 className="w-full h-full"
