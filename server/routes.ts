@@ -754,10 +754,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fetch concepts from all platforms specific to this avatar
         const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(avatarKeywords, niche);
         
-        // Get up to 10 concepts per platform for analysis
-        const facebookCandidates = scrapedConcepts.facebook.slice(0, 10);
-        const instagramCandidates = scrapedConcepts.instagram.slice(0, 10);
-        const tiktokCandidates = scrapedConcepts.tiktok.slice(0, 10);
+        // Use ALL concepts returned by the API for analysis
+        const facebookCandidates = scrapedConcepts.facebook;
+        const instagramCandidates = scrapedConcepts.instagram;
+        const tiktokCandidates = scrapedConcepts.tiktok;
 
         console.log(`Avatar ${avatar.name}: analyzing ${facebookCandidates.length + instagramCandidates.length + tiktokCandidates.length} concepts (FB: ${facebookCandidates.length}, IG: ${instagramCandidates.length}, TT: ${tiktokCandidates.length})`);
 

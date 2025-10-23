@@ -210,7 +210,7 @@ export class ScrapeCreatorService {
     
     console.log('[Facebook Parser] Found', ads.length, 'ads');
     
-    return ads.slice(0, 20).map((ad: any) => ({
+    return ads.map((ad: any) => ({
       platform: 'facebook' as const,
       title: ad.page_name || ad.headline || ad.title || 'Facebook Ad Concept',
       description: ad.ad_creative_bodies?.[0] || ad.body || ad.description || '',
@@ -244,7 +244,7 @@ export class ScrapeCreatorService {
     
     console.log('[Instagram Parser] Found', reels.length, 'reels');
     
-    return reels.slice(0, 20).map((reel: any) => ({
+    return reels.map((reel: any) => ({
       platform: 'instagram' as const,
       title: reel.caption?.split('\n')[0]?.substring(0, 60) || 'Instagram Reel Concept',
       description: reel.caption || '',
@@ -280,7 +280,7 @@ export class ScrapeCreatorService {
     
     console.log('[TikTok Parser] Found', videos.length, 'videos');
     
-    return videos.slice(0, 20).map((video: any) => {
+    return videos.map((video: any) => {
       const desc = video.desc || video.description || video.video_description || '';
       const title = desc.substring(0, 60) || 'TikTok Video Concept';
       
