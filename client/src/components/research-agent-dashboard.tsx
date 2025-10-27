@@ -655,6 +655,28 @@ export function ResearchAgentDashboard() {
 
         {/* Tab: Customer Avatars */}
         <TabsContent value="avatars" className="space-y-4">
+          {/* Loading skeleton for avatars */}
+          {isLoadingAvatars && (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-6 w-20" />
+                        <Skeleton className="h-6 w-20" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {!isLoadingAvatars && (
+            <>
           {/* Avatar Filters */}
           <Card data-testid="card-avatar-filters">
             <CardHeader>
@@ -962,10 +984,32 @@ export function ResearchAgentDashboard() {
               ))}
             </div>
           )}
+          </>
+          )}
         </TabsContent>
 
         {/* TAB 2: Creative Concepts */}
         <TabsContent value="concepts" className="space-y-4">
+          {/* Loading skeleton for concepts */}
+          {isLoadingConcepts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-32 w-full mb-3" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {!isLoadingConcepts && (
+            <>
           {/* Concept Filters */}
           <Card data-testid="card-concept-filters">
             <CardHeader>
@@ -1098,6 +1142,8 @@ export function ResearchAgentDashboard() {
                 </Card>
               ))}
             </div>
+          )}
+          </>
           )}
         </TabsContent>
 
