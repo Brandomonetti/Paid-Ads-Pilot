@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Dashboard } from "@/components/dashboard";
 import CustomerIntelligenceHub from "@/components/customer-intelligence-hub";
-import { ResearchAgentDashboard } from "@/components/research-agent-dashboard";
+import { CreativeResearchCenter } from "@/components/creative-research-center";
 import { ScriptAgentDashboard } from "@/components/script-agent-dashboard";
 import { PerformanceAgentDashboard } from "@/components/performance-agent-dashboard";
 import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-dashboard";
@@ -27,7 +27,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
       <Route path="/research/customer-intelligence" component={CustomerIntelligenceHub} />
-      <Route path="/research/creative-concepts" component={ResearchAgentDashboard} />
+      <Route path="/research/creative-concepts" component={CreativeResearchCenter} />
       <Route path="/script" component={ScriptAgentDashboard} />
       <Route path="/performance" component={PerformanceAgentDashboard} />
       <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
