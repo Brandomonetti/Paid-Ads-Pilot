@@ -8,6 +8,7 @@ import { metaOAuthService } from "./meta-oauth-service";
 import { startMetaOAuth, handleMetaCallback, checkLinkSessionStatus } from "./oauth-broker";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import { scrapeCreatorService } from "./scrape-creator-service";
+import { generateAvatarsFromInsights } from "./avatar-generation-service";
 import {
   insertPlatformSettingsSchema,
   updatePlatformSettingsSchema,
@@ -220,6 +221,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to start research discovery" });
+    }
+  });
+
+  // Customer Intelligence Hub - Avatar endpoints
+  app.get("/api/avatars", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const avatars = await storage.getAvatars(userId);
+      res.json(avatars);
+    } catch (error) {
+      console.error("Error fetching avatars:", error);
+      res.status(500).json({ error: "Failed to fetch avatars" });
+    }
+  });
+
+  app.post("/api/avatars/generate", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get all insights for the user
+      const insights = await storage.getInsights(userId);
+      
+      if (insights.length === 0) {
+        res.status(400).json({ 
+          error: "No insights found. Discover customer insights first before generating avatars." 
+        });
+        return;
+      }
+
+      // Delete existing avatars before generating new ones (for clean regeneration)
+      await storage.deleteAllAvatars(userId);
+
+      // Generate avatars from insights using AI
+      const result = await generateAvatarsFromInsights(userId, insights);
+      
+      // Save generated avatars to database
+      const savedAvatars = await Promise.all(
+        result.avatars.map(avatar => storage.createAvatar(avatar))
+      );
+
+      res.json({ 
+        success: true,
+        avatarsGenerated: savedAvatars.length,
+        avatars: savedAvatars,
+        summary: result.summary
+      });
+    } catch (error) {
+      console.error("Error generating avatars:", error);
+      res.status(500).json({ 
+        error: "Failed to generate avatars",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
