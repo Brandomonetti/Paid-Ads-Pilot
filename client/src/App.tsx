@@ -8,7 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Dashboard } from "@/components/dashboard";
-import { ResearchAgentDashboard } from "@/components/research-agent-dashboard";
+import CustomerIntelligenceHub from "@/components/customer-intelligence-hub";
 import { ScriptAgentDashboard } from "@/components/script-agent-dashboard";
 import { PerformanceAgentDashboard } from "@/components/performance-agent-dashboard";
 import { CreativeBriefAgentDashboard } from "@/components/creative-brief-agent-dashboard";
@@ -25,7 +25,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/knowledge-base" component={KnowledgeBaseDashboard} />
-      <Route path="/research" component={ResearchAgentDashboard} />
+      <Route path="/research" component={CustomerIntelligenceHub} />
       <Route path="/script" component={ScriptAgentDashboard} />
       <Route path="/performance" component={PerformanceAgentDashboard} />
       <Route path="/creative-brief" component={CreativeBriefAgentDashboard} />
