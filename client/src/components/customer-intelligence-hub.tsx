@@ -173,14 +173,14 @@ export default function CustomerIntelligenceHub() {
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
             Latest Discoveries ({filteredInsights.length})
           </TabsTrigger>
-          <TabsTrigger value="avatars" data-testid="tab-target-avatars">
-            Target Avatars ({avatarsData.length})
-          </TabsTrigger>
           <TabsTrigger value="library" data-testid="tab-research-library">
             Research Library
           </TabsTrigger>
           <TabsTrigger value="sources" data-testid="tab-source-tracker">
             Source Tracker ({sourcesData.length})
+          </TabsTrigger>
+          <TabsTrigger value="avatars" data-testid="tab-target-avatars">
+            Target Avatars ({avatarsData.length})
           </TabsTrigger>
         </TabsList>
 
