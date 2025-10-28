@@ -490,3 +490,105 @@ export const updateGeneratedScriptSchema = z.object({
 export type InsertGeneratedScript = z.infer<typeof insertGeneratedScriptSchema>;
 export type UpdateGeneratedScript = z.infer<typeof updateGeneratedScriptSchema>;
 export type GeneratedScript = typeof generatedScripts.$inferSelect;
+
+// ============================================================================
+// CREATIVE RESEARCH CENTER SCHEMA (Avatar & Concept System)
+// ============================================================================
+
+// Avatars schema - customer personas for creative research
+export const avatars = pgTable("avatars", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Avatar Core Details
+  name: text("name").notNull(),
+  ageRange: text("age_range").notNull(),
+  demographics: text("demographics").notNull(),
+  psychographics: text("psychographics").notNull(),
+  painPoints: text("pain_points").array().notNull(),
+  desires: text("desires").array().notNull(),
+  objections: text("objections").array().notNull(),
+  triggers: text("triggers").array().notNull(),
+  hooks: text("hooks").array().notNull(),
+  
+  // Metadata
+  priority: text("priority").notNull().default("medium"), // high, medium, low
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull().default("75.00"),
+  source: text("source").notNull().default("generated"), // generated, manual
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertAvatarSchema = createInsertSchema(avatars).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertAvatar = z.infer<typeof insertAvatarSchema>;
+export type Avatar = typeof avatars.$inferSelect;
+
+// Concepts schema - viral social media posts for creative inspiration
+export const concepts = pgTable("concepts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Concept Core Details
+  platform: text("platform").notNull(), // facebook, instagram, tiktok
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  url: text("url").notNull(),
+  
+  // Creative Elements
+  hooks: text("hooks").array().notNull(),
+  visualElements: text("visual_elements").array().notNull(),
+  copyStyle: text("copy_style"),
+  
+  // Performance Metrics
+  performance: jsonb("performance").notNull(), // views, engagement, conversionRate
+  engagementScore: integer("engagement_score").notNull().default(0),
+  
+  // Metadata
+  format: text("format").notNull(), // video, image, carousel
+  status: text("status").notNull().default("discovered"), // discovered, tested, proven
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  discoveredAt: timestamp("discovered_at").defaultNow()
+});
+
+export const insertConceptSchema = createInsertSchema(concepts).omit({
+  id: true,
+  createdAt: true,
+  discoveredAt: true
+});
+
+export type InsertConcept = z.infer<typeof insertConceptSchema>;
+export type Concept = typeof concepts.$inferSelect;
+
+// Avatar-Concept Links schema - intelligent matching between avatars and concepts
+export const avatarConcepts = pgTable("avatar_concepts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  avatarId: varchar("avatar_id").notNull().references(() => avatars.id),
+  conceptId: varchar("concept_id").notNull().references(() => concepts.id),
+  
+  // Matching Intelligence
+  relevanceScore: decimal("relevance_score", { precision: 5, scale: 2 }).notNull(),
+  matchReasoning: text("match_reasoning").notNull(),
+  
+  // User Feedback
+  userApproved: boolean("user_approved"),
+  feedback: text("feedback"),
+  
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const insertAvatarConceptSchema = createInsertSchema(avatarConcepts).omit({
+  id: true,
+  createdAt: true
+});
+
+export type InsertAvatarConcept = z.infer<typeof insertAvatarConceptSchema>;
+export type AvatarConcept = typeof avatarConcepts.$inferSelect;

@@ -1,6 +1,7 @@
-import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb, Database } from "lucide-react"
+import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb, Database, Users, Sparkles, ChevronRight } from "lucide-react"
 import logoPath from "@assets/b52CH3jEBgKI03ajauLebDVQ3o_1758796736572.webp"
 import { Link, useLocation } from "wouter"
+import { useState } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -12,18 +13,31 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/useAuth"
 
-const agents = [
+const researchSubsections = [
   {
-    title: "Research Agent",
-    url: "/research",
-    icon: Brain,
-    description: "Generate angles & avatars"
+    title: "Customer Research Center",
+    url: "/research/customer-intelligence",
+    icon: Users,
+    description: "Mine customer insights"
   },
+  {
+    title: "Creative Research Center",
+    url: "/research/creative-concepts",
+    icon: Sparkles,
+    description: "Find viral ad concepts"
+  },
+]
+
+const otherAgents = [
   {
     title: "Script Agent", 
     url: "/script",
@@ -65,6 +79,10 @@ const navigation = [
 export function AppSidebar() {
   const [location] = useLocation()
   const { user } = useAuth()
+  const [isResearchOpen, setIsResearchOpen] = useState(true)
+
+  // Check if any research subsection is active
+  const isResearchActive = researchSubsections.some(sub => location === sub.url)
 
   return (
     <Sidebar collapsible="icon">
@@ -104,7 +122,43 @@ export function AppSidebar() {
           </div>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-3">
-              {agents.map((agent) => (
+              {/* Research Agent with collapsible subsections */}
+              <Collapsible open={isResearchOpen} onOpenChange={setIsResearchOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton data-testid="link-agent-research-agent" className={isResearchActive ? "bg-sidebar-accent" : ""}>
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
+                        <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" />
+                      </div>
+                      <div className="flex flex-col flex-1">
+                        <span>Research Agent</span>
+                        <span className="text-xs text-muted-foreground">Customer & creative research</span>
+                      </div>
+                      <ChevronRight className={`ml-auto transition-transform duration-200 h-4 w-4 ${isResearchOpen ? 'rotate-90' : ''}`} />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {researchSubsections.map((subsection) => {
+                        const Icon = subsection.icon
+                        return (
+                          <SidebarMenuSubItem key={subsection.title}>
+                            <SidebarMenuSubButton asChild isActive={location === subsection.url}>
+                              <Link href={subsection.url} data-testid={`link-subsection-${subsection.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                                <Icon className="h-4 w-4" />
+                                <span>{subsection.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Other agents */}
+              {otherAgents.map((agent) => (
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
                     <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(' ', '-')}`}>
