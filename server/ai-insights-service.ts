@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { MetaAdsService } from "./meta-ads-service";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+// Using GPT-4o as the latest stable OpenAI model
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface PerformanceData {
@@ -56,7 +56,7 @@ export class AIInsightsService {
       const prompt = this.buildInsightPrompt(request);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -229,7 +229,7 @@ Return JSON array with this structure:
 `;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",

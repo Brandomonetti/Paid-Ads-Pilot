@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { KnowledgeBase } from "@shared/schema";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+// Using GPT-4o as the latest stable OpenAI model
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface ScriptGenerationRequest {
@@ -41,7 +41,7 @@ export async function generateScript(
     const prompt = buildScriptPrompt(request, knowledgeBase);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -230,7 +230,7 @@ Create a detailed customer avatar JSON with:
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -294,7 +294,7 @@ Make each avatar DISTINCT and specific - avoid generic descriptions.
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -384,7 +384,7 @@ Return a JSON object with concept indices ranked by relevance score (MUST return
 IMPORTANT: You MUST return exactly ${topN} rankings, choosing the ${topN} most relevant concepts from the list.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -464,7 +464,7 @@ Return ONLY a JSON object with:
 Be precise and nuanced - avoid round numbers. Consider subtle differences that make scores like 0.73, 0.84, or 0.91 more accurate than 0.70, 0.80, or 0.90.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",

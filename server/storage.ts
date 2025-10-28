@@ -173,6 +173,7 @@ export class MemStorage implements IStorage {
     const insight: Insight = { 
       ...insertInsight,
       id,
+      engagementScore: insertInsight.engagementScore || 0,
       sourceId: insertInsight.sourceId || null,
       sentimentScore: insertInsight.sentimentScore || null,
       confidenceScore: insertInsight.confidenceScore || "0.75",

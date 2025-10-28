@@ -26,7 +26,7 @@ export async function generateAvatarsFromInsights(
     const prompt = buildAvatarGenerationPrompt(painPoints, desires, objections, triggers);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -82,7 +82,9 @@ Always respond with valid JSON in the exact format requested.`
       summary: {
         totalGenerated: avatars.length,
         primarySegments: avatars.map(a => a.name),
-        confidenceAverage: avatars.reduce((sum, a) => sum + parseFloat(a.confidence), 0) / avatars.length
+        confidenceAverage: avatars.length > 0 
+          ? avatars.reduce((sum, a) => sum + parseFloat(a.confidence || "75"), 0) / avatars.length
+          : 0
       }
     };
   } catch (error) {
