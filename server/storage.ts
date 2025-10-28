@@ -9,8 +9,9 @@ import {
   type UpdateKnowledgeBase,
   type GeneratedScript, type InsertGeneratedScript,
   type UpdateGeneratedScript,
+  type Avatar, type InsertAvatar,
   users, insights, sources, researchRuns, platformSettings, 
-  knowledgeBase, generatedScripts
+  knowledgeBase, generatedScripts, avatars
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -66,6 +67,13 @@ export interface IStorage {
   getGeneratedScript(id: string): Promise<GeneratedScript | undefined>;
   createGeneratedScript(script: InsertGeneratedScript): Promise<GeneratedScript>;
   updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined>;
+  
+  // Avatar methods (Target Personas from Customer Intelligence Hub)
+  getAvatars(userId: string): Promise<Avatar[]>;
+  getAvatar(id: string): Promise<Avatar | undefined>;
+  createAvatar(avatar: InsertAvatar): Promise<Avatar>;
+  updateAvatar(id: string, userId: string, updates: Partial<Avatar>): Promise<Avatar | undefined>;
+  deleteAllAvatars(userId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -76,6 +84,7 @@ export class MemStorage implements IStorage {
   private platformSettings: Map<string, PlatformSettings>;
   private knowledgeBase: Map<string, KnowledgeBase>;
   private generatedScripts: Map<string, GeneratedScript>;
+  private avatars: Map<string, Avatar>;
 
   constructor() {
     this.users = new Map();
@@ -85,6 +94,7 @@ export class MemStorage implements IStorage {
     this.platformSettings = new Map();
     this.knowledgeBase = new Map();
     this.generatedScripts = new Map();
+    this.avatars = new Map();
   }
 
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -428,6 +438,57 @@ export class MemStorage implements IStorage {
     this.generatedScripts.set(id, updatedScript);
     return updatedScript;
   }
+
+  // Avatar methods (Target Personas from Customer Intelligence Hub)
+  async getAvatars(userId: string): Promise<Avatar[]> {
+    return Array.from(this.avatars.values()).filter(
+      avatar => avatar.userId === userId
+    );
+  }
+
+  async getAvatar(id: string): Promise<Avatar | undefined> {
+    return this.avatars.get(id);
+  }
+
+  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
+    const id = randomUUID();
+    const avatar: Avatar = {
+      ...insertAvatar,
+      id,
+      priority: insertAvatar.priority || "medium",
+      confidence: insertAvatar.confidence || "75.00",
+      source: insertAvatar.source || "generated",
+      status: insertAvatar.status || "pending",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.avatars.set(id, avatar);
+    return avatar;
+  }
+
+  async updateAvatar(id: string, userId: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
+    const avatar = this.avatars.get(id);
+    if (!avatar) return undefined;
+    
+    // Security: Verify ownership before allowing updates
+    if (avatar.userId !== userId) return undefined;
+    
+    const updatedAvatar: Avatar = {
+      ...avatar,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.avatars.set(id, updatedAvatar);
+    return updatedAvatar;
+  }
+
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const avatarsToDelete = Array.from(this.avatars.values()).filter(
+      avatar => avatar.userId === userId
+    );
+    avatarsToDelete.forEach(avatar => this.avatars.delete(avatar.id));
+    return avatarsToDelete.length;
+  }
 }
 
 // Database-backed storage using Drizzle ORM
@@ -679,6 +740,42 @@ export class PgStorage implements IStorage {
       .where(eq(generatedScripts.id, id))
       .returning();
     return result[0];
+  }
+
+  // Avatar methods (Target Personas from Customer Intelligence Hub)
+  async getAvatars(userId: string): Promise<Avatar[]> {
+    return await this.db.select().from(avatars).where(eq(avatars.userId, userId));
+  }
+
+  async getAvatar(id: string): Promise<Avatar | undefined> {
+    const result = await this.db.select().from(avatars).where(eq(avatars.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
+    const result = await this.db.insert(avatars).values(insertAvatar).returning();
+    return result[0];
+  }
+
+  async updateAvatar(id: string, userId: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
+    // Security: Verify ownership before allowing updates
+    const existing = await this.getAvatar(id);
+    if (!existing || existing.userId !== userId) return undefined;
+    
+    const result = await this.db
+      .update(avatars)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(avatars.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const result = await this.db.delete(avatars).where(eq(avatars.userId, userId)).returning();
+    return result.length;
   }
 }
 
