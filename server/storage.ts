@@ -1,21 +1,21 @@
 import { 
   type User, type UpsertUser,
-  type Avatar, type InsertAvatar,
-  type Concept, type InsertConcept,
-  type AvatarConcept, type InsertAvatarConcept,
+  type Insight, type InsertInsight,
+  type Source, type InsertSource,
+  type ResearchRun, type InsertResearchRun,
   type PlatformSettings, type InsertPlatformSettings,
   type UpdatePlatformSettings,
   type KnowledgeBase, type InsertKnowledgeBase,
   type UpdateKnowledgeBase,
   type GeneratedScript, type InsertGeneratedScript,
   type UpdateGeneratedScript,
-  users, avatars, concepts, avatarConcepts, platformSettings, 
+  users, insights, sources, researchRuns, platformSettings, 
   knowledgeBase, generatedScripts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -25,29 +25,31 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
-  // Avatar methods
-  getAvatars(userId?: string): Promise<Avatar[]>;
-  getAvatar(id: string): Promise<Avatar | undefined>;
-  createAvatar(avatar: InsertAvatar): Promise<Avatar>;
-  updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined>;
-  deleteAllAvatars(userId: string): Promise<number>;
+  // Insight methods (Customer Intelligence Hub)
+  getInsights(userId: string, filters?: {
+    category?: string;
+    platform?: string;
+    status?: string;
+  }): Promise<Insight[]>;
+  getInsight(id: string): Promise<Insight | undefined>;
+  createInsight(insight: InsertInsight): Promise<Insight>;
+  updateInsight(id: string, updates: Partial<Insight>): Promise<Insight | undefined>;
+  deleteAllInsights(userId: string): Promise<number>;
   
-  // Concept methods
-  getConcepts(avatarId?: string, userId?: string): Promise<Concept[]>;
-  getConcept(id: string): Promise<Concept | undefined>;
-  createConcept(concept: InsertConcept): Promise<Concept>;
-  updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined>;
-  deleteAllConcepts(userId: string): Promise<number>;
-  deleteConceptsByAvatarId(avatarId: string): Promise<number>;
+  // Source methods
+  getSources(userId: string, filters?: {
+    platform?: string;
+    status?: string;
+  }): Promise<Source[]>;
+  getSource(id: string): Promise<Source | undefined>;
+  createSource(source: InsertSource): Promise<Source>;
+  updateSource(id: string, updates: Partial<Source>): Promise<Source | undefined>;
   
-  // Avatar-Concept linking methods
-  getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]>;
-  getAvatarConcept(id: string): Promise<AvatarConcept | undefined>;
-  createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
-  updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
-  deleteAllAvatarConceptLinks(userId: string): Promise<number>;
-  deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number>;
-  linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept>;
+  // Research Run methods
+  getResearchRuns(userId: string, limit?: number): Promise<ResearchRun[]>;
+  getResearchRun(id: string): Promise<ResearchRun | undefined>;
+  createResearchRun(run: InsertResearchRun): Promise<ResearchRun>;
+  updateResearchRun(id: string, updates: Partial<ResearchRun>): Promise<ResearchRun | undefined>;
   
   // Platform Settings methods
   getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
@@ -68,18 +70,18 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
-  private avatars: Map<string, Avatar>;
-  private concepts: Map<string, Concept>;
-  private avatarConcepts: Map<string, AvatarConcept>;
+  private insights: Map<string, Insight>;
+  private sources: Map<string, Source>;
+  private researchRuns: Map<string, ResearchRun>;
   private platformSettings: Map<string, PlatformSettings>;
   private knowledgeBase: Map<string, KnowledgeBase>;
   private generatedScripts: Map<string, GeneratedScript>;
 
   constructor() {
     this.users = new Map();
-    this.avatars = new Map();
-    this.concepts = new Map();
-    this.avatarConcepts = new Map();
+    this.insights = new Map();
+    this.sources = new Map();
+    this.researchRuns = new Map();
     this.platformSettings = new Map();
     this.knowledgeBase = new Map();
     this.generatedScripts = new Map();
@@ -127,197 +129,176 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // Avatar methods
-  async getAvatars(userId?: string): Promise<Avatar[]> {
-    const allAvatars = Array.from(this.avatars.values());
-    if (!userId) return allAvatars;
-    return allAvatars.filter(avatar => avatar.userId === userId);
-  }
-
-  async getAvatar(id: string): Promise<Avatar | undefined> {
-    return this.avatars.get(id);
-  }
-
-  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
-    const id = randomUUID();
-    const avatar: Avatar = { 
-      ...insertAvatar,
-      id,
-      sources: insertAvatar.sources || [],
-      angleIdeas: insertAvatar.angleIdeas || [],
-      reasoning: insertAvatar.reasoning || "",
-      priority: insertAvatar.priority || "medium",
-      dataConfidence: insertAvatar.dataConfidence || "0.75",
-      recommendationSource: insertAvatar.recommendationSource || "research",
-      status: insertAvatar.status || "pending",
-      feedback: insertAvatar.feedback || null,
-      createdAt: new Date()
-    };
-    this.avatars.set(id, avatar);
-    return avatar;
-  }
-
-  async updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
-    const avatar = this.avatars.get(id);
-    if (!avatar) return undefined;
+  // Insight methods
+  async getInsights(userId: string, filters?: {
+    category?: string;
+    platform?: string;
+    status?: string;
+  }): Promise<Insight[]> {
+    let allInsights = Array.from(this.insights.values()).filter(
+      insight => insight.userId === userId
+    );
     
-    const updatedAvatar = { ...avatar, ...updates };
-    this.avatars.set(id, updatedAvatar);
-    return updatedAvatar;
-  }
-
-  async deleteAllAvatars(userId: string): Promise<number> {
-    const avatarsToDelete = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
-    avatarsToDelete.forEach(avatar => this.avatars.delete(avatar.id));
-    return avatarsToDelete.length;
-  }
-
-  // Concept methods
-  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
-    let allConcepts = Array.from(this.concepts.values());
-    
-    // Filter by userId if provided
-    if (userId) {
-      allConcepts = allConcepts.filter(concept => concept.userId === userId);
+    if (filters?.category && filters.category !== 'all') {
+      allInsights = allInsights.filter(i => i.category === filters.category);
+    }
+    if (filters?.platform && filters.platform !== 'all') {
+      allInsights = allInsights.filter(i => i.sourcePlatform === filters.platform);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      allInsights = allInsights.filter(i => i.status === filters.status);
     }
     
-    if (!avatarId) return allConcepts;
-    
-    // Security: Verify the avatar belongs to the requesting user before returning concepts
-    if (userId) {
-      const avatar = this.avatars.get(avatarId);
-      if (!avatar || avatar.userId !== userId) {
-        // Avatar doesn't exist or doesn't belong to this user - return empty
-        return [];
-      }
-    }
-    
-    // Filter by avatarId column in concepts table (concepts fetched FOR this avatar)
-    return allConcepts.filter(concept => concept.avatarId === avatarId);
-  }
-
-  async getConcept(id: string): Promise<Concept | undefined> {
-    return this.concepts.get(id);
-  }
-
-  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
-    const id = randomUUID();
-    const concept: Concept = { 
-      ...insertConcept,
-      id,
-      avatarId: insertConcept.avatarId || null,
-      status: insertConcept.status || "pending",
-      feedback: insertConcept.feedback || null,
-      referenceUrl: insertConcept.referenceUrl || null,
-      thumbnailUrl: insertConcept.thumbnailUrl || null,
-      createdAt: new Date()
-    };
-    this.concepts.set(id, concept);
-    return concept;
-  }
-
-  async updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined> {
-    const concept = this.concepts.get(id);
-    if (!concept) return undefined;
-    
-    const updatedConcept = { ...concept, ...updates };
-    this.concepts.set(id, updatedConcept);
-    return updatedConcept;
-  }
-
-  async deleteAllConcepts(userId: string): Promise<number> {
-    const conceptsToDelete = Array.from(this.concepts.values()).filter(concept => concept.userId === userId);
-    conceptsToDelete.forEach(concept => this.concepts.delete(concept.id));
-    return conceptsToDelete.length;
-  }
-
-  async deleteConceptsByAvatarId(avatarId: string): Promise<number> {
-    const conceptsToDelete = Array.from(this.concepts.values()).filter(concept => concept.avatarId === avatarId);
-    conceptsToDelete.forEach(concept => this.concepts.delete(concept.id));
-    return conceptsToDelete.length;
-  }
-
-  // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
-    let allLinks = Array.from(this.avatarConcepts.values());
-    
-    // Filter by userId by checking if the avatar belongs to the user
-    if (userId) {
-      const userAvatarIds = Array.from(this.avatars.values())
-        .filter(avatar => avatar.userId === userId)
-        .map(avatar => avatar.id);
-      allLinks = allLinks.filter(link => userAvatarIds.includes(link.avatarId));
-    }
-    
-    return allLinks.filter(link => 
-      (!avatarId || link.avatarId === avatarId) &&
-      (!conceptId || link.conceptId === conceptId)
+    return allInsights.sort((a, b) => 
+      (b.discoveredAt?.getTime() || 0) - (a.discoveredAt?.getTime() || 0)
     );
   }
 
-  async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
-    return this.avatarConcepts.get(id);
+  async getInsight(id: string): Promise<Insight | undefined> {
+    return this.insights.get(id);
   }
 
-  async createAvatarConcept(insertAvatarConcept: InsertAvatarConcept): Promise<AvatarConcept> {
+  async createInsight(insertInsight: InsertInsight): Promise<Insight> {
     const id = randomUUID();
-    const avatarConcept: AvatarConcept = { 
-      ...insertAvatarConcept,
+    const insight: Insight = { 
+      ...insertInsight,
       id,
-      status: insertAvatarConcept.status || "linked",
-      feedback: insertAvatarConcept.feedback || null,
-      matchedHooks: insertAvatarConcept.matchedHooks || [],
-      matchedElements: insertAvatarConcept.matchedElements || [],
+      sourceId: insertInsight.sourceId || null,
+      sentimentScore: insertInsight.sentimentScore || null,
+      confidenceScore: insertInsight.confidenceScore || "0.75",
+      authorInfo: insertInsight.authorInfo || null,
+      discussionContext: insertInsight.discussionContext || null,
+      relatedKeywords: insertInsight.relatedKeywords || [],
+      status: insertInsight.status || "pending",
+      feedback: insertInsight.feedback || null,
+      usedInCampaign: insertInsight.usedInCampaign || false,
+      discoveredAt: new Date(),
       createdAt: new Date()
     };
-    this.avatarConcepts.set(id, avatarConcept);
-    return avatarConcept;
+    this.insights.set(id, insight);
+    return insight;
   }
 
-  async updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined> {
-    const avatarConcept = this.avatarConcepts.get(id);
-    if (!avatarConcept) return undefined;
+  async updateInsight(id: string, updates: Partial<Insight>): Promise<Insight | undefined> {
+    const insight = this.insights.get(id);
+    if (!insight) return undefined;
     
-    const updatedAvatarConcept = { ...avatarConcept, ...updates };
-    this.avatarConcepts.set(id, updatedAvatarConcept);
-    return updatedAvatarConcept;
+    const updatedInsight = { ...insight, ...updates };
+    this.insights.set(id, updatedInsight);
+    return updatedInsight;
   }
 
-  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
-    // Get all avatars for this user to find their links
-    const userAvatars = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
-    const userAvatarIds = new Set(userAvatars.map(avatar => avatar.id));
-    
-    const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => userAvatarIds.has(link.avatarId));
-    linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
-    return linksToDelete.length;
+  async deleteAllInsights(userId: string): Promise<number> {
+    const insightsToDelete = Array.from(this.insights.values()).filter(
+      insight => insight.userId === userId
+    );
+    insightsToDelete.forEach(insight => this.insights.delete(insight.id));
+    return insightsToDelete.length;
   }
 
-  async deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number> {
-    const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => link.avatarId === avatarId);
-    linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
-    return linksToDelete.length;
-  }
-
-  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
-    // Check if link already exists
-    const existingLink = Array.from(this.avatarConcepts.values()).find(
-      link => link.avatarId === avatarId && link.conceptId === conceptId
+  // Source methods
+  async getSources(userId: string, filters?: {
+    platform?: string;
+    status?: string;
+  }): Promise<Source[]> {
+    let allSources = Array.from(this.sources.values()).filter(
+      source => source.userId === userId
     );
     
-    if (existingLink) {
-      throw new Error('Link already exists');
+    if (filters?.platform && filters.platform !== 'all') {
+      allSources = allSources.filter(s => s.platform === filters.platform);
     }
+    if (filters?.status && filters.status !== 'all') {
+      allSources = allSources.filter(s => s.status === filters.status);
+    }
+    
+    return allSources.sort((a, b) => 
+      (b.discoveredAt?.getTime() || 0) - (a.discoveredAt?.getTime() || 0)
+    );
+  }
 
-    return await this.createAvatarConcept({
-      avatarId,
-      conceptId,
-      relevanceScore: relevanceScore.toString(),
-      matchedHooks: [],
-      matchedElements: [],
-      rationale: "Auto-linked based on avatar-specific concept fetch",
-      status: "linked"
-    });
+  async getSource(id: string): Promise<Source | undefined> {
+    return this.sources.get(id);
+  }
+
+  async createSource(insertSource: InsertSource): Promise<Source> {
+    const id = randomUUID();
+    const source: Source = {
+      ...insertSource,
+      id,
+      description: insertSource.description || null,
+      insightsDiscovered: insertSource.insightsDiscovered || 0,
+      lastChecked: new Date(),
+      checkFrequency: insertSource.checkFrequency || "weekly",
+      averageEngagement: insertSource.averageEngagement || null,
+      relevanceScore: insertSource.relevanceScore || "0.50",
+      status: insertSource.status || "active",
+      discoveredAt: new Date(),
+      createdAt: new Date()
+    };
+    this.sources.set(id, source);
+    return source;
+  }
+
+  async updateSource(id: string, updates: Partial<Source>): Promise<Source | undefined> {
+    const source = this.sources.get(id);
+    if (!source) return undefined;
+    
+    const updatedSource = { ...source, ...updates };
+    this.sources.set(id, updatedSource);
+    return updatedSource;
+  }
+
+  // Research Run methods
+  async getResearchRuns(userId: string, limit?: number): Promise<ResearchRun[]> {
+    let runs = Array.from(this.researchRuns.values()).filter(
+      run => run.userId === userId
+    );
+    
+    runs.sort((a, b) => 
+      (b.startedAt?.getTime() || 0) - (a.startedAt?.getTime() || 0)
+    );
+    
+    if (limit) {
+      runs = runs.slice(0, limit);
+    }
+    
+    return runs;
+  }
+
+  async getResearchRun(id: string): Promise<ResearchRun | undefined> {
+    return this.researchRuns.get(id);
+  }
+
+  async createResearchRun(insertRun: InsertResearchRun): Promise<ResearchRun> {
+    const id = randomUUID();
+    const run: ResearchRun = {
+      ...insertRun,
+      id,
+      status: insertRun.status || "running",
+      sourcesDiscovered: insertRun.sourcesDiscovered || 0,
+      insightsDiscovered: insertRun.insightsDiscovered || 0,
+      painPoints: insertRun.painPoints || 0,
+      desires: insertRun.desires || 0,
+      objections: insertRun.objections || 0,
+      triggers: insertRun.triggers || 0,
+      executionTime: insertRun.executionTime || null,
+      errorLog: insertRun.errorLog || null,
+      startedAt: new Date(),
+      completedAt: insertRun.completedAt || null,
+      createdAt: new Date()
+    };
+    this.researchRuns.set(id, run);
+    return run;
+  }
+
+  async updateResearchRun(id: string, updates: Partial<ResearchRun>): Promise<ResearchRun | undefined> {
+    const run = this.researchRuns.get(id);
+    if (!run) return undefined;
+    
+    const updatedRun = { ...run, ...updates };
+    this.researchRuns.set(id, updatedRun);
+    return updatedRun;
   }
 
   // Platform Settings methods
@@ -500,216 +481,132 @@ export class PgStorage implements IStorage {
     }
   }
 
-  // Avatar methods
-  async getAvatars(userId?: string): Promise<Avatar[]> {
-    if (!userId) {
-      return await this.db.select().from(avatars);
+  // Insight methods
+  async getInsights(userId: string, filters?: {
+    category?: string;
+    platform?: string;
+    status?: string;
+  }): Promise<Insight[]> {
+    const conditions = [eq(insights.userId, userId)];
+    
+    if (filters?.category && filters.category !== 'all') {
+      conditions.push(eq(insights.category, filters.category));
     }
-    return await this.db.select().from(avatars).where(eq(avatars.userId, userId));
-  }
-
-  async getAvatar(id: string): Promise<Avatar | undefined> {
-    const result = await this.db.select().from(avatars).where(eq(avatars.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
-    const result = await this.db.insert(avatars).values(insertAvatar).returning();
-    return result[0];
-  }
-
-  async updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
-    const result = await this.db
-      .update(avatars)
-      .set(updates)
-      .where(eq(avatars.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllAvatars(userId: string): Promise<number> {
-    const result = await this.db.delete(avatars).where(eq(avatars.userId, userId)).returning();
-    return result.length;
-  }
-
-  // Concept methods
-  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
-    if (!avatarId && !userId) {
-      return await this.db.select().from(concepts);
+    if (filters?.platform && filters.platform !== 'all') {
+      conditions.push(eq(insights.sourcePlatform, filters.platform));
+    }
+    if (filters?.status && filters.status !== 'all') {
+      conditions.push(eq(insights.status, filters.status));
     }
     
-    // When avatarId is provided, return concepts fetched FOR that avatar
-    // Filter by avatarId column in concepts table (NOT the junction table)
-    if (avatarId && userId) {
-      // Security: Verify avatar belongs to user
-      const avatar = await this.db.select().from(avatars).where(eq(avatars.id, avatarId)).limit(1);
-      if (!avatar[0] || avatar[0].userId !== userId) {
-        // Avatar doesn't exist or doesn't belong to this user - return empty
-        return [];
-      }
-      
-      // Return concepts that were fetched for this specific avatar
-      return await this.db.select().from(concepts).where(
-        and(
-          eq(concepts.userId, userId),
-          eq(concepts.avatarId, avatarId)
-        )
-      );
-    }
-    
-    // Just avatarId, no userId - filter by avatarId column
-    if (avatarId) {
-      return await this.db.select().from(concepts).where(eq(concepts.avatarId, avatarId));
-    }
-    
-    // Just userId, no avatarId - return all concepts for user
-    if (userId) {
-      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
-    }
-    
-    return [];
-  }
-
-  async getConcept(id: string): Promise<Concept | undefined> {
-    const result = await this.db.select().from(concepts).where(eq(concepts.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
-    const result = await this.db.insert(concepts).values(insertConcept).returning();
-    return result[0];
-  }
-
-  async updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined> {
-    const result = await this.db
-      .update(concepts)
-      .set(updates)
-      .where(eq(concepts.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllConcepts(userId: string): Promise<number> {
-    const result = await this.db.delete(concepts).where(eq(concepts.userId, userId)).returning();
-    return result.length;
-  }
-
-  async deleteConceptsByAvatarId(avatarId: string): Promise<number> {
-    const result = await this.db.delete(concepts).where(eq(concepts.avatarId, avatarId)).returning();
-    return result.length;
-  }
-
-  // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
-    // Build where conditions
-    const conditions = [];
-    if (avatarId) conditions.push(eq(avatarConcepts.avatarId, avatarId));
-    if (conceptId) conditions.push(eq(avatarConcepts.conceptId, conceptId));
-    
-    // If userId provided, join with avatars to filter by user
-    if (userId) {
-      const result = await this.db
-        .select({
-          id: avatarConcepts.id,
-          avatarId: avatarConcepts.avatarId,
-          conceptId: avatarConcepts.conceptId,
-          relevanceScore: avatarConcepts.relevanceScore,
-          matchedHooks: avatarConcepts.matchedHooks,
-          matchedElements: avatarConcepts.matchedElements,
-          rationale: avatarConcepts.rationale,
-          status: avatarConcepts.status,
-          feedback: avatarConcepts.feedback,
-          createdAt: avatarConcepts.createdAt
-        })
-        .from(avatarConcepts)
-        .innerJoin(avatars, eq(avatarConcepts.avatarId, avatars.id))
-        .where(conditions.length > 0 ? and(eq(avatars.userId, userId), ...conditions) : eq(avatars.userId, userId));
-      return result;
-    }
-    
-    // No userId filter - return based on other conditions
-    if (conditions.length > 0) {
-      return await this.db.select().from(avatarConcepts).where(and(...conditions));
-    }
-    
-    return await this.db.select().from(avatarConcepts);
-  }
-
-  async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
-    const result = await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createAvatarConcept(insertAvatarConcept: InsertAvatarConcept): Promise<AvatarConcept> {
-    const result = await this.db.insert(avatarConcepts).values(insertAvatarConcept).returning();
-    return result[0];
-  }
-
-  async updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined> {
-    const result = await this.db
-      .update(avatarConcepts)
-      .set(updates)
-      .where(eq(avatarConcepts.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
-    // Get all avatar IDs for this user
-    const userAvatars = await this.db.select({ id: avatars.id }).from(avatars).where(eq(avatars.userId, userId));
-    const userAvatarIds = userAvatars.map(a => a.id);
-    
-    if (userAvatarIds.length === 0) return 0;
-    
-    // Delete all links for these avatars
-    const result = await this.db
-      .delete(avatarConcepts)
-      .where(inArray(avatarConcepts.avatarId, userAvatarIds))
-      .returning();
-    return result.length;
-  }
-
-  async deleteAvatarConceptLinksByAvatarId(avatarId: string): Promise<number> {
-    const result = await this.db
-      .delete(avatarConcepts)
-      .where(eq(avatarConcepts.avatarId, avatarId))
-      .returning();
-    return result.length;
-  }
-
-  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
-    // Check if link already exists
-    const existing = await this.db
+    return await this.db
       .select()
-      .from(avatarConcepts)
-      .where(and(
-        eq(avatarConcepts.avatarId, avatarId),
-        eq(avatarConcepts.conceptId, conceptId)
-      ))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      throw new Error('Link already exists');
-    }
+      .from(insights)
+      .where(and(...conditions))
+      .orderBy(desc(insights.discoveredAt));
+  }
 
-    return await this.createAvatarConcept({
-      avatarId,
-      conceptId,
-      relevanceScore: relevanceScore.toString(),
-      matchedHooks: [],
-      matchedElements: [],
-      rationale: "Auto-linked based on avatar-specific concept fetch",
-      status: "linked"
-    });
+  async getInsight(id: string): Promise<Insight | undefined> {
+    const result = await this.db.select().from(insights).where(eq(insights.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createInsight(insertInsight: InsertInsight): Promise<Insight> {
+    const result = await this.db.insert(insights).values(insertInsight).returning();
+    return result[0];
+  }
+
+  async updateInsight(id: string, updates: Partial<Insight>): Promise<Insight | undefined> {
+    const result = await this.db
+      .update(insights)
+      .set(updates)
+      .where(eq(insights.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAllInsights(userId: string): Promise<number> {
+    const result = await this.db.delete(insights).where(eq(insights.userId, userId)).returning();
+    return result.length;
+  }
+
+  // Source methods
+  async getSources(userId: string, filters?: {
+    platform?: string;
+    status?: string;
+  }): Promise<Source[]> {
+    const conditions = [eq(sources.userId, userId)];
+    
+    if (filters?.platform && filters.platform !== 'all') {
+      conditions.push(eq(sources.platform, filters.platform));
+    }
+    if (filters?.status && filters.status !== 'all') {
+      conditions.push(eq(sources.status, filters.status));
+    }
+    
+    return await this.db
+      .select()
+      .from(sources)
+      .where(and(...conditions))
+      .orderBy(desc(sources.discoveredAt));
+  }
+
+  async getSource(id: string): Promise<Source | undefined> {
+    const result = await this.db.select().from(sources).where(eq(sources.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createSource(insertSource: InsertSource): Promise<Source> {
+    const result = await this.db.insert(sources).values(insertSource).returning();
+    return result[0];
+  }
+
+  async updateSource(id: string, updates: Partial<Source>): Promise<Source | undefined> {
+    const result = await this.db
+      .update(sources)
+      .set(updates)
+      .where(eq(sources.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Research Run methods
+  async getResearchRuns(userId: string, limit?: number): Promise<ResearchRun[]> {
+    let query = this.db
+      .select()
+      .from(researchRuns)
+      .where(eq(researchRuns.userId, userId))
+      .orderBy(desc(researchRuns.startedAt));
+    
+    if (limit) {
+      query = query.limit(limit) as any;
+    }
+    
+    return await query;
+  }
+
+  async getResearchRun(id: string): Promise<ResearchRun | undefined> {
+    const result = await this.db.select().from(researchRuns).where(eq(researchRuns.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createResearchRun(insertRun: InsertResearchRun): Promise<ResearchRun> {
+    const result = await this.db.insert(researchRuns).values(insertRun).returning();
+    return result[0];
+  }
+
+  async updateResearchRun(id: string, updates: Partial<ResearchRun>): Promise<ResearchRun | undefined> {
+    const result = await this.db
+      .update(researchRuns)
+      .set(updates)
+      .where(eq(researchRuns.id, id))
+      .returning();
+    return result[0];
   }
 
   // Platform Settings methods
   async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
-    const result = await this.db
-      .select()
-      .from(platformSettings)
-      .where(eq(platformSettings.userId, userId))
-      .limit(1);
+    const result = await this.db.select().from(platformSettings).where(eq(platformSettings.userId, userId)).limit(1);
     return result[0];
   }
 
@@ -732,23 +629,12 @@ export class PgStorage implements IStorage {
 
   // Knowledge Base methods
   async getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined> {
-    const result = await this.db
-      .select()
-      .from(knowledgeBase)
-      .where(eq(knowledgeBase.userId, userId))
-      .limit(1);
+    const result = await this.db.select().from(knowledgeBase).where(eq(knowledgeBase.userId, userId)).limit(1);
     return result[0];
   }
 
   async createKnowledgeBase(insertKnowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase> {
-    const result = await this.db
-      .insert(knowledgeBase)
-      .values({
-        ...insertKnowledgeBase,
-        lastUpdated: new Date(),
-        createdAt: new Date()
-      })
-      .returning();
+    const result = await this.db.insert(knowledgeBase).values(insertKnowledgeBase).returning();
     return result[0];
   }
 
@@ -764,47 +650,37 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  // Generated Scripts methods (for self-learning system)
+  // Generated Scripts methods
   async getGeneratedScripts(userId: string): Promise<GeneratedScript[]> {
-    return await this.db
-      .select()
-      .from(generatedScripts)
-      .where(eq(generatedScripts.userId, userId))
-      .orderBy(generatedScripts.createdAt);
+    return await this.db.select().from(generatedScripts).where(eq(generatedScripts.userId, userId));
   }
 
   async getGeneratedScript(id: string): Promise<GeneratedScript | undefined> {
-    const result = await this.db
-      .select()
-      .from(generatedScripts)
-      .where(eq(generatedScripts.id, id))
-      .limit(1);
+    const result = await this.db.select().from(generatedScripts).where(eq(generatedScripts.id, id)).limit(1);
     return result[0];
   }
 
   async createGeneratedScript(insertScript: InsertGeneratedScript): Promise<GeneratedScript> {
-    const result = await this.db
-      .insert(generatedScripts)
-      .values({
-        ...insertScript,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
+    const result = await this.db.insert(generatedScripts).values(insertScript).returning();
     return result[0];
   }
 
   async updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+    // Security: Verify ownership before allowing updates
+    const existing = await this.getGeneratedScript(id);
+    if (!existing || existing.userId !== userId) return undefined;
+    
     const result = await this.db
       .update(generatedScripts)
       .set({
         ...updates,
         updatedAt: new Date()
       })
-      .where(and(eq(generatedScripts.id, id), eq(generatedScripts.userId, userId)))
+      .where(eq(generatedScripts.id, id))
       .returning();
     return result[0];
   }
 }
 
+// Export the current storage implementation
 export const storage = new PgStorage();

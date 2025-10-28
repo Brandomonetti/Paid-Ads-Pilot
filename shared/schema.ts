@@ -33,82 +33,127 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-// Customer Avatar schema
-export const avatars = pgTable("avatars", {
+// Customer Intelligence Hub - Insights schema
+export const insights = pgTable("insights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  name: text("name").notNull(),
-  ageRange: text("age_range").notNull(),
-  demographics: text("demographics").notNull(),
-  painPoint: text("pain_point").notNull(),
-  hooks: text("hooks").array().notNull(),
-  sources: text("sources").array().notNull().default(sql`ARRAY[]::text[]`), // Reddit forums, articles, etc.
-  angleIdeas: text("angle_ideas").array().notNull().default(sql`ARRAY[]::text[]`), // Creative angle suggestions
-  reasoning: text("reasoning").notNull().default(""), // Why this avatar is being presented
-  priority: text("priority").notNull().default("medium"), // high, medium, low - based on data confidence
-  dataConfidence: decimal("data_confidence", { precision: 3, scale: 2 }).notNull().default("0.75"), // 0.00 to 1.00
-  recommendationSource: text("recommendation_source").notNull().default("research"), // research, performance_agent, user_request
-  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  
+  // Insight Core Data
+  title: text("title").notNull(), // Key finding in one sentence
+  category: text("category").notNull(), // pain-point, desire, objection, trigger
+  rawQuote: text("raw_quote").notNull(), // Direct customer quote
+  summary: text("summary").notNull(), // AI summary of the insight
+  observations: text("observations").array().notNull(), // Key learnings
+  marketingAngles: text("marketing_angles").array().notNull(), // How to use this in ads
+  
+  // Source Information
+  sourceId: varchar("source_id").references(() => sources.id),
+  sourcePlatform: text("source_platform").notNull(), // reddit, amazon, youtube, facebook, etc.
+  sourceUrl: text("source_url").notNull(), // Direct link to original
+  sourceType: text("source_type").notNull(), // review, comment, post, thread, article
+  
+  // Engagement & Quality Metrics
+  engagementScore: integer("engagement_score").notNull().default(0), // upvotes, likes, etc.
+  sentimentScore: decimal("sentiment_score", { precision: 3, scale: 2 }), // -1.00 to 1.00
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).notNull().default("0.75"), // AI confidence
+  
+  // Metadata
+  authorInfo: text("author_info"), // Username or profile info
+  discussionContext: text("discussion_context"), // What thread/product/video this was on
+  relatedKeywords: text("related_keywords").array().notNull().default(sql`ARRAY[]::text[]`),
+  
+  // Status & Tracking
+  status: text("status").notNull().default("pending"), // pending, approved, rejected, archived
   feedback: text("feedback"),
+  usedInCampaign: boolean("used_in_campaign").notNull().default(false),
+  
+  discoveredAt: timestamp("discovered_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow()
 });
 
-export const insertAvatarSchema = createInsertSchema(avatars).omit({
+export const insertInsightSchema = createInsertSchema(insights).omit({
   id: true,
-  createdAt: true
+  createdAt: true,
+  discoveredAt: true
 });
 
-export type InsertAvatar = z.infer<typeof insertAvatarSchema>;
-export type Avatar = typeof avatars.$inferSelect;
+export type InsertInsight = z.infer<typeof insertInsightSchema>;
+export type Insight = typeof insights.$inferSelect;
 
-// Creative Concept schema
-export const concepts = pgTable("concepts", {
+// Sources schema - tracks discovered platforms and URLs
+export const sources = pgTable("sources", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  avatarId: varchar("avatar_id").references(() => avatars.id), // Which avatar this concept was fetched for (nullable for general concepts)
-  title: text("title").notNull(),
-  format: text("format").notNull(), // "Raw UGC Video", "Testimonial", etc.
-  platform: text("platform").notNull(), // "TikTok/Instagram Reels", etc.
-  industry: text("industry").notNull(),
-  performance: jsonb("performance").notNull(), // {views: string, engagement: string, conversion: string}
-  insights: text("insights").array().notNull(),
-  keyElements: text("key_elements").array().notNull(),
-  status: text("status").notNull().default("pending"), // pending, approved, rejected
-  referenceUrl: text("reference_url"),
-  thumbnailUrl: text("thumbnail_url"), // Thumbnail image URL for social media posts
-  feedback: text("feedback"),
+  
+  // Source Details
+  platform: text("platform").notNull(), // reddit, amazon, youtube, facebook, forum, article
+  sourceType: text("source_type").notNull(), // subreddit, product, video, group, thread, blog
+  url: text("url").notNull().unique(),
+  title: text("title").notNull(), // Name of subreddit, product title, video title, etc.
+  description: text("description"),
+  
+  // Tracking Metrics
+  insightsDiscovered: integer("insights_discovered").notNull().default(0),
+  lastChecked: timestamp("last_checked").defaultNow(),
+  checkFrequency: text("check_frequency").notNull().default("weekly"), // daily, weekly, monthly
+  
+  // Quality Metrics
+  averageEngagement: decimal("average_engagement", { precision: 10, scale: 2 }),
+  relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }).notNull().default("0.50"),
+  
+  // Status
+  status: text("status").notNull().default("active"), // active, paused, archived
+  
+  discoveredAt: timestamp("discovered_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow()
 });
 
-export const insertConceptSchema = createInsertSchema(concepts).omit({
+export const insertSourceSchema = createInsertSchema(sources).omit({
   id: true,
-  createdAt: true
+  createdAt: true,
+  discoveredAt: true
 });
 
-export type InsertConcept = z.infer<typeof insertConceptSchema>;
-export type Concept = typeof concepts.$inferSelect;
+export type InsertSource = z.infer<typeof insertSourceSchema>;
+export type Source = typeof sources.$inferSelect;
 
-// Avatar-Concept junction table for linking with relevance scoring
-export const avatarConcepts = pgTable("avatar_concepts", {
+// Research Runs schema - tracks when research was performed
+export const researchRuns = pgTable("research_runs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  avatarId: varchar("avatar_id").notNull().references(() => avatars.id),
-  conceptId: varchar("concept_id").notNull().references(() => concepts.id),
-  relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }).notNull(), // 0.00 to 1.00
-  matchedHooks: text("matched_hooks").array().notNull().default(sql`ARRAY[]::text[]`),
-  matchedElements: text("matched_elements").array().notNull().default(sql`ARRAY[]::text[]`),
-  rationale: text("rationale").notNull(), // why this concept fits this avatar
-  status: text("status").notNull().default("linked"), // linked, approved, rejected
-  feedback: text("feedback"),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Run Details
+  runType: text("run_type").notNull(), // manual, automated
+  status: text("status").notNull().default("running"), // running, completed, failed
+  
+  // Discovery Results
+  platformsSearched: text("platforms_searched").array().notNull(), // [reddit, amazon, youtube, ...]
+  sourcesDiscovered: integer("sources_discovered").notNull().default(0),
+  insightsDiscovered: integer("insights_discovered").notNull().default(0),
+  
+  // Categorization Breakdown
+  painPoints: integer("pain_points").notNull().default(0),
+  desires: integer("desires").notNull().default(0),
+  objections: integer("objections").notNull().default(0),
+  triggers: integer("triggers").notNull().default(0),
+  
+  // Performance Metrics
+  executionTime: integer("execution_time"), // milliseconds
+  errorLog: text("error_log"),
+  
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow()
 });
 
-export const insertAvatarConceptSchema = createInsertSchema(avatarConcepts).omit({
+export const insertResearchRunSchema = createInsertSchema(researchRuns).omit({
   id: true,
-  createdAt: true
+  createdAt: true,
+  startedAt: true
 });
 
-export type InsertAvatarConcept = z.infer<typeof insertAvatarConceptSchema>;
-export type AvatarConcept = typeof avatarConcepts.$inferSelect;
+export type InsertResearchRun = z.infer<typeof insertResearchRunSchema>;
+export type ResearchRun = typeof researchRuns.$inferSelect;
 
 // Meta Ad Account schema
 export const adAccounts = pgTable("ad_accounts", {
