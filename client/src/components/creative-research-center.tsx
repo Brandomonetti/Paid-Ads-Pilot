@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -60,6 +61,7 @@ interface CreativeConcept {
 
 export function CreativeResearchCenter() {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('curated');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'page'>('brand');
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
@@ -68,7 +70,21 @@ export function CreativeResearchCenter() {
     platform: "all",
     engagement: "all",
     format: "all",
-    sortBy: "engagement"
+    sortBy: "engagement",
+    siteType: "all",
+    gender: "all",
+    ages: "all",
+    dailyLikes: "all",
+    totalLikes: "all",
+    mediaType: "all",
+    createdBetween: "all",
+    seenBetween: "all",
+    networks: "all",
+    advertiser: "",
+    technologies: "all",
+    countries: "all",
+    language: "all",
+    buttons: "all"
   });
 
   // Fetch all creative concepts
@@ -184,18 +200,29 @@ export function CreativeResearchCenter() {
         </div>
       </div>
 
-      {/* Section 1: Curated Creatives */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Curated Creatives
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            AI-discovered viral content and high-performing ads
-          </p>
-        </CardHeader>
-        <CardContent>
+      {/* Tab Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="curated" data-testid="tab-curated-creatives">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Curated Creatives ({filteredConcepts.length})
+          </TabsTrigger>
+          <TabsTrigger value="explore" data-testid="tab-explore-creatives">
+            <Search className="h-4 w-4 mr-2" />
+            Explore Creatives
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Curated Creatives Tab */}
+        <TabsContent value="curated" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI-Discovered Viral Content</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                High-performing ads curated by AI
+              </p>
+            </CardHeader>
+            <CardContent>
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -392,21 +419,20 @@ export function CreativeResearchCenter() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Section 2: Explore Creatives */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Explore Creatives
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Search and filter competitor ads with advanced criteria
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        {/* Explore Creatives Tab */}
+        <TabsContent value="explore" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Search & Explore</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Search and filter competitor ads with advanced criteria
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
           {/* Search Bar */}
           <div className="flex flex-wrap gap-3">
             <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
@@ -452,93 +478,217 @@ export function CreativeResearchCenter() {
             </Button>
           </div>
 
-          {/* Advanced Filters */}
-          <div className="pt-4 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Advanced Filters
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement' })}
-                data-testid="button-clear-filters"
-              >
-                Clear all
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Select 
-                value={filters.platform} 
-                onValueChange={(value) => setFilters({...filters, platform: value})}
-              >
-                <SelectTrigger data-testid="select-platform">
-                  <SelectValue placeholder="Platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Platforms</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Advanced Filters */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Advanced Filters
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilters({ 
+                      platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement',
+                      siteType: 'all', gender: 'all', ages: 'all', dailyLikes: 'all', 
+                      totalLikes: 'all', mediaType: 'all', createdBetween: 'all', 
+                      seenBetween: 'all', networks: 'all', advertiser: '', technologies: 'all', 
+                      countries: 'all', language: 'all', buttons: 'all'
+                    })}
+                    data-testid="button-clear-filters"
+                  >
+                    Clear all
+                  </Button>
+                </div>
+                
+                {/* First row of filters */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+                  <Select value={filters.siteType} onValueChange={(value) => setFilters({...filters, siteType: value})}>
+                    <SelectTrigger data-testid="select-site-type">
+                      <SelectValue placeholder="Site type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sites</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Select 
-                value={filters.engagement} 
-                onValueChange={(value) => setFilters({...filters, engagement: value})}
-              >
-                <SelectTrigger data-testid="select-engagement">
-                  <SelectValue placeholder="Engagement Rate" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Engagement</SelectItem>
-                  <SelectItem value="high">High (&gt;10%)</SelectItem>
-                  <SelectItem value="medium">Medium (5-10%)</SelectItem>
-                  <SelectItem value="low">Low (&lt;5%)</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select value={filters.gender} onValueChange={(value) => setFilters({...filters, gender: value})}>
+                    <SelectTrigger data-testid="select-gender">
+                      <SelectValue placeholder="Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Genders</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="unisex">Unisex</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Select 
-                value={filters.format} 
-                onValueChange={(value) => setFilters({...filters, format: value})}
-              >
-                <SelectTrigger data-testid="select-format">
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Formats</SelectItem>
-                  <SelectItem value="Raw UGC Video">Raw UGC Video</SelectItem>
-                  <SelectItem value="POV Storytelling">POV Storytelling</SelectItem>
-                  <SelectItem value="Sped-up Process Video">Sped-up Process</SelectItem>
-                  <SelectItem value="DIML Storytelling">DIML Storytelling</SelectItem>
-                  <SelectItem value="Before/After">Before/After</SelectItem>
-                  <SelectItem value="Testimonial">Testimonial</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select value={filters.ages} onValueChange={(value) => setFilters({...filters, ages: value})}>
+                    <SelectTrigger data-testid="select-ages">
+                      <SelectValue placeholder="Ages" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Ages</SelectItem>
+                      <SelectItem value="18-24">18-24</SelectItem>
+                      <SelectItem value="25-34">25-34</SelectItem>
+                      <SelectItem value="35-44">35-44</SelectItem>
+                      <SelectItem value="45-54">45-54</SelectItem>
+                      <SelectItem value="55+">55+</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Select 
-                value={filters.sortBy} 
-                onValueChange={(value) => setFilters({...filters, sortBy: value})}
-              >
-                <SelectTrigger data-testid="select-sort">
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="engagement">Engagement</SelectItem>
-                  <SelectItem value="likes">Most Liked</SelectItem>
-                  <SelectItem value="recent">Most Recent</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select value={filters.dailyLikes} onValueChange={(value) => setFilters({...filters, dailyLikes: value})}>
+                    <SelectTrigger data-testid="select-daily-likes">
+                      <SelectValue placeholder="Daily likes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any</SelectItem>
+                      <SelectItem value="<100">&lt;100</SelectItem>
+                      <SelectItem value="100-1k">100-1K</SelectItem>
+                      <SelectItem value="1k-10k">1K-10K</SelectItem>
+                      <SelectItem value=">10k">&gt;10K</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{filteredConcepts.length} result{filteredConcepts.length !== 1 ? 's' : ''}</span>
+                  <Select value={filters.totalLikes} onValueChange={(value) => setFilters({...filters, totalLikes: value})}>
+                    <SelectTrigger data-testid="select-total-likes">
+                      <SelectValue placeholder="Total likes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any</SelectItem>
+                      <SelectItem value="<1k">&lt;1K</SelectItem>
+                      <SelectItem value="1k-10k">1K-10K</SelectItem>
+                      <SelectItem value="10k-100k">10K-100K</SelectItem>
+                      <SelectItem value=">100k">&gt;100K</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Second row of filters */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+                  <Select value={filters.mediaType} onValueChange={(value) => setFilters({...filters, mediaType: value})}>
+                    <SelectTrigger data-testid="select-media-type">
+                      <SelectValue placeholder="Media type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Media</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                      <SelectItem value="carousel">Carousel</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.createdBetween} onValueChange={(value) => setFilters({...filters, createdBetween: value})}>
+                    <SelectTrigger data-testid="select-created-between">
+                      <SelectValue placeholder="Created Between" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Time</SelectItem>
+                      <SelectItem value="7days">Last 7 Days</SelectItem>
+                      <SelectItem value="30days">Last 30 Days</SelectItem>
+                      <SelectItem value="90days">Last 90 Days</SelectItem>
+                      <SelectItem value="1year">Last Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.seenBetween} onValueChange={(value) => setFilters({...filters, seenBetween: value})}>
+                    <SelectTrigger data-testid="select-seen-between">
+                      <SelectValue placeholder="Seen Between" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Time</SelectItem>
+                      <SelectItem value="7days">Last 7 Days</SelectItem>
+                      <SelectItem value="30days">Last 30 Days</SelectItem>
+                      <SelectItem value="90days">Last 90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.networks} onValueChange={(value) => setFilters({...filters, networks: value})}>
+                    <SelectTrigger data-testid="select-networks">
+                      <SelectValue placeholder="Networks" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Networks</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="messenger">Messenger</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    placeholder="Advertiser"
+                    value={filters.advertiser}
+                    onChange={(e) => setFilters({...filters, advertiser: e.target.value})}
+                    data-testid="input-advertiser"
+                  />
+                </div>
+
+                {/* Third row of filters */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <Select value={filters.technologies} onValueChange={(value) => setFilters({...filters, technologies: value})}>
+                    <SelectTrigger data-testid="select-technologies">
+                      <SelectValue placeholder="Technologies" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="shopify">Shopify</SelectItem>
+                      <SelectItem value="wordpress">WordPress</SelectItem>
+                      <SelectItem value="wix">Wix</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.countries} onValueChange={(value) => setFilters({...filters, countries: value})}>
+                    <SelectTrigger data-testid="select-countries">
+                      <SelectValue placeholder="Countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      <SelectItem value="us">United States</SelectItem>
+                      <SelectItem value="uk">United Kingdom</SelectItem>
+                      <SelectItem value="ca">Canada</SelectItem>
+                      <SelectItem value="au">Australia</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.language} onValueChange={(value) => setFilters({...filters, language: value})}>
+                    <SelectTrigger data-testid="select-language">
+                      <SelectValue placeholder="Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Languages</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="de">German</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.buttons} onValueChange={(value) => setFilters({...filters, buttons: value})}>
+                    <SelectTrigger data-testid="select-buttons">
+                      <SelectValue placeholder="Buttons" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="shop-now">Shop Now</SelectItem>
+                      <SelectItem value="learn-more">Learn More</SelectItem>
+                      <SelectItem value="sign-up">Sign Up</SelectItem>
+                      <SelectItem value="download">Download</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{filteredConcepts.length} result{filteredConcepts.length !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
