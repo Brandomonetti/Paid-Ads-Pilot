@@ -23,7 +23,10 @@ import {
   Database,
   Play,
   Calendar,
-  Filter
+  Filter,
+  Users,
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +71,34 @@ export default function CustomerIntelligenceHub() {
   });
   
   const sourcesData = (sources as any[]) || [];
+
+  // Fetch avatars
+  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery({
+    queryKey: ['/api/avatars'],
+  });
+
+  const avatarsData = (avatars as any[]) || [];
+
+  // Generate avatars mutation
+  const generateAvatarsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/avatars/generate', 'POST', {});
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Avatars generated!",
+        description: `Created ${data.avatarsGenerated || 0} customer personas from your research insights.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Generation failed",
+        description: error.message || "Failed to generate customer avatars",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Discover new insights mutation
   const discoverMutation = useMutation({
@@ -138,9 +169,12 @@ export default function CustomerIntelligenceHub() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
             Latest Discoveries ({filteredInsights.length})
+          </TabsTrigger>
+          <TabsTrigger value="avatars" data-testid="tab-target-avatars">
+            Target Avatars ({avatarsData.length})
           </TabsTrigger>
           <TabsTrigger value="library" data-testid="tab-research-library">
             Research Library
@@ -368,7 +402,183 @@ export default function CustomerIntelligenceHub() {
           )}
         </TabsContent>
 
-        {/* Tab 2: Research Library */}
+        {/* Tab 2: Target Avatars */}
+        <TabsContent value="avatars" className="space-y-4">
+          {/* Header with Generate Button */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Customer Personas
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    AI-synthesized target avatars with pain points and angle propositions
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => generateAvatarsMutation.mutate()}
+                  disabled={generateAvatarsMutation.isPending || insightsData.length === 0}
+                  className="gap-2"
+                  data-testid="button-generate-avatars"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {generateAvatarsMutation.isPending ? "Generating..." : "Generate Avatars"}
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Loading State */}
+          {isLoadingAvatars && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-32 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoadingAvatars && avatarsData.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">No target avatars yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  {insightsData.length === 0 
+                    ? "Discover customer insights first, then generate target avatars to identify who to target and with what pain points."
+                    : "Click 'Generate Avatars' to synthesize your research into actionable customer personas."}
+                </p>
+                {insightsData.length === 0 && (
+                  <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Discover Insights First
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Avatars Grid */}
+          {!isLoadingAvatars && avatarsData.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {avatarsData.map((avatar: any) => (
+                <Card key={avatar.id} className="hover-elevate" data-testid={`card-avatar-${avatar.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="gap-1">
+                            <Users className="h-3 w-3" />
+                            {avatar.priority} priority
+                          </Badge>
+                          <Badge variant="secondary">
+                            {avatar.confidence}% confidence
+                          </Badge>
+                          {avatar.status === 'approved' && (
+                            <Badge className="bg-green-500 text-white gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Approved
+                            </Badge>
+                          )}
+                        </div>
+                        <CardTitle className="text-lg">{avatar.name}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {avatar.ageRange} • {avatar.demographics}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Psychographics */}
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2">Profile</h4>
+                      <p className="text-sm text-muted-foreground">{avatar.psychographics}</p>
+                    </div>
+
+                    {/* Pain Points */}
+                    {avatar.painPoints && avatar.painPoints.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                          <X className="h-4 w-4 text-red-500" />
+                          Pain Points
+                        </h4>
+                        <ul className="space-y-1">
+                          {avatar.painPoints.slice(0, 3).map((point: string, idx: number) => (
+                            <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                              <span className="text-red-500">•</span>
+                              {point}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Desires */}
+                    {avatar.desires && avatar.desires.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                          <Heart className="h-4 w-4 text-purple-500" />
+                          Desires
+                        </h4>
+                        <ul className="space-y-1">
+                          {avatar.desires.slice(0, 3).map((desire: string, idx: number) => (
+                            <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                              <span className="text-purple-500">•</span>
+                              {desire}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Marketing Angles (Hooks) */}
+                    {avatar.hooks && avatar.hooks.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-green-500" />
+                          Angle Propositions
+                        </h4>
+                        <div className="space-y-1">
+                          {avatar.hooks.slice(0, 3).map((hook: string, idx: number) => (
+                            <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
+                              💡 {hook}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Approval Actions (for future functionality) */}
+                    <div className="pt-2 flex gap-2">
+                      <Button
+                        variant={avatar.status === 'approved' ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex-1 gap-2"
+                        data-testid={`button-approve-avatar-${avatar.id}`}
+                        disabled
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        {avatar.status === 'approved' ? 'Approved' : 'Approve for Scripts'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 3: Research Library */}
         <TabsContent value="library" className="space-y-4">
           <Card>
             <CardContent className="p-12 text-center">
