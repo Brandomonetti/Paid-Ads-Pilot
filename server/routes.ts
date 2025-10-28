@@ -823,6 +823,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Creative Research Center - Concepts endpoints
+  app.get("/api/concepts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const concepts = await storage.getConcepts(userId);
+      res.json(concepts);
+    } catch (error) {
+      console.error("Error fetching concepts:", error);
+      res.status(500).json({ error: "Failed to fetch concepts" });
+    }
+  });
+
+  app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { query, type } = req.body;
+
+      if (!query) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      // Extract keywords from the query
+      // For URL type, we'd want to extract brand/page info
+      // For brand/page type, use directly as keywords
+      const keywords = type === 'url' 
+        ? query.split('/').filter((part: string) => part && part !== 'https:' && part !== 'http:')
+        : [query];
+
+      // Fetch concepts from all platforms using Scrape Creator service
+      const conceptsResponse = await scrapeCreatorService.fetchConceptsForBrand(
+        keywords,
+        query // Use the query as the niche as well
+      );
+
+      // Convert SocialMediaConcept to our Concept format and save to storage
+      const allConcepts = [];
+      
+      // Process Facebook concepts
+      for (const fbConcept of conceptsResponse.facebook) {
+        const concept = await storage.createConcept({
+          userId,
+          platform: 'facebook' as const,
+          title: fbConcept.title,
+          description: fbConcept.description,
+          thumbnailUrl: fbConcept.rawData?.thumbnail || undefined,
+          postUrl: fbConcept.rawData?.post_url || undefined,
+          brandName: query,
+          industry: fbConcept.rawData?.industry || undefined,
+          format: fbConcept.rawData?.format || 'Unknown',
+          hooks: fbConcept.hook ? [fbConcept.hook] : [],
+          engagementScore: fbConcept.engagementScore || 0,
+          likes: fbConcept.rawData?.likes || undefined,
+          comments: fbConcept.rawData?.comments || undefined,
+          shares: fbConcept.rawData?.shares || undefined,
+          views: fbConcept.rawData?.views || undefined,
+          engagementRate: fbConcept.rawData?.engagement_rate || undefined,
+        });
+        allConcepts.push(concept);
+      }
+
+      // Process Instagram concepts
+      for (const igConcept of conceptsResponse.instagram) {
+        const concept = await storage.createConcept({
+          userId,
+          platform: 'instagram' as const,
+          title: igConcept.title,
+          description: igConcept.description,
+          thumbnailUrl: igConcept.rawData?.thumbnail || undefined,
+          videoUrl: igConcept.rawData?.video_url || undefined,
+          postUrl: igConcept.rawData?.post_url || undefined,
+          brandName: query,
+          industry: igConcept.rawData?.industry || undefined,
+          format: igConcept.rawData?.format || 'Unknown',
+          hooks: igConcept.hook ? [igConcept.hook] : [],
+          engagementScore: igConcept.engagementScore || 0,
+          likes: igConcept.rawData?.likes || undefined,
+          comments: igConcept.rawData?.comments || undefined,
+          shares: igConcept.rawData?.shares || undefined,
+          views: igConcept.rawData?.views || undefined,
+          engagementRate: igConcept.rawData?.engagement_rate || undefined,
+        });
+        allConcepts.push(concept);
+      }
+
+      // Process TikTok concepts
+      for (const ttConcept of conceptsResponse.tiktok) {
+        const concept = await storage.createConcept({
+          userId,
+          platform: 'tiktok' as const,
+          title: ttConcept.title,
+          description: ttConcept.description,
+          thumbnailUrl: ttConcept.rawData?.thumbnail || undefined,
+          videoUrl: ttConcept.rawData?.video_url || undefined,
+          postUrl: ttConcept.rawData?.post_url || undefined,
+          brandName: query,
+          industry: ttConcept.rawData?.industry || undefined,
+          format: ttConcept.rawData?.format || 'Unknown',
+          hooks: ttConcept.hook ? [ttConcept.hook] : [],
+          engagementScore: ttConcept.engagementScore || 0,
+          likes: ttConcept.rawData?.likes || undefined,
+          comments: ttConcept.rawData?.comments || undefined,
+          shares: ttConcept.rawData?.shares || undefined,
+          views: ttConcept.rawData?.views || undefined,
+          engagementRate: ttConcept.rawData?.engagement_rate || undefined,
+        });
+        allConcepts.push(concept);
+      }
+
+      res.json({
+        count: allConcepts.length,
+        concepts: allConcepts
+      });
+    } catch (error) {
+      console.error("Error searching concepts:", error);
+      res.status(500).json({ 
+        error: "Failed to search for creative concepts",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

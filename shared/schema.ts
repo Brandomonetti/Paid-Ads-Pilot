@@ -539,19 +539,25 @@ export const concepts = pgTable("concepts", {
   platform: text("platform").notNull(), // facebook, instagram, tiktok
   title: text("title").notNull(),
   description: text("description").notNull(),
-  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  videoUrl: text("video_url"),
+  postUrl: text("post_url"),
+  brandName: text("brand_name"),
+  industry: text("industry"),
   
   // Creative Elements
-  hooks: text("hooks").array().notNull(),
-  visualElements: text("visual_elements").array().notNull(),
-  copyStyle: text("copy_style"),
+  format: text("format").notNull(), // Raw UGC Video, POV Storytelling, etc.
+  hooks: text("hooks").array().notNull().default(sql`'{}'::text[]`),
   
-  // Performance Metrics
-  performance: jsonb("performance").notNull(), // views, engagement, conversionRate
+  // Engagement Metrics
   engagementScore: integer("engagement_score").notNull().default(0),
+  likes: integer("likes"),
+  comments: integer("comments"),
+  shares: integer("shares"),
+  views: integer("views"),
+  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }),
   
   // Metadata
-  format: text("format").notNull(), // video, image, carousel
   status: text("status").notNull().default("discovered"), // discovered, tested, proven
   
   createdAt: timestamp("created_at").defaultNow(),

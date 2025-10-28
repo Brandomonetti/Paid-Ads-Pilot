@@ -120,7 +120,7 @@ export function CreativeResearchCenter() {
       if (filters.platform !== "all" && concept.platform !== filters.platform) return false;
       
       if (filters.engagement !== "all") {
-        const rate = concept.engagementRate || 0;
+        const rate = Number(concept.engagementRate) || 0;
         if (filters.engagement === "high" && rate <= 10) return false;
         if (filters.engagement === "medium" && (rate <= 5 || rate > 10)) return false;
         if (filters.engagement === "low" && rate > 5) return false;
@@ -175,7 +175,7 @@ export function CreativeResearchCenter() {
     instagram: concepts.filter(c => c.platform === 'instagram').length,
     tiktok: concepts.filter(c => c.platform === 'tiktok').length,
     avgEngagement: concepts.length > 0 
-      ? Math.round(concepts.reduce((sum, c) => sum + (c.engagementRate || 0), 0) / concepts.length)
+      ? Math.round(concepts.reduce((sum, c) => sum + (Number(c.engagementRate) || 0), 0) / concepts.length)
       : 0,
     saved: savedConcepts.size
   };
@@ -243,7 +243,7 @@ export function CreativeResearchCenter() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="text-high-performers">
-              {concepts.filter(c => (c.engagementRate || 0) >= 10).length}
+              {concepts.filter(c => (Number(c.engagementRate) || 0) >= 10).length}
             </div>
             <p className="text-xs text-muted-foreground">
               &gt;10% engagement rate
@@ -508,11 +508,11 @@ export function CreativeResearchCenter() {
                   </div>
 
                   {/* Engagement Rate */}
-                  {concept.engagementRate !== undefined && (
+                  {concept.engagementRate !== undefined && concept.engagementRate !== null && (
                     <div className="pt-2 border-t">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Engagement Rate</span>
-                        <span className="font-medium">{concept.engagementRate.toFixed(1)}%</span>
+                        <span className="font-medium">{Number(concept.engagementRate).toFixed(1)}%</span>
                       </div>
                     </div>
                   )}

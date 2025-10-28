@@ -10,8 +10,9 @@ import {
   type GeneratedScript, type InsertGeneratedScript,
   type UpdateGeneratedScript,
   type Avatar, type InsertAvatar,
+  type Concept, type InsertConcept,
   users, insights, sources, researchRuns, platformSettings, 
-  knowledgeBase, generatedScripts, avatars
+  knowledgeBase, generatedScripts, avatars, concepts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -74,6 +75,13 @@ export interface IStorage {
   createAvatar(avatar: InsertAvatar): Promise<Avatar>;
   updateAvatar(id: string, userId: string, updates: Partial<Avatar>): Promise<Avatar | undefined>;
   deleteAllAvatars(userId: string): Promise<number>;
+  
+  // Concept methods (Creative Research Center)
+  getConcepts(userId: string): Promise<Concept[]>;
+  getConcept(id: string): Promise<Concept | undefined>;
+  createConcept(concept: InsertConcept): Promise<Concept>;
+  updateConcept(id: string, userId: string, updates: Partial<Concept>): Promise<Concept | undefined>;
+  deleteAllConcepts(userId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -85,6 +93,7 @@ export class MemStorage implements IStorage {
   private knowledgeBase: Map<string, KnowledgeBase>;
   private generatedScripts: Map<string, GeneratedScript>;
   private avatars: Map<string, Avatar>;
+  private concepts: Map<string, Concept>;
 
   constructor() {
     this.users = new Map();
@@ -95,6 +104,7 @@ export class MemStorage implements IStorage {
     this.knowledgeBase = new Map();
     this.generatedScripts = new Map();
     this.avatars = new Map();
+    this.concepts = new Map();
   }
 
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -490,6 +500,63 @@ export class MemStorage implements IStorage {
     avatarsToDelete.forEach(avatar => this.avatars.delete(avatar.id));
     return avatarsToDelete.length;
   }
+
+  // Concept methods (Creative Research Center)
+  async getConcepts(userId: string): Promise<Concept[]> {
+    return Array.from(this.concepts.values()).filter(c => c.userId === userId);
+  }
+
+  async getConcept(id: string): Promise<Concept | undefined> {
+    return this.concepts.get(id);
+  }
+
+  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
+    const id = randomUUID();
+    const concept: Concept = {
+      id,
+      ...insertConcept,
+      thumbnailUrl: insertConcept.thumbnailUrl ?? null,
+      videoUrl: insertConcept.videoUrl ?? null,
+      postUrl: insertConcept.postUrl ?? null,
+      brandName: insertConcept.brandName ?? null,
+      industry: insertConcept.industry ?? null,
+      likes: insertConcept.likes ?? null,
+      comments: insertConcept.comments ?? null,
+      shares: insertConcept.shares ?? null,
+      views: insertConcept.views ?? null,
+      engagementRate: insertConcept.engagementRate ?? null,
+      hooks: insertConcept.hooks || [],
+      engagementScore: insertConcept.engagementScore || 0,
+      status: insertConcept.status || 'discovered',
+      createdAt: new Date(),
+      discoveredAt: new Date()
+    };
+    this.concepts.set(id, concept);
+    return concept;
+  }
+
+  async updateConcept(id: string, userId: string, updates: Partial<Concept>): Promise<Concept | undefined> {
+    const concept = this.concepts.get(id);
+    if (!concept) return undefined;
+    
+    // Security: Verify ownership before allowing updates
+    if (concept.userId !== userId) return undefined;
+    
+    const updatedConcept: Concept = {
+      ...concept,
+      ...updates
+    };
+    this.concepts.set(id, updatedConcept);
+    return updatedConcept;
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const conceptsToDelete = Array.from(this.concepts.values()).filter(
+      concept => concept.userId === userId
+    );
+    conceptsToDelete.forEach(concept => this.concepts.delete(concept.id));
+    return conceptsToDelete.length;
+  }
 }
 
 // Database-backed storage using Drizzle ORM
@@ -776,6 +843,44 @@ export class PgStorage implements IStorage {
 
   async deleteAllAvatars(userId: string): Promise<number> {
     const result = await this.db.delete(avatars).where(eq(avatars.userId, userId)).returning();
+    return result.length;
+  }
+
+  // Concept methods (Creative Research Center)
+  async getConcepts(userId: string): Promise<Concept[]> {
+    const result = await this.db
+      .select()
+      .from(concepts)
+      .where(eq(concepts.userId, userId))
+      .orderBy(desc(concepts.createdAt));
+    return result;
+  }
+
+  async getConcept(id: string): Promise<Concept | undefined> {
+    const result = await this.db.select().from(concepts).where(eq(concepts.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
+    const result = await this.db.insert(concepts).values(insertConcept).returning();
+    return result[0];
+  }
+
+  async updateConcept(id: string, userId: string, updates: Partial<Concept>): Promise<Concept | undefined> {
+    // Security: Verify ownership before allowing updates
+    const existing = await this.getConcept(id);
+    if (!existing || existing.userId !== userId) return undefined;
+    
+    const result = await this.db
+      .update(concepts)
+      .set(updates)
+      .where(eq(concepts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const result = await this.db.delete(concepts).where(eq(concepts.userId, userId)).returning();
     return result.length;
   }
 }
