@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScript, generateAvatar, generateMultipleAvatars, selectBestConcepts, calculateRelevanceScore } from "./openai-service";
+import { generateScript } from "./openai-service";
 import { metaAdsService } from "./meta-ads-service";
 import { aiInsightsService } from "./ai-insights-service";
 import { metaOAuthService } from "./meta-oauth-service";
@@ -9,17 +9,12 @@ import { startMetaOAuth, handleMetaCallback, checkLinkSessionStatus } from "./oa
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import { scrapeCreatorService } from "./scrape-creator-service";
 import {
-  insertAvatarSchema,
-  insertConceptSchema,
-  insertAvatarConceptSchema,
   insertPlatformSettingsSchema,
   updatePlatformSettingsSchema,
   insertKnowledgeBaseSchema,
   updateKnowledgeBaseSchema,
   insertGeneratedScriptSchema,
-  updateGeneratedScriptSchema,
-  type Avatar,
-  type Concept
+  updateGeneratedScriptSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -194,163 +189,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to check connection status" });
     }
   });
-  // Avatar routes (protected)
-  app.get("/api/avatars", isAuthenticated, async (req: any, res) => {
+
+  // Customer Intelligence Hub - Insights endpoints (stub)
+  app.get("/api/insights", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const avatars = await storage.getAvatars(userId);
-      res.json(avatars);
+      // Stub endpoint - returns empty array for now
+      res.json([]);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch avatars" });
+      res.status(500).json({ error: "Failed to fetch insights" });
     }
   });
 
-  app.post("/api/avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
+  // Customer Intelligence Hub - Sources endpoints (stub)
+  app.get("/api/sources", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedData = insertAvatarSchema.parse(req.body);
-      const avatar = await storage.createAvatar(validatedData);
-      res.status(201).json(avatar);
+      // Stub endpoint - returns empty array for now
+      res.json([]);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid avatar data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to create avatar" });
-      }
+      res.status(500).json({ error: "Failed to fetch sources" });
     }
   });
 
-  app.patch("/api/avatars/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
+  // Customer Intelligence Hub - Research discovery endpoint (stub)
+  app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
-      const { id } = req.params;
-      const avatar = await storage.updateAvatar(id, req.body);
-      if (!avatar) {
-        res.status(404).json({ error: "Avatar not found" });
-        return;
-      }
-      res.json(avatar);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update avatar" });
-    }
-  });
-
-  // Concept routes (protected)
-  app.get("/api/concepts", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const avatarId = req.query.avatarId as string | undefined;
-      console.log(`GET /api/concepts - userId: ${userId}, avatarId: ${avatarId || 'none'}`);
-      const concepts = await storage.getConcepts(avatarId, userId);
-      console.log(`Returning ${concepts.length} concepts for avatarId: ${avatarId || 'all'}`);
-      res.json(concepts);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch concepts" });
-    }
-  });
-
-  app.post("/api/concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
-    try {
-      const validatedData = insertConceptSchema.parse(req.body);
-      const concept = await storage.createConcept(validatedData);
-      res.status(201).json(concept);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid concept data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to create concept" });
-      }
-    }
-  });
-
-  app.patch("/api/concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const concept = await storage.updateConcept(id, req.body);
-      if (!concept) {
-        res.status(404).json({ error: "Concept not found" });
-        return;
-      }
-      res.json(concept);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update concept" });
-    }
-  });
-
-  // Avatar-Concept linking routes (protected)
-  app.get("/api/avatar-concepts", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { avatarId, conceptId } = req.query;
-      const avatarConcepts = await storage.getAvatarConcepts(
-        avatarId as string,
-        conceptId as string,
-        userId
-      );
-      res.json(avatarConcepts);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch avatar-concept links" });
-    }
-  });
-
-  app.post("/api/avatar-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
-    try {
-      const validatedData = insertAvatarConceptSchema.parse(req.body);
-      const avatarConcept = await storage.createAvatarConcept(validatedData);
-      res.status(201).json(avatarConcept);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid avatar-concept data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to create avatar-concept link" });
-      }
-    }
-  });
-
-  app.patch("/api/avatar-concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const avatarConcept = await storage.updateAvatarConcept(id, req.body);
-      if (!avatarConcept) {
-        res.status(404).json({ error: "Avatar-concept link not found" });
-        return;
-      }
-      res.json(avatarConcept);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update avatar-concept link" });
-    }
-  });
-
-  // AI-powered relevance score calculation
-  app.post("/api/calculate-relevance", isAuthenticated, async (req: any, res) => {
-    try {
-      const { avatarId, conceptId } = req.body;
-      const userId = req.user.claims.sub;
-      
-      // Fetch avatar and concept from database
-      const avatar = await storage.getAvatar(avatarId);
-      const concepts = await storage.getConcepts(undefined, userId);
-      const concept = concepts.find(c => c.id === conceptId);
-      
-      if (!avatar || !concept) {
-        res.status(404).json({ error: "Avatar or concept not found" });
-        return;
-      }
-      
-      // Verify ownership
-      if (avatar.userId !== userId || concept.userId !== userId) {
-        res.status(403).json({ error: "Unauthorized" });
-        return;
-      }
-      
-      // Calculate AI-powered relevance score
-      const relevanceScore = await calculateRelevanceScore(avatar, concept);
-      
-      res.json({ relevanceScore });
-    } catch (error) {
-      console.error("Error calculating relevance score:", error);
-      res.status(500).json({ 
-        error: "Failed to calculate relevance score",
-        message: error instanceof Error ? error.message : "Unknown error"
+      // Stub endpoint - returns success message for now
+      res.json({ 
+        success: true, 
+        message: "Research discovery initiated. This feature is coming soon." 
       });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start research discovery" });
     }
   });
 
@@ -505,41 +374,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Fetch approved avatars from Research Agent for this user
-      const approvedAvatars = await storage.getAvatars(userId);
-      const userApprovedAvatars = approvedAvatars.filter(avatar => avatar.status === "approved");
-      
-      if (userApprovedAvatars.length === 0) {
-        res.status(400).json({ 
-          error: "No approved avatars found. Please generate and approve customer avatars in the Research Agent first.",
-          redirect: "/research"
-        });
-        return;
-      }
-
-      // AI automatically selects the best avatar and approach based on data
-      const bestAvatar = userApprovedAvatars
-        .sort((a, b) => {
-          // Prioritize Performance Agent recommendations, then high confidence, then high priority
-          const aScore = (a.recommendationSource === 'performance_agent' ? 100 : 0) + 
-                        (parseFloat(a.dataConfidence || '0') * 50) + 
-                        (a.priority === 'high' ? 25 : a.priority === 'medium' ? 15 : 5);
-          const bScore = (b.recommendationSource === 'performance_agent' ? 100 : 0) + 
-                        (parseFloat(b.dataConfidence || '0') * 50) + 
-                        (b.priority === 'high' ? 25 : b.priority === 'medium' ? 15 : 5);
-          return bScore - aScore;
-        })[0];
-
-      // AI determines optimal script parameters based on avatar and brand data
+      // AI determines optimal script parameters based on brand data
       const aiScriptRequest = {
         scriptType: "ugc" as const, // Start with UGC as most versatile
         duration: "30s" as const, // Optimal for most platforms
-        targetAvatar: bestAvatar.name,
-        marketingAngle: bestAvatar.hooks?.[0] || "Problem-Solution Framework",
+        targetAvatar: "General Audience",
+        marketingAngle: "Problem-Solution Framework",
         awarenessStage: "problem aware" as const // Most common starting point
       };
 
-      // Generate script using OpenAI with selected avatar data
+      // Generate script using OpenAI with knowledge base data
       const generatedScript = await generateScript(aiScriptRequest, knowledgeBase);
       
       // Save generated script to database for self-learning system
@@ -551,19 +395,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: generatedScript.summary,
         content: generatedScript,
         sourceResearch: {
-          avatarName: bestAvatar.name,
+          avatarName: "General Audience",
           marketingAngle: aiScriptRequest.marketingAngle,
           awarenessStage: aiScriptRequest.awarenessStage
         },
         generationContext: {
           knowledgeBaseSnapshot: knowledgeBase,
-          selectedAvatar: bestAvatar,
-          aiDecisionFactors: {
-            avatarConfidence: bestAvatar.dataConfidence,
-            avatarPriority: bestAvatar.priority,
-            recommendationSource: bestAvatar.recommendationSource,
-            availableAvatars: userApprovedAvatars.length
-          },
           timestamp: new Date().toISOString()
         }
       });
@@ -611,247 +448,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: "Failed to update script" });
       }
-    }
-  });
-
-  // Avatar generation route (protected) - generates single avatar
-  app.post("/api/generate-avatar", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-
-      // Fetch the user's knowledge base
-      const knowledgeBase = await storage.getKnowledgeBase(userId);
-      if (!knowledgeBase) {
-        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
-        return;
-      }
-
-      // Generate avatar using OpenAI
-      const generatedAvatar = await generateAvatar(knowledgeBase);
-      
-      res.json(generatedAvatar);
-    } catch (error) {
-      console.error("Avatar generation error:", error);
-      res.status(500).json({ 
-        error: "Failed to generate avatar", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Generate multiple avatars (4-5) at once - NEW WORKFLOW
-  // DESTRUCTIVE: Deletes all existing avatars, concepts, and links before regenerating
-  app.post("/api/generate-avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-
-      // Fetch the user's knowledge base
-      const knowledgeBase = await storage.getKnowledgeBase(userId);
-      if (!knowledgeBase) {
-        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
-        return;
-      }
-
-      // Check if knowledge base is complete
-      if ((knowledgeBase.completionPercentage || 0) < 100) {
-        res.status(400).json({ error: "Please complete your knowledge base setup first before generating avatars." });
-        return;
-      }
-
-      // DELETE ALL existing data for clean slate (links → concepts → avatars)
-      console.log(`[REGENERATE] Deleting all existing data for user ${userId}...`);
-      const deletedLinks = await storage.deleteAllAvatarConceptLinks(userId);
-      const deletedConcepts = await storage.deleteAllConcepts(userId);
-      const deletedAvatars = await storage.deleteAllAvatars(userId);
-      console.log(`[REGENERATE] Deleted: ${deletedAvatars} avatars, ${deletedConcepts} concepts, ${deletedLinks} links`);
-
-      // Generate 4-5 fresh avatars using OpenAI
-      const generatedAvatars = await generateMultipleAvatars(knowledgeBase);
-      
-      // Save all avatars to database with userId
-      const savedAvatars = await Promise.all(
-        generatedAvatars.map(async (avatar) => {
-          return await storage.createAvatar({
-            userId,
-            name: avatar.name,
-            ageRange: avatar.demographics?.split(',')[0]?.trim() || "25-45",
-            demographics: avatar.demographics,
-            painPoint: avatar.painPoints?.[0] || avatar.description,
-            hooks: avatar.painPoints || [],
-            sources: [],
-            angleIdeas: avatar.motivations || [],
-            reasoning: avatar.description,
-            priority: "medium",
-            dataConfidence: "0.8",
-            recommendationSource: "ai-generated",
-            status: "pending"
-          });
-        })
-      );
-      
-      res.json({ 
-        avatars: savedAvatars,
-        count: savedAvatars.length,
-        deletedCount: {
-          avatars: deletedAvatars,
-          concepts: deletedConcepts,
-          links: deletedLinks
-        },
-        message: `Successfully regenerated ${savedAvatars.length} customer avatars (deleted ${deletedAvatars} old avatars, ${deletedConcepts} concepts, ${deletedLinks} links)`
-      });
-    } catch (error) {
-      console.error("Multiple avatars generation error:", error);
-      res.status(500).json({ 
-        error: "Failed to generate avatars", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Generate concepts from social media platforms - NEW WORKFLOW
-  app.post("/api/generate-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const specificAvatarId = req.body.avatarId as string | undefined; // Optional: fetch for specific avatar only
-
-      // Fetch the user's knowledge base
-      const knowledgeBase = await storage.getKnowledgeBase(userId);
-      if (!knowledgeBase) {
-        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
-        return;
-      }
-
-      // Check if knowledge base is complete
-      if ((knowledgeBase.completionPercentage || 0) < 100) {
-        res.status(400).json({ error: "Please complete your knowledge base setup first before generating concepts." });
-        return;
-      }
-
-      // Fetch avatars: either specific one or all
-      let avatars;
-      if (specificAvatarId) {
-        const avatar = await storage.getAvatar(specificAvatarId);
-        if (!avatar || avatar.userId !== userId) {
-          res.status(404).json({ error: "Avatar not found or doesn't belong to you." });
-          return;
-        }
-        avatars = [avatar];
-        console.log(`Fetching concepts for specific avatar: ${avatar.name}`);
-      } else {
-        avatars = await storage.getAvatars(userId);
-        if (avatars.length === 0) {
-          res.status(400).json({ error: "Please generate avatars first before fetching concepts." });
-          return;
-        }
-        console.log(`Fetching concepts for all ${avatars.length} avatars`);
-      }
-
-      const niche = knowledgeBase.currentPersonas || 'general';
-      let allSavedConcepts: any[] = [];
-      let totalDeletedConcepts = 0;
-
-      // Delete old concepts for the avatars we're processing
-      // Security: Only delete concepts for avatars that belong to this user (already verified above)
-      // IMPORTANT: Delete links FIRST to avoid foreign key constraint violations
-      for (const avatar of avatars) {
-        // Double-check ownership before deletion (defense in depth)
-        if (avatar.userId !== userId) {
-          console.error(`Ownership violation: Avatar ${avatar.id} does not belong to user ${userId}`);
-          res.status(403).json({ error: "You don't have permission to delete concepts for this avatar." });
-          return;
-        }
-        
-        // Step 1: Delete avatar-concept links first
-        const deletedLinks = await storage.deleteAvatarConceptLinksByAvatarId(avatar.id);
-        if (deletedLinks > 0) {
-          console.log(`Deleted ${deletedLinks} concept links for avatar: ${avatar.name}`);
-        }
-        
-        // Step 2: Now safe to delete the concepts
-        const deletedCount = await storage.deleteConceptsByAvatarId(avatar.id);
-        totalDeletedConcepts += deletedCount;
-        if (deletedCount > 0) {
-          console.log(`Deleted ${deletedCount} old concepts for avatar: ${avatar.name}`);
-        }
-      }
-
-      // For each avatar, fetch specific concepts based on their pain points/hooks
-      for (const avatar of avatars) {
-        // Extract avatar-specific keywords from hooks and pain points
-        const avatarKeywords = [
-          ...avatar.hooks,
-          avatar.painPoint,
-          avatar.demographics
-        ].filter(Boolean);
-
-        console.log(`Fetching concepts for avatar: ${avatar.name} with keywords:`, avatarKeywords.slice(0, 3));
-
-        // Fetch concepts from all platforms specific to this avatar
-        const scrapedConcepts = await scrapeCreatorService.fetchConceptsForBrand(avatarKeywords, niche);
-        
-        // Use ALL concepts returned by the API for analysis
-        const facebookCandidates = scrapedConcepts.facebook;
-        const instagramCandidates = scrapedConcepts.instagram;
-        const tiktokCandidates = scrapedConcepts.tiktok;
-
-        console.log(`Avatar ${avatar.name}: analyzing ${facebookCandidates.length + instagramCandidates.length + tiktokCandidates.length} concepts (FB: ${facebookCandidates.length}, IG: ${instagramCandidates.length}, TT: ${tiktokCandidates.length})`);
-
-        // Use OpenAI to analyze and select the 2 best posts per platform
-        const [facebookConcepts, instagramConcepts, tiktokConcepts] = await Promise.all([
-          selectBestConcepts(facebookCandidates, avatar, 2),
-          selectBestConcepts(instagramCandidates, avatar, 2),
-          selectBestConcepts(tiktokCandidates, avatar, 2)
-        ]);
-
-        const avatarConcepts = [
-          ...facebookConcepts,
-          ...instagramConcepts,
-          ...tiktokConcepts
-        ];
-
-        console.log(`Avatar ${avatar.name}: selected ${avatarConcepts.length} best concepts (FB: ${facebookConcepts.length}, IG: ${instagramConcepts.length}, TT: ${tiktokConcepts.length})`);
-
-        // Save concepts to database with userId AND avatarId (track which avatar they were fetched for)
-        const savedConcepts = await Promise.all(
-          avatarConcepts.map(async (concept) => {
-            return await storage.createConcept({
-              userId,
-              avatarId: avatar.id, // Track which avatar this concept was fetched for
-              title: concept.title,
-              format: concept.visualStyle || 'video',
-              platform: concept.platform,
-              industry: niche,
-              performance: {
-                engagement: concept.engagementScore || 0,
-                views: 'Unknown',
-                conversion: 'Unknown'
-              },
-              insights: [concept.description, concept.hook].filter(Boolean),
-              keyElements: [concept.cta, concept.visualStyle].filter(Boolean),
-              referenceUrl: concept.postUrl || undefined,
-              thumbnailUrl: concept.thumbnailUrl || undefined,
-              status: "pending"
-            });
-          })
-        );
-
-        allSavedConcepts.push(...savedConcepts);
-      }
-
-      res.json({
-        concepts: allSavedConcepts,
-        count: allSavedConcepts.length,
-        deletedCount: totalDeletedConcepts,
-        avatarsProcessed: avatars.length,
-        conceptsPerAvatar: Math.floor(allSavedConcepts.length / avatars.length),
-        message: `Fetched ${allSavedConcepts.length} new concepts for ${avatars.length} avatar(s)${totalDeletedConcepts > 0 ? ` (replaced ${totalDeletedConcepts} old concepts)` : ''}. Review and manually link concepts to avatars.`
-      });
-    } catch (error) {
-      console.error("Concept generation error:", error);
-      res.status(500).json({ 
-        error: "Failed to generate concepts", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
     }
   });
 
