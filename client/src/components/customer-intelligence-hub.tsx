@@ -59,6 +59,14 @@ export default function CustomerIntelligenceHub() {
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState('all');
+  
+  // Library specific filters
+  const [libraryCategory, setLibraryCategory] = useState('all');
+  const [libraryPlatform, setLibraryPlatform] = useState('all');
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [libraryDateRange, setLibraryDateRange] = useState('all');
+  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
 
   // Mock data for development visualization
   const mockInsights = [
@@ -868,15 +876,344 @@ export default function CustomerIntelligenceHub() {
 
         {/* Tab 3: Research Library */}
         <TabsContent value="library" className="space-y-4">
+          {/* Library Header with Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Brain className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{insightsData.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Insights</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
+                    <X className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{categoryCounts['pain-point']}</p>
+                    <p className="text-xs text-muted-foreground">Pain Points</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+                    <Heart className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{categoryCounts.desire}</p>
+                    <p className="text-xs text-muted-foreground">Desires</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
+                    <Zap className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{categoryCounts.trigger}</p>
+                    <p className="text-xs text-muted-foreground">Triggers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Library Filters */}
           <Card>
-            <CardContent className="p-12 text-center">
-              <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">Research Library</h3>
-              <p className="text-muted-foreground">
-                Full searchable archive of all discovered insights coming soon
-              </p>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Research Library
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant={libraryViewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLibraryViewMode('grid')}
+                    data-testid="button-view-grid"
+                  >
+                    Grid
+                  </Button>
+                  <Button
+                    variant={libraryViewMode === 'list' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLibraryViewMode('list')}
+                    data-testid="button-view-list"
+                  >
+                    List
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Search Bar */}
+              <div className="flex flex-wrap gap-3">
+                <Input
+                  placeholder="Search all research..."
+                  value={librarySearch}
+                  onChange={(e) => setLibrarySearch(e.target.value)}
+                  className="flex-1 min-w-[300px]"
+                  data-testid="input-library-search"
+                />
+              </div>
+
+              {/* Filter Controls */}
+              <div className="flex flex-wrap gap-3">
+                <Select value={libraryCategory} onValueChange={setLibraryCategory}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-library-category">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="pain-point">Pain Points</SelectItem>
+                    <SelectItem value="desire">Desires</SelectItem>
+                    <SelectItem value="objection">Objections</SelectItem>
+                    <SelectItem value="trigger">Triggers</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={libraryPlatform} onValueChange={setLibraryPlatform}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-library-platform">
+                    <SelectValue placeholder="Platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Platforms</SelectItem>
+                    <SelectItem value="reddit">Reddit</SelectItem>
+                    <SelectItem value="amazon">Amazon</SelectItem>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                    <SelectItem value="forum">Forums</SelectItem>
+                    <SelectItem value="article">Articles</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={libraryDateRange} onValueChange={setLibraryDateRange}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-library-date">
+                    <SelectValue placeholder="Date Range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="24h">Last 24 Hours</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                    <SelectItem value="90d">Last 90 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setLibraryCategory('all');
+                    setLibraryPlatform('all');
+                    setLibrarySearch('');
+                    setLibraryDateRange('all');
+                  }}
+                  data-testid="button-clear-library-filters"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+
+              {/* Results Count */}
+              <div className="text-sm text-muted-foreground">
+                Showing {insightsData.filter((insight: any) => {
+                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (librarySearch) {
+                    const query = librarySearch.toLowerCase();
+                    return (
+                      insight.title?.toLowerCase().includes(query) ||
+                      insight.summary?.toLowerCase().includes(query) ||
+                      insight.rawQuote?.toLowerCase().includes(query)
+                    );
+                  }
+                  return true;
+                }).length} of {insightsData.length} insights
+              </div>
             </CardContent>
           </Card>
+
+          {/* Library Content */}
+          {libraryViewMode === 'grid' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {insightsData
+                .filter((insight: any) => {
+                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (librarySearch) {
+                    const query = librarySearch.toLowerCase();
+                    return (
+                      insight.title?.toLowerCase().includes(query) ||
+                      insight.summary?.toLowerCase().includes(query) ||
+                      insight.rawQuote?.toLowerCase().includes(query)
+                    );
+                  }
+                  return true;
+                })
+                .map((insight: any) => {
+                  const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+                  const CategoryIcon = categoryInfo?.icon || Brain;
+                  
+                  return (
+                    <Card key={insight.id} className="hover-elevate" data-testid={`card-library-insight-${insight.id}`}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className={`${categoryInfo?.color} gap-1`}>
+                                <CategoryIcon className="h-3 w-3" />
+                                {categoryInfo?.label}
+                              </Badge>
+                              <Badge
+                                className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}
+                              >
+                                {insight.sourcePlatform}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-base">{insight.title}</CardTitle>
+                          </div>
+                        </div>
+                        <CardDescription className="text-sm italic mt-2">
+                          "{insight.rawQuote}"
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">{insight.summary}</p>
+                        </div>
+                        
+                        {insight.observations && insight.observations.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">Key Observations</h4>
+                            <ul className="space-y-1">
+                              {insight.observations.slice(0, 2).map((obs: string, idx: number) => (
+                                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                  <span className="text-primary">•</span>
+                                  {obs}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {insight.marketingAngles && insight.marketingAngles.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">Marketing Angles</h4>
+                            <div className="space-y-1">
+                              {insight.marketingAngles.slice(0, 2).map((angle: string, idx: number) => (
+                                <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
+                                  💡 {angle}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="gap-2 w-full"
+                          data-testid={`button-library-view-source-${insight.id}`}
+                        >
+                          <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3" />
+                            View Original Source
+                          </a>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
+
+          {libraryViewMode === 'list' && (
+            <div className="space-y-3">
+              {insightsData
+                .filter((insight: any) => {
+                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (librarySearch) {
+                    const query = librarySearch.toLowerCase();
+                    return (
+                      insight.title?.toLowerCase().includes(query) ||
+                      insight.summary?.toLowerCase().includes(query) ||
+                      insight.rawQuote?.toLowerCase().includes(query)
+                    );
+                  }
+                  return true;
+                })
+                .map((insight: any) => {
+                  const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+                  const CategoryIcon = categoryInfo?.icon || Brain;
+                  
+                  return (
+                    <Card key={insight.id} className="hover-elevate" data-testid={`card-library-list-${insight.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className={`${categoryInfo?.color} gap-1`}>
+                                <CategoryIcon className="h-3 w-3" />
+                                {categoryInfo?.label}
+                              </Badge>
+                              <Badge className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}>
+                                {insight.sourcePlatform}
+                              </Badge>
+                            </div>
+                            <h4 className="font-semibold mb-1">{insight.title}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{insight.summary}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="gap-2"
+                            data-testid={`button-library-list-source-${insight.id}`}
+                          >
+                            <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3" />
+                              View
+                            </a>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
+
+          {insightsData.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">No Research Yet</h3>
+                <p className="text-muted-foreground">
+                  Start discovering insights to build your research library
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Tab 3: Source Tracker */}
