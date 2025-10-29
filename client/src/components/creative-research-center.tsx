@@ -61,7 +61,7 @@ interface CreativeConcept {
 
 export function CreativeResearchCenter() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('curated');
+  const [activeTab, setActiveTab] = useState('latest');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'page'>('brand');
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
@@ -438,7 +438,14 @@ export function CreativeResearchCenter() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Latest Discoveries ({conceptsData.filter(c => {
+              const hoursAgo = (Date.now() - new Date(c.createdAt || 0).getTime()) / (1000 * 60 * 60);
+              return hoursAgo <= 24;
+            }).length})
+          </TabsTrigger>
           <TabsTrigger value="curated" data-testid="tab-curated-creatives">
             <Sparkles className="h-4 w-4 mr-2" />
             Curated Creatives ({filteredConcepts.length})
@@ -449,8 +456,230 @@ export function CreativeResearchCenter() {
           </TabsTrigger>
         </TabsList>
 
+        {/* Latest Discoveries Tab (24h) */}
+        <TabsContent value="latest" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Latest Discoveries
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                New viral content discovered in the last 24 hours
+              </p>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const latestConcepts = conceptsData.filter(c => {
+                  const hoursAgo = (Date.now() - new Date(c.createdAt || 0).getTime()) / (1000 * 60 * 60);
+                  return hoursAgo <= 24;
+                });
+
+                return latestConcepts.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="font-medium mb-2">No New Discoveries</h3>
+                    <p className="text-sm text-muted-foreground">
+                      No new viral content has been discovered in the last 24 hours. Check back soon!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {latestConcepts.map((concept) => (
+                      <Card 
+                        key={concept.id}
+                        className="hover-elevate overflow-hidden"
+                        data-testid={`card-latest-${concept.id}`}
+                      >
+                        {concept.thumbnailUrl && (
+                          <div className="relative aspect-video bg-muted">
+                            <img 
+                              src={concept.thumbnailUrl} 
+                              alt={concept.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {concept.videoUrl && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Play className="h-12 w-12 text-white" />
+                              </div>
+                            )}
+                            <Badge className="absolute top-2 right-2 bg-green-500 text-white">
+                              New
+                            </Badge>
+                          </div>
+                        )}
+
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <span className="text-lg">{getPlatformIcon(concept.platform)}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {concept.format}
+                                </Badge>
+                                <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
+                                  {new Date(concept.createdAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </Badge>
+                              </div>
+                              <CardTitle className="text-base line-clamp-2">{concept.title}</CardTitle>
+                              {concept.brandName && (
+                                <p className="text-xs text-muted-foreground mt-1">by {concept.brandName}</p>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {concept.description}
+                          </p>
+
+                          {/* Engagement Metrics */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {concept.views && (
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(concept.views)}</span>
+                              </div>
+                            )}
+                            {concept.likes && (
+                              <div className="flex items-center gap-1">
+                                <Heart className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(concept.likes)}</span>
+                              </div>
+                            )}
+                            {concept.engagementRate && (
+                              <div className="flex items-center gap-1">
+                                <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                                <span>{(Number(concept.engagementRate) * 100).toFixed(1)}%</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 pt-2">
+                            {concept.postUrl && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                asChild
+                                className="flex-1"
+                                data-testid={`button-latest-view-${concept.id}`}
+                              >
+                                <a href={concept.postUrl} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={savedConcepts.has(concept.id) ? 'default' : 'outline'}
+                              onClick={() => toggleSave(concept.id)}
+                              className="flex-1"
+                              data-testid={`button-latest-save-${concept.id}`}
+                            >
+                              <Bookmark className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Curated Creatives Tab */}
         <TabsContent value="curated" className="space-y-4">
+          {/* Filters for Curated Tab */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter Creatives
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                <Select 
+                  value={filters.platform} 
+                  onValueChange={(value) => setFilters({...filters, platform: value})}
+                >
+                  <SelectTrigger className="w-[150px]" data-testid="select-curated-platform">
+                    <SelectValue placeholder="Platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Platforms</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={filters.engagement} 
+                  onValueChange={(value) => setFilters({...filters, engagement: value})}
+                >
+                  <SelectTrigger className="w-[150px]" data-testid="select-curated-engagement">
+                    <SelectValue placeholder="Engagement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Engagement</SelectItem>
+                    <SelectItem value="high">High (&gt;10%)</SelectItem>
+                    <SelectItem value="medium">Medium (5-10%)</SelectItem>
+                    <SelectItem value="low">Low (&lt;5%)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={filters.format} 
+                  onValueChange={(value) => setFilters({...filters, format: value})}
+                >
+                  <SelectTrigger className="w-[180px]" data-testid="select-curated-format">
+                    <SelectValue placeholder="Format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Formats</SelectItem>
+                    <SelectItem value="Raw UGC Video">Raw UGC</SelectItem>
+                    <SelectItem value="POV Storytelling">POV Storytelling</SelectItem>
+                    <SelectItem value="Before/After">Before/After</SelectItem>
+                    <SelectItem value="Testimonial">Testimonial</SelectItem>
+                    <SelectItem value="DIML Storytelling">DIML</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={filters.sortBy} 
+                  onValueChange={(value) => setFilters({...filters, sortBy: value})}
+                >
+                  <SelectTrigger className="w-[150px]" data-testid="select-curated-sort">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="engagement">Engagement</SelectItem>
+                    <SelectItem value="likes">Most Liked</SelectItem>
+                    <SelectItem value="recent">Most Recent</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilters({ ...filters, platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement' })}
+                  data-testid="button-clear-curated-filters"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredConcepts.length} of {conceptsData.length} creatives
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>AI-Discovered Viral Content</CardTitle>
