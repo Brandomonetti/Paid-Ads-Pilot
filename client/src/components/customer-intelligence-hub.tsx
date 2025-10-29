@@ -482,6 +482,17 @@ export default function CustomerIntelligenceHub() {
 
         {/* Tab 1: Latest Discoveries */}
         <TabsContent value="latest" className="space-y-4">
+          {/* Header */}
+          <div className="border-l-4 border-primary pl-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Latest Discoveries (Last 24 Hours)
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Fresh customer insights discovered in the past 24 hours - sorted by recency
+            </p>
+          </div>
+
           {/* Filters */}
           <Card data-testid="card-filters">
             <CardHeader>

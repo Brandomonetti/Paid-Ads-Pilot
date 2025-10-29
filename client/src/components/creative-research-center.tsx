@@ -89,6 +89,147 @@ export function CreativeResearchCenter() {
 
   // Mock data for development visualization
   const mockConcepts: CreativeConcept[] = [
+    // LATEST DISCOVERIES (Last 24 hours)
+    {
+      id: 'c-latest-1',
+      platform: 'tiktok',
+      title: 'Viral Hook: "Nobody told me this about..."',
+      description: 'Short-form UGC using the "nobody told me" hook format. Creator shares surprising benefit discovered after 2 weeks. Raw, authentic delivery with trending sound overlay. Comments full of people tagging friends.',
+      format: 'Raw UGC Video',
+      hooks: [
+        'Nobody told me this would happen after 2 weeks',
+        'Why didn\'t anyone tell me about this sooner??',
+        'The thing they don\'t show you in before/after pics'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1611432579699-484f7990b127?w=400',
+      postUrl: 'https://tiktok.com/@realtalktiktok/video/latest1',
+      brandName: 'HonestWellness',
+      industry: 'Health & Wellness',
+      engagementScore: 98,
+      likes: 1200000,
+      comments: 18500,
+      shares: 45000,
+      views: 6800000,
+      engagementRate: 0.19,
+      createdAt: new Date(Date.now() - 3 * 3600000).toISOString() // 3 hours ago
+    },
+    {
+      id: 'c-latest-2',
+      platform: 'instagram',
+      title: 'Trending Reel: Side-by-Side Comparison',
+      description: 'Split-screen format showing "me using cheap products" vs "me using this". Funny, relatable, and visually striking. Audio is trending sound that amplifies the contrast. Massive saves and shares.',
+      format: 'Before/After',
+      hooks: [
+        'The upgrade I didn\'t know I needed',
+        'Why did I wait so long to switch??',
+        'Left side: broke. Right side: woke.'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400',
+      postUrl: 'https://instagram.com/reel/comparison-viral',
+      brandName: 'UpgradeYourLife',
+      industry: 'Lifestyle',
+      engagementScore: 95,
+      likes: 892000,
+      comments: 12300,
+      shares: 34100,
+      views: 4500000,
+      engagementRate: 0.21,
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString() // 6 hours ago
+    },
+    {
+      id: 'c-latest-3',
+      platform: 'facebook',
+      title: 'Emotional Story: "I almost gave up..."',
+      description: 'Longer-form testimonial video (2 min) with genuine emotion. Person shares their lowest point, the moment they decided to try one more thing, and the transformation. Comments are extremely supportive and engaged.',
+      format: 'Testimonial',
+      hooks: [
+        'I was ready to give up until...',
+        'This is the story I never thought I\'d tell',
+        'Rock bottom became my foundation'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1552581234-26160f608093?w=400',
+      postUrl: 'https://facebook.com/watch/transformation-story-real',
+      brandName: 'SecondChance',
+      industry: 'Health & Wellness',
+      engagementScore: 96,
+      likes: 145000,
+      comments: 23400,
+      shares: 67800,
+      views: 1200000,
+      engagementRate: 0.20,
+      createdAt: new Date(Date.now() - 10 * 3600000).toISOString() // 10 hours ago
+    },
+    {
+      id: 'c-latest-4',
+      platform: 'tiktok',
+      title: 'Jump-Cut Energy: "Day in My Life" Montage',
+      description: 'Fast-paced day-in-life showing person crushing tasks with visible energy. Quick cuts, upbeat music, timestamps showing packed schedule. Caption: "This used to be impossible for me". Aspirational yet achievable.',
+      format: 'POV Storytelling',
+      hooks: [
+        'POV: You finally have the energy to do it all',
+        '6am to 10pm and still not tired - here\'s how',
+        'This is what consistent energy looks like in real life'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1522441815192-d9f04eb0615c?w=400',
+      postUrl: 'https://tiktok.com/@energizedlife/video/latest2',
+      brandName: 'AllDayEnergy',
+      industry: 'Productivity',
+      engagementScore: 94,
+      likes: 756000,
+      comments: 9200,
+      shares: 28300,
+      views: 3900000,
+      engagementRate: 0.20,
+      createdAt: new Date(Date.now() - 15 * 3600000).toISOString() // 15 hours ago
+    },
+    {
+      id: 'c-latest-5',
+      platform: 'instagram',
+      title: 'Carousel: "Here\'s what actually worked"',
+      description: 'Multi-slide educational carousel breaking down exactly what changed in their routine. Slide 1: The problem. Slides 2-7: What they tried that didn\'t work. Slide 8: What finally worked. Slide 9: Results. Slide 10: Product reveal. Very high save rate.',
+      format: 'Educational Content',
+      hooks: [
+        'I tried 12 things - only 1 actually worked',
+        'Here\'s what I wish I knew from day 1',
+        'Save this - you\'ll want to come back to it'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400',
+      postUrl: 'https://instagram.com/p/what-worked-guide',
+      brandName: 'RealResults',
+      industry: 'Health & Wellness',
+      engagementScore: 97,
+      likes: 234000,
+      comments: 5600,
+      shares: 8900,
+      views: 890000,
+      engagementRate: 0.28,
+      createdAt: new Date(Date.now() - 20 * 3600000).toISOString() // 20 hours ago
+    },
+    {
+      id: 'c-latest-6',
+      platform: 'tiktok',
+      title: 'Trend: "If you know, you know" Format',
+      description: 'Uses trending "iykyk" format where creator subtly shows product in background while doing relatable activity. Doesn\'t explicitly sell - just shows it as part of their lifestyle. Comments full of "what is that??" driving engagement.',
+      format: 'Raw UGC Video',
+      hooks: [
+        'If you know you know 👀',
+        'Don\'t tell everyone about this lol',
+        'The ones who know are winning rn'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400',
+      postUrl: 'https://tiktok.com/@subtleinfluence/video/latest3',
+      brandName: 'InThoseWhoKnow',
+      industry: 'Lifestyle',
+      engagementScore: 93,
+      likes: 567000,
+      comments: 34500,
+      shares: 19200,
+      views: 2800000,
+      engagementRate: 0.22,
+      createdAt: new Date(Date.now() - 22 * 3600000).toISOString() // 22 hours ago
+    },
+
+    // OLDER CONCEPTS (7+ days ago for Curated tab)
     {
       id: 'c1',
       platform: 'tiktok',
@@ -462,10 +603,10 @@ export function CreativeResearchCenter() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Latest Discoveries
+                Latest Discoveries (Last 24 Hours)
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                New viral content discovered in the last 24 hours
+                Fresh viral content discovered in the past 24 hours - trending right now
               </p>
             </CardHeader>
             <CardContent>
