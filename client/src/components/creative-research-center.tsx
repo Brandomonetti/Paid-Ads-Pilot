@@ -87,10 +87,246 @@ export function CreativeResearchCenter() {
     buttons: "all"
   });
 
-  // Fetch all creative concepts
+  // Mock data for development visualization
+  const mockConcepts: CreativeConcept[] = [
+    {
+      id: 'c1',
+      platform: 'tiktok',
+      title: 'Raw UGC: Morning Routine Energy Transformation',
+      description: 'Authentic "get ready with me" style video showing before/after energy levels. Creator starts groggy, takes supplement mid-routine, shows visible energy shift by end. Very relatable, no heavy production.',
+      format: 'Raw UGC Video',
+      hooks: [
+        'POV: You finally found something that actually works',
+        'This is what 30 days of consistent energy looks like',
+        'Watch my energy levels go from 0 to 100'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+      postUrl: 'https://tiktok.com/@fitlifestyle/video/example1',
+      brandName: 'VitalityBoost',
+      industry: 'Health & Wellness',
+      engagementScore: 96,
+      likes: 847000,
+      comments: 12400,
+      shares: 23100,
+      views: 4200000,
+      engagementRate: 0.21,
+      createdAt: new Date(Date.now() - 7 * 86400000).toISOString()
+    },
+    {
+      id: 'c2',
+      platform: 'instagram',
+      title: 'Before/After Body Transformation Carousel',
+      description: 'Multi-slide carousel showing 90-day transformation with weekly progress photos. Each slide has timestamp and weight/measurements. Final slide reveals the "secret" (product + consistency). High engagement from fitness community.',
+      format: 'Before/After',
+      hooks: [
+        '90 days ago I couldn\'t even look at myself',
+        'The difference consistency makes (swipe to see)',
+        'Here\'s exactly what I did - no BS'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400',
+      postUrl: 'https://instagram.com/p/transformation90',
+      brandName: 'FitFuel Pro',
+      industry: 'Fitness Supplements',
+      engagementScore: 93,
+      likes: 156000,
+      comments: 8900,
+      shares: 4200,
+      views: 890000,
+      engagementRate: 0.19,
+      createdAt: new Date(Date.now() - 14 * 86400000).toISOString()
+    },
+    {
+      id: 'c3',
+      platform: 'facebook',
+      title: 'Emotional Testimonial: Mom Gets Her Energy Back',
+      description: 'Heartfelt video testimonial from busy mom who struggled with afternoon crashes. Shows her playing with kids at end of day now. Genuine emotion, relatable pain points. Comments full of "this is me" responses.',
+      format: 'Testimonial',
+      hooks: [
+        'I was too tired to play with my kids after work',
+        'This mom of 3 found her energy again',
+        'You don\'t have to choose between career and being present'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400',
+      postUrl: 'https://facebook.com/watch/momlife-energy',
+      brandName: 'MamaVitality',
+      industry: 'Health & Wellness',
+      engagementScore: 91,
+      likes: 42000,
+      comments: 6700,
+      shares: 18900,
+      views: 620000,
+      engagementRate: 0.11,
+      createdAt: new Date(Date.now() - 21 * 86400000).toISOString()
+    },
+    {
+      id: 'c4',
+      platform: 'tiktok',
+      title: 'POV Storytelling: The Day Everything Changed',
+      description: 'First-person perspective narrative showing "rock bottom" moment, then daily progress clips. Emotional arc with triumphant ending. Uses trending audio. Massive shareability factor.',
+      format: 'POV Storytelling',
+      hooks: [
+        'POV: The day you stopped making excuses',
+        'This is what happens when you actually commit',
+        'Week 1 vs Week 12 - the difference is insane'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400',
+      postUrl: 'https://tiktok.com/@transformstories/video/example2',
+      brandName: 'CoreStrength',
+      industry: 'Fitness',
+      engagementScore: 94,
+      likes: 923000,
+      comments: 15200,
+      shares: 31400,
+      views: 5100000,
+      engagementRate: 0.19,
+      createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
+    },
+    {
+      id: 'c5',
+      platform: 'instagram',
+      title: 'DIML: "I Didn\'t Believe It Until..."',
+      description: 'Didn\'t-I-Make-It-Look storytelling format. Creator addresses camera skeptically at start, fast-forwards through journey with voiceover, ends with proof and admission they were wrong. Converts skeptics.',
+      format: 'DIML Storytelling',
+      hooks: [
+        'I thought this was another scam until...',
+        'Here\'s why I was wrong (and I\'m glad I was)',
+        'The skeptic becomes a believer - my story'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400',
+      postUrl: 'https://instagram.com/reel/skeptic-to-believer',
+      brandName: 'TrustFit',
+      industry: 'Health & Wellness',
+      engagementScore: 89,
+      likes: 78000,
+      comments: 5400,
+      shares: 3100,
+      views: 450000,
+      engagementRate: 0.19,
+      createdAt: new Date(Date.now() - 18 * 86400000).toISOString()
+    },
+    {
+      id: 'c6',
+      platform: 'tiktok',
+      title: 'Sped-Up Process: 30-Day Timelapse Journey',
+      description: 'Fast-motion compilation of daily workout/supplement routine with date stamps. Set to upbeat music. Shows consistency and gradual visible changes. Viewers can see themselves in the journey.',
+      format: 'Sped-up Process Video',
+      hooks: [
+        'What 30 days of consistency actually looks like',
+        'Day 1 to Day 30 - watch the transformation',
+        'This is what happens when you don\'t give up'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=400',
+      postUrl: 'https://tiktok.com/@30daychallenge/video/example3',
+      brandName: 'ConsistentFit',
+      industry: 'Fitness',
+      engagementScore: 92,
+      likes: 645000,
+      comments: 9800,
+      shares: 19200,
+      views: 3200000,
+      engagementRate: 0.21,
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString()
+    },
+    {
+      id: 'c7',
+      platform: 'facebook',
+      title: 'Educational: Science Behind Recovery',
+      description: 'Professional-looking educational content explaining muscle recovery science in simple terms. Includes graphics, before/after muscle scans. Positions product as scientifically-backed solution.',
+      format: 'Educational Content',
+      hooks: [
+        'Here\'s what actually happens during muscle recovery',
+        'The science of getting stronger (explained simply)',
+        'Why your muscles need this to grow'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400',
+      postUrl: 'https://facebook.com/watch/recovery-science',
+      brandName: 'ScienceFit Pro',
+      industry: 'Fitness Supplements',
+      engagementScore: 87,
+      likes: 34000,
+      comments: 4100,
+      shares: 8600,
+      views: 380000,
+      engagementRate: 0.12,
+      createdAt: new Date(Date.now() - 25 * 86400000).toISOString()
+    },
+    {
+      id: 'c8',
+      platform: 'instagram',
+      title: 'Community Compilation: Real Customer Results',
+      description: 'Montage of customer-submitted transformation videos. Shows diversity of ages, body types, backgrounds. Creates "if they can, I can" response. Massive social proof.',
+      format: 'UGC Compilation',
+      hooks: [
+        'These are all real customers - not actors',
+        '500+ transformations and counting',
+        'Your results could be next'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
+      postUrl: 'https://instagram.com/reel/community-results',
+      brandName: 'TogetherFit',
+      industry: 'Fitness Community',
+      engagementScore: 95,
+      likes: 234000,
+      comments: 11200,
+      shares: 15800,
+      views: 1100000,
+      engagementRate: 0.24,
+      createdAt: new Date(Date.now() - 12 * 86400000).toISOString()
+    },
+    {
+      id: 'c9',
+      platform: 'tiktok',
+      title: 'Controversial Take: "You Don\'t Need More Motivation"',
+      description: 'Provocative hook challenges common beliefs. Creator argues systems beat motivation. Shows their simple daily system. Comments debating, huge engagement. Algorithm loves controversy.',
+      format: 'Opinion/Hot Take',
+      hooks: [
+        'Stop waiting for motivation - it\'s a trap',
+        'Unpopular opinion: motivation is overrated',
+        'Here\'s what actually works (and it\'s not what you think)'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=400',
+      postUrl: 'https://tiktok.com/@honesttakes/video/example4',
+      brandName: 'RealTalk Fitness',
+      industry: 'Fitness Coaching',
+      engagementScore: 88,
+      likes: 512000,
+      comments: 28900,
+      shares: 12100,
+      views: 2800000,
+      engagementRate: 0.20,
+      createdAt: new Date(Date.now() - 8 * 86400000).toISOString()
+    },
+    {
+      id: 'c10',
+      platform: 'instagram',
+      title: 'Day in the Life: Busy Professional\'s Routine',
+      description: 'Follow along day showing how real person fits fitness into packed schedule. Shows supplement timing, quick workouts, meal prep. Extremely relatable for target audience.',
+      format: 'Lifestyle/DITL',
+      hooks: [
+        'How I stay fit with a 60-hour work week',
+        'You don\'t need hours - you need a system',
+        'Fit life as a busy professional (realistic edition)'
+      ],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400',
+      postUrl: 'https://instagram.com/reel/busy-life-fitness',
+      brandName: 'BusyFit',
+      industry: 'Health & Wellness',
+      engagementScore: 90,
+      likes: 189000,
+      comments: 7600,
+      shares: 9400,
+      views: 820000,
+      engagementRate: 0.25,
+      createdAt: new Date(Date.now() - 16 * 86400000).toISOString()
+    }
+  ];
+
+  // Fetch all creative concepts - use mock data if empty
   const { data: concepts = [], isLoading } = useQuery<CreativeConcept[]>({
     queryKey: ['/api/concepts'],
   });
+
+  const conceptsData = (concepts as CreativeConcept[]).length > 0 ? concepts : mockConcepts;
 
   // Search for competitor/brand content
   const searchMutation = useMutation({
@@ -131,7 +367,7 @@ export function CreativeResearchCenter() {
   };
 
   // Filter and sort concepts
-  const filteredConcepts = concepts
+  const filteredConcepts = conceptsData
     .filter((concept) => {
       if (filters.platform !== "all" && concept.platform !== filters.platform) return false;
       

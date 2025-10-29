@@ -60,24 +60,312 @@ export default function CustomerIntelligenceHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
 
-  // Fetch insights
+  // Mock data for development visualization
+  const mockInsights = [
+    {
+      id: '1',
+      category: 'pain-point',
+      title: 'Post-workout muscle soreness preventing consistent training',
+      rawQuote: 'I love working out but the next-day soreness is brutal. I can barely walk after leg day and it keeps me from going back to the gym.',
+      summary: 'Customers experience severe delayed onset muscle soreness (DOMS) that creates a barrier to consistent workout routines, leading to missed gym sessions and fitness goal abandonment.',
+      observations: [
+        'DOMS severity peaks 24-48 hours post-workout',
+        'Pain is worse after lower body exercises',
+        'Creates fear of returning to gym',
+        'Most acute in beginners and after breaks'
+      ],
+      marketingAngles: [
+        'Recovery so fast, you\'ll wonder if you even worked out',
+        'Say goodbye to leg-day dread',
+        'Train harder, recover faster - no more missed gym days'
+      ],
+      sourcePlatform: 'reddit',
+      sourceUrl: 'https://reddit.com/r/fitness/example',
+      confidence: 92
+    },
+    {
+      id: '2',
+      category: 'desire',
+      title: 'Want to feel confident and energized without relying on pre-workout',
+      rawQuote: 'I wish I could just wake up with natural energy and not need caffeine or pre-workout to feel motivated. My body feels dependent and I crash hard.',
+      summary: 'Customers desire sustained, natural energy throughout the day without stimulant dependency, crashes, or the jittery side effects of traditional pre-workout supplements.',
+      observations: [
+        'Caffeine tolerance builds quickly',
+        'Afternoon energy crashes are common',
+        'Desire for sustainable energy solutions',
+        'Concern about stimulant dependency'
+      ],
+      marketingAngles: [
+        'All-day energy without the crash or jitters',
+        'Natural energy that lasts - no caffeine needed',
+        'Feel energized from sunrise to sunset, naturally'
+      ],
+      sourcePlatform: 'youtube',
+      sourceUrl: 'https://youtube.com/watch?v=example',
+      confidence: 88
+    },
+    {
+      id: '3',
+      category: 'objection',
+      title: 'Skeptical of supplement quality and ingredient transparency',
+      rawQuote: 'How do I know what\'s actually in these supplements? The industry is so unregulated. I don\'t trust brands that hide behind proprietary blends.',
+      summary: 'Customers express deep skepticism about supplement ingredient quality, manufacturing practices, and transparency, especially regarding proprietary blends and third-party testing.',
+      observations: [
+        'Lack of trust in supplement industry',
+        'Demand for third-party testing certificates',
+        'Proprietary blends seen as hiding poor ingredients',
+        'Want to see exact ingredient doses'
+      ],
+      marketingAngles: [
+        'Every ingredient listed. Every dose shown. No secrets.',
+        'Third-party tested for purity and potency - see the proof',
+        'Transparent ingredients you can pronounce and trust'
+      ],
+      sourcePlatform: 'amazon',
+      sourceUrl: 'https://amazon.com/product/reviews/example',
+      confidence: 95
+    },
+    {
+      id: '4',
+      category: 'trigger',
+      title: 'Friends\' visible fitness transformations create urgency to start',
+      rawQuote: 'Seeing my friend\'s before/after pics made me realize I need to get serious. If she can do it with her busy schedule, I have no excuse.',
+      summary: 'Social proof from peers\' successful transformations triggers immediate motivation and removes mental barriers, creating a "if they can, I can" mindset shift.',
+      observations: [
+        'Peer transformations more motivating than celebrity endorsements',
+        'Visual proof creates belief in possibility',
+        'Busy schedule relatability is key',
+        'Creates sense of urgency to start now'
+      ],
+      marketingAngles: [
+        'Join 50,000+ people transforming their bodies this month',
+        'Real people. Real results. Your turn.',
+        'See what happens when you commit for just 30 days'
+      ],
+      sourcePlatform: 'instagram',
+      sourceUrl: 'https://instagram.com/p/example',
+      confidence: 90
+    },
+    {
+      id: '5',
+      category: 'pain-point',
+      title: 'Difficulty tracking progress and staying accountable alone',
+      rawQuote: 'I start strong but lose motivation after 2 weeks. I need someone to hold me accountable but personal trainers are too expensive.',
+      summary: 'Customers struggle with self-accountability and motivation sustainability, leading to program abandonment. They need external accountability structures but cost is prohibitive.',
+      observations: [
+        'Motivation peaks in week 1-2 then drops',
+        'Lack of progress tracking leads to discouragement',
+        'Community accountability more sustainable than solo efforts',
+        'Cost barrier prevents hiring personal trainers'
+      ],
+      marketingAngles: [
+        'Your personal accountability partner - at a fraction of the cost',
+        'Track every win. Celebrate every milestone. Stay motivated.',
+        'Join a community that won\'t let you quit on yourself'
+      ],
+      sourcePlatform: 'tiktok',
+      sourceUrl: 'https://tiktok.com/@user/video/example',
+      confidence: 87
+    },
+    {
+      id: '6',
+      category: 'desire',
+      title: 'Want to look toned and fit without spending hours at the gym',
+      rawQuote: 'I don\'t have 2 hours a day for the gym. I just want to look good in a bikini with like 30 min workouts max. Is that even possible?',
+      summary: 'Time-constrained customers desire efficient workouts that deliver visible aesthetic results without lengthy gym sessions, prioritizing appearance over performance.',
+      observations: [
+        'Time scarcity is primary barrier',
+        'Aesthetic goals over strength/performance',
+        '30-45 minutes is ideal workout duration',
+        'Convenience and efficiency highly valued'
+      ],
+      marketingAngles: [
+        'Get toned in just 30 minutes a day',
+        'Efficient workouts for busy people who want results',
+        'Look great, feel confident - no 2-hour gym sessions required'
+      ],
+      sourcePlatform: 'facebook',
+      sourceUrl: 'https://facebook.com/groups/fitness/posts/example',
+      confidence: 91
+    }
+  ];
+
+  const mockSources = [
+    {
+      id: 's1',
+      platform: 'reddit',
+      sourceType: 'Subreddit',
+      title: 'r/Fitness - Daily Discussion Threads',
+      description: 'Active community discussing workout routines, nutrition, and recovery strategies',
+      url: 'https://reddit.com/r/fitness',
+      insightsDiscovered: 847,
+      lastChecked: new Date().toISOString()
+    },
+    {
+      id: 's2',
+      platform: 'amazon',
+      sourceType: 'Product Reviews',
+      title: 'Top Protein Powder Reviews',
+      description: 'Customer feedback on leading protein supplement products',
+      url: 'https://amazon.com/protein-powder-reviews',
+      insightsDiscovered: 1243,
+      lastChecked: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      id: 's3',
+      platform: 'youtube',
+      sourceType: 'Video Comments',
+      title: 'Fitness Transformation Videos',
+      description: 'Comments on popular fitness journey and transformation content',
+      url: 'https://youtube.com/fitness-transformations',
+      insightsDiscovered: 562,
+      lastChecked: new Date(Date.now() - 172800000).toISOString()
+    },
+    {
+      id: 's4',
+      platform: 'tiktok',
+      sourceType: 'Hashtag Analysis',
+      title: '#FitnessMotivation & #GymTok',
+      description: 'Trending fitness content and community conversations',
+      url: 'https://tiktok.com/tag/fitnessmotivation',
+      insightsDiscovered: 923,
+      lastChecked: new Date().toISOString()
+    }
+  ];
+
+  const mockAvatars = [
+    {
+      id: 'a1',
+      name: 'Time-Crunched Taylor',
+      ageRange: '28-35',
+      demographics: 'Working professional, Urban, Mid-income',
+      psychographics: 'Highly motivated but time-poor. Values efficiency and results over process. Struggles with consistency due to demanding career. Wants to look good and feel confident without fitness consuming their life.',
+      painPoints: [
+        'Only has 30-45 minutes max for workouts',
+        'Inconsistent schedule makes routine difficult',
+        'Previous programs required too much time commitment',
+        'Feels guilty about not prioritizing fitness more'
+      ],
+      desires: [
+        'Visible results from short, efficient workouts',
+        'Flexibility to workout at home or gym',
+        'Simple nutrition plan that fits busy lifestyle',
+        'Look toned and feel energized for work'
+      ],
+      hooks: [
+        'Get fit in less time than your commute - 30 min max',
+        'Designed for people who are too busy to waste time',
+        'Results-driven workouts for your packed schedule',
+        'Efficiency meets effectiveness - no fluff, just results'
+      ],
+      priority: 'high',
+      confidence: 94,
+      status: 'approved'
+    },
+    {
+      id: 'a2',
+      name: 'Recovery-Focused Rachel',
+      ageRange: '25-40',
+      demographics: 'Fitness enthusiast, Suburban/Urban, Middle-class',
+      psychographics: 'Loves working out but constantly battling soreness and fatigue. Knows recovery is important but doesn\'t know how to optimize it. Willing to invest in quality recovery products. Wants to train harder without burning out.',
+      painPoints: [
+        'Severe muscle soreness prevents consistent training',
+        'Energy crashes after intense workouts',
+        'Takes too long to recover between sessions',
+        'Feels guilty taking rest days but body demands it'
+      ],
+      desires: [
+        'Faster recovery to train more frequently',
+        'Natural energy without stimulant dependency',
+        'Reduced inflammation and muscle soreness',
+        'Sustainable training schedule year-round'
+      ],
+      hooks: [
+        'Train harder, recover faster - never miss a workout',
+        'Say goodbye to 3-day DOMS and hello to daily training',
+        'Natural recovery support your body will thank you for',
+        'Bounce back in 24 hours, not 72'
+      ],
+      priority: 'high',
+      confidence: 92,
+      status: 'pending'
+    },
+    {
+      id: 'a3',
+      name: 'Skeptical Steve',
+      ageRange: '30-45',
+      demographics: 'Educated professional, Research-oriented, Higher income',
+      psychographics: 'Highly skeptical of supplement industry claims. Demands scientific evidence and transparency. Won\'t buy based on marketing hype alone. Values third-party testing and clean ingredients. Willing to pay premium for quality.',
+      painPoints: [
+        'Can\'t trust most supplement brands\' claims',
+        'Proprietary blends hide poor quality ingredients',
+        'No way to verify purity and potency',
+        'Wasted money on ineffective products before'
+      ],
+      desires: [
+        'Complete ingredient transparency',
+        'Third-party tested products with certificates',
+        'Science-backed formulations',
+        'Brand that treats customers with intelligence'
+      ],
+      hooks: [
+        'Every ingredient listed. Every dose shown. Proof provided.',
+        'Third-party tested for purity - see the certificates',
+        'Science-backed formulas for people who do their research',
+        'Transparency you can trust. Results you can measure.'
+      ],
+      priority: 'medium',
+      confidence: 89,
+      status: 'pending'
+    },
+    {
+      id: 'a4',
+      name: 'Accountability-Seeking Amy',
+      ageRange: '22-35',
+      demographics: 'Young professional, Social, Entry to mid-level income',
+      psychographics: 'Struggles with self-motivation and consistency. Thrives in community environments. Starts strong but loses momentum without external accountability. Influenced by social proof and peer success stories.',
+      painPoints: [
+        'Loses motivation after 2-3 weeks solo',
+        'No one to hold her accountable to goals',
+        'Feels isolated in fitness journey',
+        'Can\'t afford expensive personal trainers'
+      ],
+      desires: [
+        'Community of like-minded people',
+        'Regular check-ins and progress tracking',
+        'Affordable accountability system',
+        'Celebration of small wins along the way'
+      ],
+      hooks: [
+        'Join 10,000+ members who won\'t let you quit',
+        'Your accountability partner at 1/10th the cost of a trainer',
+        'Track every win. Celebrate every milestone. Together.',
+        'Community-powered motivation that actually works'
+      ],
+      priority: 'medium',
+      confidence: 85,
+      status: 'pending'
+    }
+  ];
+
+  // Fetch insights - use mock data if empty
   const { data: insights = [], isLoading: isLoadingInsights } = useQuery({
     queryKey: ['/api/insights', { category: selectedCategory, platform: selectedPlatform }],
   });
 
-  // Fetch sources
+  // Fetch sources - use mock data if empty
   const { data: sources = [], isLoading: isLoadingSources } = useQuery({
     queryKey: ['/api/sources', { platform: selectedPlatform }],
   });
   
-  const sourcesData = (sources as any[]) || [];
+  const sourcesData = (sources as any[]).length > 0 ? (sources as any[]) : mockSources;
 
-  // Fetch avatars
+  // Fetch avatars - use mock data if empty
   const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery({
     queryKey: ['/api/avatars'],
   });
 
-  const avatarsData = (avatars as any[]) || [];
+  const avatarsData = (avatars as any[]).length > 0 ? (avatars as any[]) : mockAvatars;
 
   // Generate avatars mutation
   const generateAvatarsMutation = useMutation({
@@ -122,8 +410,8 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Filter insights by search
-  const insightsData = (insights as any[]) || [];
+  // Filter insights by search - use mock data if empty
+  const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
   const filteredInsights = insightsData.filter((insight: any) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
