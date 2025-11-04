@@ -222,13 +222,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("N8N_API_KEY not configured");
       }
 
-      // Send event to n8n webhook
+      // Send event to n8n webhook with API key in auth header
       const axios = await import('axios');
-      await axios.default.post(n8nWebhookUrl, {
-        userId,
-        apiKey,
-        timestamp: new Date().toISOString()
-      });
+      await axios.default.post(
+        n8nWebhookUrl, 
+        {
+          userId,
+          timestamp: new Date().toISOString()
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        }
+      );
 
       res.json({ 
         success: true, 
