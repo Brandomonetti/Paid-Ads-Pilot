@@ -211,15 +211,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Customer Intelligence Hub - Research discovery endpoint (stub)
+  // Customer Intelligence Hub - Research discovery endpoint
   app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
-      // Stub endpoint - returns success message for now
+      const userId = req.user.claims.sub;
+      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/fetch-recent-article';
+      const apiKey = process.env.N8N_API_KEY;
+
+      if (!apiKey) {
+        throw new Error("N8N_API_KEY not configured");
+      }
+
+      // Send event to n8n webhook
+      const axios = await import('axios');
+      await axios.default.post(n8nWebhookUrl, {
+        userId,
+        apiKey,
+        timestamp: new Date().toISOString()
+      });
+
       res.json({ 
         success: true, 
-        message: "Research discovery initiated. This feature is coming soon." 
+        message: "Research discovery initiated. AI is now searching for customer insights." 
       });
     } catch (error) {
+      console.error("Error triggering research discovery:", error);
       res.status(500).json({ error: "Failed to start research discovery" });
     }
   });
