@@ -400,7 +400,7 @@ export default function CustomerIntelligenceHub() {
   // Discover new insights mutation
   const discoverMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/research/discover', 'POST', { searchParams });
+      return await apiRequest('POST', '/api/research/discover', { searchParams });
     },
     onSuccess: () => {
       toast({
