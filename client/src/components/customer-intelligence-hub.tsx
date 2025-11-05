@@ -60,6 +60,7 @@ export default function CustomerIntelligenceHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState('all');
+  const [searchParams, setSearchParams] = useState('');
   
   // Library specific filters
   const [libraryCategory, setLibraryCategory] = useState('all');
@@ -399,7 +400,7 @@ export default function CustomerIntelligenceHub() {
   // Discover new insights mutation
   const discoverMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/research/discover', 'POST', {});
+      return await apiRequest('/api/research/discover', 'POST', { searchParams });
     },
     onSuccess: () => {
       toast({
@@ -441,7 +442,7 @@ export default function CustomerIntelligenceHub() {
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Brain className="h-8 w-8 text-primary" />
@@ -451,16 +452,25 @@ export default function CustomerIntelligenceHub() {
             AI-powered customer insights from across the web
           </p>
         </div>
-        <Button
-          onClick={() => discoverMutation.mutate()}
-          disabled={discoverMutation.isPending}
-          size="lg"
-          className="gap-2"
-          data-testid="button-discover-insights"
-        >
-          <Play className="h-4 w-4" />
-          {discoverMutation.isPending ? "Discovering..." : "Discover New Insights"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search keywords (e.g., fitness, supplements...)"
+            value={searchParams}
+            onChange={(e) => setSearchParams(e.target.value)}
+            className="w-80"
+            data-testid="input-search-params"
+          />
+          <Button
+            onClick={() => discoverMutation.mutate()}
+            disabled={discoverMutation.isPending}
+            size="lg"
+            className="gap-2"
+            data-testid="button-discover-insights"
+          >
+            <Play className="h-4 w-4" />
+            {discoverMutation.isPending ? "Discovering..." : "Discover New Insights"}
+          </Button>
+        </div>
       </div>
 
       {/* Tab Navigation */}

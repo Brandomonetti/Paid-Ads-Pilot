@@ -215,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { searchParams } = req.body;
       const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook/fetch-recent-article';
       const apiKey = process.env.N8N_API_KEY;
 
@@ -228,6 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         n8nWebhookUrl, 
         {
           userId,
+          searchParams: searchParams || '',
           timestamp: new Date().toISOString()
         },
         {
