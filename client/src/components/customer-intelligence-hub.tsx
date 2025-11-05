@@ -468,7 +468,7 @@ export default function CustomerIntelligenceHub() {
             data-testid="button-discover-insights"
           >
             <Play className="h-4 w-4" />
-            {discoverMutation.isPending ? "Discovering..." : "Discover New Insights"}
+            {discoverMutation.isPending ? "Discovering..." : "Discover"}
           </Button>
         </div>
       </div>
