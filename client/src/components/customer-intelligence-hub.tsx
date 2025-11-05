@@ -462,7 +462,7 @@ export default function CustomerIntelligenceHub() {
           />
           <Button
             onClick={() => discoverMutation.mutate()}
-            disabled={discoverMutation.isPending}
+            disabled={discoverMutation.isPending || !searchParams.trim()}
             size="lg"
             className="gap-2"
             data-testid="button-discover-insights"

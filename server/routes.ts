@@ -223,13 +223,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("N8N_API_KEY not configured");
       }
 
+      if (!searchParams || !searchParams.trim()) {
+        res.status(400).json({ error: "Search keywords are required" });
+        return;
+      }
+
       // Send event to n8n webhook with API key in auth header
       const axios = await import('axios');
       await axios.default.post(
         n8nWebhookUrl, 
         {
           userId,
-          searchParams: searchParams || '',
+          searchParams: searchParams.trim(),
           timestamp: new Date().toISOString()
         },
         {
@@ -243,9 +248,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         message: "Research discovery initiated. AI is now searching for customer insights." 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error triggering research discovery:", error);
-      res.status(500).json({ error: "Failed to start research discovery" });
+      
+      // Provide more specific error messages
+      if (error.response?.status === 404) {
+        res.status(503).json({ 
+          error: "Research service unavailable. Please ensure the n8n workflow is active." 
+        });
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        res.status(500).json({ 
+          error: "Authentication failed with research service. Please contact support." 
+        });
+      } else {
+        res.status(500).json({ 
+          error: "Failed to start research discovery. Please try again later." 
+        });
+      }
     }
   });
 
