@@ -454,9 +454,9 @@ export default function CustomerIntelligenceHub() {
         </div>
         <div className="flex items-center gap-3">
           <Input
-            placeholder="Search keywords (e.g., fitness, supplements...)"
+            placeholder="Search keyword (e.g., fitness)"
             value={searchParams}
-            onChange={(e) => setSearchParams(e.target.value)}
+            onChange={(e) => setSearchParams(e.target.value.replace(/\s/g, ''))}
             className="w-80"
             data-testid="input-search-params"
           />
