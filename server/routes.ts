@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { searchParams } = req.body;
+      const { knowledgeBase } = req.body;
       const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook/fetch-recent-article';
       const apiKey = process.env.N8N_API_KEY;
 
@@ -223,18 +223,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("N8N_API_KEY not configured");
       }
 
-      if (!searchParams || !searchParams.trim()) {
-        res.status(400).json({ error: "Search keywords are required" });
+      if (!knowledgeBase) {
+        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
         return;
       }
 
-      // Send event to n8n webhook with API key in auth header
+      // Send event to n8n webhook with knowledge base concept data
       const axios = await import('axios');
       await axios.default.post(
         n8nWebhookUrl, 
         {
           userId,
-          searchParams: searchParams.trim(),
+          knowledgeBase: {
+            websiteUrl: knowledgeBase.websiteUrl,
+            brandVoice: knowledgeBase.brandVoice,
+            missionStatement: knowledgeBase.missionStatement,
+            brandValues: knowledgeBase.brandValues,
+            productLinks: knowledgeBase.productLinks,
+            pricingInfo: knowledgeBase.pricingInfo,
+            keyBenefits: knowledgeBase.keyBenefits,
+            usps: knowledgeBase.usps,
+            currentPersonas: knowledgeBase.currentPersonas,
+            demographics: knowledgeBase.demographics,
+            mainCompetitors: knowledgeBase.mainCompetitors,
+            instagramHandle: knowledgeBase.instagramHandle,
+            facebookPage: knowledgeBase.facebookPage,
+            tiktokHandle: knowledgeBase.tiktokHandle,
+            contentStyle: knowledgeBase.contentStyle,
+            salesTrends: knowledgeBase.salesTrends
+          },
           timestamp: new Date().toISOString()
         },
         {
@@ -246,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         success: true, 
-        message: "Research discovery initiated. AI is now searching for customer insights." 
+        message: "Research discovery initiated. AI is now searching for customer insights based on your brand." 
       });
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
