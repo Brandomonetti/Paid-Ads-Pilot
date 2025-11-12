@@ -415,9 +415,10 @@ export default function CustomerIntelligenceHub() {
       queryClient.invalidateQueries({ queryKey: ['/api/sources'] });
     },
     onError: (error: any) => {
+      const message = error.response?.data?.message || error.message || "Failed to start research discovery";
       toast({
         title: "Discovery failed",
-        description: error.message || "Failed to start research discovery",
+        description: message,
         variant: "destructive",
       });
     },
