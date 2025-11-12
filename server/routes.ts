@@ -268,31 +268,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
       
-      // Provide more specific error messages based on n8n response
+      // Get n8n response (already structured with message and data fields)
       const status = error.response?.status;
-      let responseData = error.response?.data;
-      
-      // Parse responseData if it's a string
-      if (typeof responseData === 'string') {
-        try {
-          // Try to parse if it looks like JSON
-          responseData = JSON.parse(responseData);
-        } catch {
-          // If not valid JSON, try to extract message from string format
-          const match = responseData.match(/message:\s*(.+?)\s*[,}]/);
-          if (match) {
-            responseData = { message: match[1] };
-          }
-        }
-      }
-      
-      const message = responseData?.message || responseData?.error;
+      const responseData = error.response?.data;
       
       if (status === 400) {
-        // Bad request from n8n - use message field from response
+        // Bad request from n8n - pass through the response
         res.status(400).json({ 
-          message: message || "Invalid request data sent to n8n workflow.",
-          data: responseData
+          message: responseData?.message || "Invalid request data sent to n8n workflow.",
+          data: responseData?.data
         });
       } else if (status === 404) {
         res.status(503).json({ 
@@ -304,8 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         res.status(500).json({ 
-          message: message || "Failed to start research discovery. Please try again later.",
-          data: responseData
+          message: responseData?.message || "Failed to start research discovery. Please try again later.",
+          data: responseData?.data
         });
       }
     }
