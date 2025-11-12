@@ -268,44 +268,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
       
-      // Get n8n response
-      const status = error.response?.status;
-      let responseData = error.response?.data;
+      // Pass through n8n's response to frontend
+      const status = error.response?.status || 500;
+      const n8nResponse = error.response?.data;
       
-      // Parse responseData if it's a string
-      if (typeof responseData === 'string') {
-        try {
-          // Try to parse as JSON first
-          responseData = JSON.parse(responseData);
-        } catch {
-          // If not valid JSON, extract message from string format like "{ message: ... }"
-          const messageMatch = responseData.match(/message:\s*(.+?)\s*}/);
-          if (messageMatch) {
-            responseData = { message: messageMatch[1].trim() };
-          }
-        }
-      }
-      
-      if (status === 400) {
-        // Bad request from n8n - pass through the response
-        res.status(400).json({ 
-          message: responseData?.message || "Invalid request data sent to n8n workflow.",
-          data: responseData?.data
-        });
-      } else if (status === 404) {
-        res.status(503).json({ 
-          message: "Research service unavailable. Please ensure the n8n workflow is active." 
-        });
-      } else if (status === 401 || status === 403) {
-        res.status(401).json({ 
-          message: "Authentication failed with research service. Please check your N8N_API_KEY." 
-        });
-      } else {
-        res.status(500).json({ 
-          message: responseData?.message || "Failed to start research discovery. Please try again later.",
-          data: responseData?.data
-        });
-      }
+      // Return n8n's response as-is to frontend
+      res.status(status).json(n8nResponse || { 
+        message: "Failed to start research discovery. Please try again later." 
+      });
     }
   });
 
