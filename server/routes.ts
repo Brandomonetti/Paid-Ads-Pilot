@@ -270,7 +270,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Provide more specific error messages based on n8n response
       const status = error.response?.status;
-      const responseData = error.response?.data;
+      let responseData = error.response?.data;
+      
+      // Parse responseData if it's a string
+      if (typeof responseData === 'string') {
+        try {
+          // Try to parse if it looks like JSON
+          responseData = JSON.parse(responseData);
+        } catch {
+          // If not valid JSON, try to extract message from string format
+          const match = responseData.match(/message:\s*(.+?)\s*[,}]/);
+          if (match) {
+            responseData = { message: match[1] };
+          }
+        }
+      }
+      
       const message = responseData?.message || responseData?.error;
       
       if (status === 400) {
