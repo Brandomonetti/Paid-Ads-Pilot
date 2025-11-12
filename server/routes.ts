@@ -268,18 +268,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
       
-      // Provide more specific error messages
-      if (error.response?.status === 404) {
+      // Provide more specific error messages based on n8n response
+      const status = error.response?.status;
+      const responseData = error.response?.data;
+      
+      if (status === 400) {
+        // Bad request from n8n - pass through the error details
+        res.status(400).json({ 
+          error: responseData?.message || responseData?.error || "Invalid request data sent to n8n workflow.",
+          details: responseData
+        });
+      } else if (status === 404) {
         res.status(503).json({ 
           error: "Research service unavailable. Please ensure the n8n workflow is active." 
         });
-      } else if (error.response?.status === 401 || error.response?.status === 403) {
-        res.status(500).json({ 
-          error: "Authentication failed with research service. Please contact support." 
+      } else if (status === 401 || status === 403) {
+        res.status(401).json({ 
+          error: "Authentication failed with research service. Please check your N8N_API_KEY." 
         });
       } else {
         res.status(500).json({ 
-          error: "Failed to start research discovery. Please try again later." 
+          error: "Failed to start research discovery. Please try again later.",
+          details: responseData
         });
       }
     }
