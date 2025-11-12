@@ -279,7 +279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch {
           // If not valid JSON, manually parse the object-like string
           // Extract message and concepts from string like "{ message: ..., concepts: [...] }"
-          const messageMatch = n8nResponse.match(/message:\s*([^,}]+)/);
+          // Use lookahead to capture message until ", concepts:" appears
+          const messageMatch = n8nResponse.match(/message:\s*(.+?),\s*concepts:/);
           const conceptsMatch = n8nResponse.match(/concepts:\s*(\[.*?\])/);
           
           n8nResponse = {
