@@ -268,9 +268,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
       
-      // Get n8n response (already structured with message and data fields)
+      // Get n8n response
       const status = error.response?.status;
-      const responseData = error.response?.data;
+      let responseData = error.response?.data;
+      
+      // Parse responseData if it's a string
+      if (typeof responseData === 'string') {
+        try {
+          // Try to parse as JSON first
+          responseData = JSON.parse(responseData);
+        } catch {
+          // If not valid JSON, extract message from string format like "{ message: ... }"
+          const messageMatch = responseData.match(/message:\s*(.+?)\s*}/);
+          if (messageMatch) {
+            responseData = { message: messageMatch[1].trim() };
+          }
+        }
+      }
       
       if (status === 400) {
         // Bad request from n8n - pass through the response
