@@ -268,13 +268,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering research discovery:", error);
       
-      // Pass through n8n's response to frontend
       const status = error.response?.status || 500;
-      const n8nResponse = error.response?.data;
+      let n8nResponse = error.response?.data;
       
-      // Return n8n's response as-is to frontend
+      // Parse if n8n returns a string instead of JSON
+      if (typeof n8nResponse === 'string') {
+        try {
+          // Try parsing as valid JSON first
+          n8nResponse = JSON.parse(n8nResponse);
+        } catch {
+          // If not valid JSON, manually parse the object-like string
+          // Extract message and concepts from string like "{ message: ..., concepts: [...] }"
+          const messageMatch = n8nResponse.match(/message:\s*([^,}]+)/);
+          const conceptsMatch = n8nResponse.match(/concepts:\s*(\[.*?\])/);
+          
+          n8nResponse = {
+            message: messageMatch ? messageMatch[1].trim() : "Unknown error from n8n",
+            concepts: conceptsMatch ? JSON.parse(conceptsMatch[1]) : []
+          };
+        }
+      }
+      
+      // Return parsed n8n response to frontend
       res.status(status).json(n8nResponse || { 
-        message: "Failed to start research discovery. Please try again later." 
+        message: "Failed to start research discovery. Please try again later.",
+        concepts: []
       });
     }
   });
