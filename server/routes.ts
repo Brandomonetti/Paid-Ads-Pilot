@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { knowledgeBase } = req.body;
-      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-posts';
+      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research';
       const apiKey = process.env.N8N_API_KEY;
 
       if (!apiKey) {
@@ -233,6 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await axios.default.post(
         n8nWebhookUrl, 
         {
+          type: "creative",
           userId,
           knowledgeBase: {
             websiteUrl: knowledgeBase.websiteUrl,
@@ -284,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { knowledgeBase } = req.body;
-      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-customer';
+      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research';
       const apiKey = process.env.N8N_API_KEY;
 
       if (!apiKey) {
@@ -301,6 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await axios.default.post(
         n8nWebhookUrl, 
         {
+          type: "customer",
           userId,
           knowledgeBase: {
             websiteUrl: knowledgeBase.websiteUrl,
