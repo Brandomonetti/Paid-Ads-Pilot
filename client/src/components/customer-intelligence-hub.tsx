@@ -457,16 +457,6 @@ export default function CustomerIntelligenceHub() {
             AI-powered customer insights from across the web
           </p>
         </div>
-        <Button
-          onClick={() => discoverMutation.mutate()}
-          disabled={discoverMutation.isPending || !knowledgeBase}
-          size="lg"
-          className="gap-2"
-          data-testid="button-discover-insights"
-        >
-          <Play className="h-4 w-4" />
-          {discoverMutation.isPending ? "Discovering..." : "Discover"}
-        </Button>
       </div>
 
       {/* Tab Navigation */}

@@ -87,6 +87,33 @@ export function CreativeResearchCenter() {
     buttons: "all"
   });
 
+  // Fetch knowledge base data for discovery
+  const { data: knowledgeBase } = useQuery({
+    queryKey: ['/api/knowledge-base']
+  });
+
+  // Discover new insights mutation
+  const discoverMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/research/discover', { knowledgeBase });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Discovery started!",
+        description: "AI is now searching for customer insights based on your knowledge base.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to start research discovery";
+      toast({
+        title: "Discovery failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mock data for development visualization
   const mockConcepts: CreativeConcept[] = [
     // LATEST DISCOVERIES (Last 24 hours)
@@ -601,13 +628,27 @@ export function CreativeResearchCenter() {
         <TabsContent value="latest" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Latest Discoveries (Last 24 Hours)
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Fresh viral content discovered in the past 24 hours - trending right now
-              </p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Latest Discoveries (Last 24 Hours)
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Fresh viral content discovered in the past 24 hours - trending right now
+                  </p>
+                </div>
+                <Button
+                  onClick={() => discoverMutation.mutate()}
+                  disabled={discoverMutation.isPending || !knowledgeBase}
+                  size="lg"
+                  className="gap-2"
+                  data-testid="button-discover-insights"
+                >
+                  <Play className="h-4 w-4" />
+                  {discoverMutation.isPending ? "Discovering..." : "Discover"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {(() => {
