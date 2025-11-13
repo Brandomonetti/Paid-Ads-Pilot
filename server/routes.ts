@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { knowledgeBase } = req.body;
-      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/fetch-recent-article';
+      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-posts';
       const apiKey = process.env.N8N_API_KEY;
 
       if (!apiKey) {
