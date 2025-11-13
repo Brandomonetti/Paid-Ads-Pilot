@@ -437,15 +437,6 @@ export default function CustomerIntelligenceHub() {
             AI-powered customer insights from across the web
           </p>
         </div>
-        <Button
-          onClick={handleDiscoverClick}
-          size="lg"
-          className="gap-2"
-          data-testid="button-discover-customer-insights"
-        >
-          <Play className="h-4 w-4" />
-          Discover
-        </Button>
       </div>
 
       {/* Tab Navigation */}
@@ -469,13 +460,26 @@ export default function CustomerIntelligenceHub() {
         <TabsContent value="latest" className="space-y-4">
           {/* Header */}
           <div className="border-l-4 border-primary pl-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Latest Discoveries (Last 24 Hours)
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Fresh customer insights discovered in the past 24 hours - sorted by recency
-            </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Latest Discoveries (Last 24 Hours)
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Fresh customer insights discovered in the past 24 hours - sorted by recency
+                </p>
+              </div>
+              <Button
+                onClick={handleDiscoverClick}
+                size="lg"
+                className="gap-2"
+                data-testid="button-discover-customer-insights"
+              >
+                <Play className="h-4 w-4" />
+                Discover
+              </Button>
+            </div>
           </div>
 
           {/* Insights Grid */}
