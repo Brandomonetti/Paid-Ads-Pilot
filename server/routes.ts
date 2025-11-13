@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Customer Intelligence Hub - Research discovery endpoint
+  // Creative Research Center - Discovery endpoint
   app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -263,18 +263,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         success: true, 
-        message: "Research discovery initiated. AI is now searching for customer insights based on your brand." 
+        message: "Creative research discovery initiated. AI is now searching for viral content based on your brand." 
       });
     } catch (error: any) {
-      console.error("Error triggering research discovery:", error);
+      console.error("Error triggering creative research discovery:", error);
       
       const status = error.response?.status || 500;
       const n8nResponse = error.response?.data;
       
       // n8n returns JSON directly, pass it through to frontend
       res.status(status).json(n8nResponse || { 
-        message: "Failed to start research discovery. Please try again later.",
+        message: "Failed to start creative research discovery. Please try again later.",
         concepts: []
+      });
+    }
+  });
+
+  // Customer Intelligence Hub - Discovery endpoint
+  app.post("/api/customer-research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { knowledgeBase } = req.body;
+      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-customer';
+      const apiKey = process.env.N8N_API_KEY;
+
+      if (!apiKey) {
+        throw new Error("N8N_API_KEY not configured");
+      }
+
+      if (!knowledgeBase) {
+        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
+        return;
+      }
+
+      // Send event to n8n webhook with knowledge base concept data
+      const axios = await import('axios');
+      await axios.default.post(
+        n8nWebhookUrl, 
+        {
+          userId,
+          knowledgeBase: {
+            websiteUrl: knowledgeBase.websiteUrl,
+            brandVoice: knowledgeBase.brandVoice,
+            missionStatement: knowledgeBase.missionStatement,
+            brandValues: knowledgeBase.brandValues,
+            productLinks: knowledgeBase.productLinks,
+            pricingInfo: knowledgeBase.pricingInfo,
+            keyBenefits: knowledgeBase.keyBenefits,
+            usps: knowledgeBase.usps,
+            currentPersonas: knowledgeBase.currentPersonas,
+            demographics: knowledgeBase.demographics,
+            mainCompetitors: knowledgeBase.mainCompetitors,
+            instagramHandle: knowledgeBase.instagramHandle,
+            facebookPage: knowledgeBase.facebookPage,
+            tiktokHandle: knowledgeBase.tiktokHandle,
+            contentStyle: knowledgeBase.contentStyle,
+            salesTrends: knowledgeBase.salesTrends
+          },
+          timestamp: new Date().toISOString()
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        }
+      );
+
+      res.json({ 
+        success: true, 
+        message: "Customer research discovery initiated. AI is now searching for customer insights based on your brand." 
+      });
+    } catch (error: any) {
+      console.error("Error triggering customer research discovery:", error);
+      
+      const status = error.response?.status || 500;
+      const n8nResponse = error.response?.data;
+      
+      // n8n returns JSON directly, pass it through to frontend
+      res.status(status).json(n8nResponse || { 
+        message: "Failed to start customer research discovery. Please try again later.",
+        insights: []
       });
     }
   });

@@ -396,13 +396,33 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Coming soon handler for discover button
-  const handleDiscoverClick = () => {
-    toast({
-      title: "Coming soon",
-      description: "Customer research discovery feature is coming soon!",
-    });
-  };
+  // Fetch knowledge base data for discovery
+  const { data: knowledgeBase } = useQuery({
+    queryKey: ['/api/knowledge-base']
+  });
+
+  // Discover new customer insights mutation
+  const discoverMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/customer-research/discover', { knowledgeBase });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Discovery started!",
+        description: "AI is now searching for customer insights based on your knowledge base.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sources'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to start customer research discovery";
+      toast({
+        title: "Discovery failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter insights by search - use mock data if empty
   const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
@@ -471,13 +491,14 @@ export default function CustomerIntelligenceHub() {
                 </p>
               </div>
               <Button
-                onClick={handleDiscoverClick}
+                onClick={() => discoverMutation.mutate()}
+                disabled={discoverMutation.isPending || !knowledgeBase}
                 size="lg"
                 className="gap-2"
                 data-testid="button-discover-customer-insights"
               >
                 <Play className="h-4 w-4" />
-                Discover
+                {discoverMutation.isPending ? "Discovering..." : "Discover"}
               </Button>
             </div>
           </div>
@@ -507,9 +528,9 @@ export default function CustomerIntelligenceHub() {
                 <p className="text-muted-foreground mb-4">
                   Click "Discover New Insights" to start finding valuable customer intelligence
                 </p>
-                <Button onClick={handleDiscoverClick}>
+                <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                   <Play className="h-4 w-4 mr-2" />
-                  Start Discovery
+                  {discoverMutation.isPending ? "Discovering..." : "Start Discovery"}
                 </Button>
               </CardContent>
             </Card>
@@ -686,9 +707,9 @@ export default function CustomerIntelligenceHub() {
                     : "Click 'Generate Avatars' to synthesize your research into actionable customer personas."}
                 </p>
                 {insightsData.length === 0 && (
-                  <Button onClick={handleDiscoverClick}>
+                  <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                     <Play className="h-4 w-4 mr-2" />
-                    Discover Insights First
+                    {discoverMutation.isPending ? "Discovering..." : "Discover Insights First"}
                   </Button>
                 )}
               </CardContent>
