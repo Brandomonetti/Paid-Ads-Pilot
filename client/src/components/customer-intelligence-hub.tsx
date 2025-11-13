@@ -61,11 +61,6 @@ export default function CustomerIntelligenceHub() {
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState('all');
   
-  // Fetch knowledge base data for discovery
-  const { data: knowledgeBase } = useQuery({
-    queryKey: ['/api/knowledge-base']
-  });
-  
   // Library specific filters
   const [libraryCategory, setLibraryCategory] = useState('all');
   const [libraryPlatform, setLibraryPlatform] = useState('all');
@@ -401,28 +396,13 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Discover new insights mutation
-  const discoverMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest('POST', '/api/research/discover', { knowledgeBase });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Discovery started!",
-        description: "AI is now searching for customer insights based on your knowledge base.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sources'] });
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || "Failed to start research discovery";
-      toast({
-        title: "Discovery failed",
-        description: message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Coming soon handler for discover button
+  const handleDiscoverClick = () => {
+    toast({
+      title: "Coming soon",
+      description: "Customer research discovery feature is coming soon!",
+    });
+  };
 
   // Filter insights by search - use mock data if empty
   const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
@@ -457,6 +437,15 @@ export default function CustomerIntelligenceHub() {
             AI-powered customer insights from across the web
           </p>
         </div>
+        <Button
+          onClick={handleDiscoverClick}
+          size="lg"
+          className="gap-2"
+          data-testid="button-discover-customer-insights"
+        >
+          <Play className="h-4 w-4" />
+          Discover
+        </Button>
       </div>
 
       {/* Tab Navigation */}
@@ -514,7 +503,7 @@ export default function CustomerIntelligenceHub() {
                 <p className="text-muted-foreground mb-4">
                   Click "Discover New Insights" to start finding valuable customer intelligence
                 </p>
-                <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending}>
+                <Button onClick={handleDiscoverClick}>
                   <Play className="h-4 w-4 mr-2" />
                   Start Discovery
                 </Button>
@@ -693,7 +682,7 @@ export default function CustomerIntelligenceHub() {
                     : "Click 'Generate Avatars' to synthesize your research into actionable customer personas."}
                 </p>
                 {insightsData.length === 0 && (
-                  <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending}>
+                  <Button onClick={handleDiscoverClick}>
                     <Play className="h-4 w-4 mr-2" />
                     Discover Insights First
                   </Button>
