@@ -89,7 +89,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'reddit',
       sourceUrl: 'https://reddit.com/r/fitness/example',
-      confidence: 92
+      confidence: 92,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 3600000).toISOString()
     },
     {
       id: '2',
@@ -110,7 +112,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'youtube',
       sourceUrl: 'https://youtube.com/watch?v=example',
-      confidence: 88
+      confidence: 88,
+      status: 'approved',
+      discoveredAt: new Date(Date.now() - 7200000).toISOString()
     },
     {
       id: '3',
@@ -131,7 +135,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'amazon',
       sourceUrl: 'https://amazon.com/product/reviews/example',
-      confidence: 95
+      confidence: 95,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 1800000).toISOString()
     },
     {
       id: '4',
@@ -152,7 +158,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'instagram',
       sourceUrl: 'https://instagram.com/p/example',
-      confidence: 90
+      confidence: 90,
+      status: 'approved',
+      discoveredAt: new Date(Date.now() - 10800000).toISOString()
     },
     {
       id: '5',
@@ -173,7 +181,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'tiktok',
       sourceUrl: 'https://tiktok.com/@user/video/example',
-      confidence: 87
+      confidence: 87,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 5400000).toISOString()
     },
     {
       id: '6',
@@ -194,7 +204,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'facebook',
       sourceUrl: 'https://facebook.com/groups/fitness/posts/example',
-      confidence: 91
+      confidence: 91,
+      status: 'approved',
+      discoveredAt: new Date(Date.now() - 14400000).toISOString()
     }
   ];
 
@@ -424,24 +436,101 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Filter insights by search - use mock data if empty
-  const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
-  const filteredInsights = insightsData.filter((insight: any) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      insight.title?.toLowerCase().includes(query) ||
-      insight.rawQuote?.toLowerCase().includes(query) ||
-      insight.summary?.toLowerCase().includes(query)
-    );
+  // Approve insight mutation
+  const approveInsightMutation = useMutation({
+    mutationFn: async (insightId: string) => {
+      return await apiRequest('PATCH', `/api/insights/${insightId}/approve`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Insight approved!",
+        description: "This insight has been added to your Research Library.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to approve",
+        description: error.message || "Could not approve this insight",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Calculate category counts
+  // Reject insight mutation
+  const rejectInsightMutation = useMutation({
+    mutationFn: async (insightId: string) => {
+      return await apiRequest('PATCH', `/api/insights/${insightId}/reject`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Insight rejected",
+        description: "This insight has been removed from Latest Discoveries.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to reject",
+        description: error.message || "Could not reject this insight",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Filter insights by search - use mock data if empty
+  const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
+  
+  // Latest Discoveries: only show pending insights
+  const pendingInsights = insightsData.filter((insight: any) => insight.status === 'pending');
+  
+  // Apply search and time filter to pending insights
+  const filteredInsights = pendingInsights.filter((insight: any) => {
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        insight.title?.toLowerCase().includes(query) ||
+        insight.rawQuote?.toLowerCase().includes(query) ||
+        insight.summary?.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // Time filter (for Latest Discoveries)
+    if (timeFilter !== 'all' && insight.discoveredAt) {
+      const discoveryTime = new Date(insight.discoveredAt).getTime();
+      const now = Date.now();
+      const hourInMs = 3600000;
+      
+      switch (timeFilter) {
+        case '1h':
+          if (now - discoveryTime > hourInMs) return false;
+          break;
+        case '6h':
+          if (now - discoveryTime > 6 * hourInMs) return false;
+          break;
+        case '24h':
+          if (now - discoveryTime > 24 * hourInMs) return false;
+          break;
+        case '7d':
+          if (now - discoveryTime > 7 * 24 * hourInMs) return false;
+          break;
+      }
+    }
+    
+    return true;
+  });
+  
+  // Research Library: only show approved insights
+  const approvedInsights = insightsData.filter((insight: any) => insight.status === 'approved');
+
+  // Calculate category counts for approved insights (used in Research Library)
   const categoryCounts = {
-    'pain-point': insightsData.filter((i: any) => i.category === 'pain-point').length,
-    'desire': insightsData.filter((i: any) => i.category === 'desire').length,
-    'objection': insightsData.filter((i: any) => i.category === 'objection').length,
-    'trigger': insightsData.filter((i: any) => i.category === 'trigger').length,
+    'pain-point': approvedInsights.filter((i: any) => i.category === 'pain-point').length,
+    'desire': approvedInsights.filter((i: any) => i.category === 'desire').length,
+    'objection': approvedInsights.filter((i: any) => i.category === 'objection').length,
+    'trigger': approvedInsights.filter((i: any) => i.category === 'trigger').length,
   };
 
   return (
@@ -477,26 +566,40 @@ export default function CustomerIntelligenceHub() {
         <TabsContent value="latest" className="space-y-4">
           {/* Header */}
           <div className="border-l-4 border-primary pl-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex-1">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Latest Discoveries (Last 24 Hours)
+                  Latest Discoveries
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Fresh customer insights discovered in the past 24 hours - sorted by recency
+                  Review and approve insights to add them to your Research Library
                 </p>
               </div>
-              <Button
-                onClick={() => discoverMutation.mutate()}
-                disabled={discoverMutation.isPending || !knowledgeBase}
-                size="lg"
-                className="gap-2"
-                data-testid="button-discover-customer-insights"
-              >
-                <Play className="h-4 w-4" />
-                {discoverMutation.isPending ? "Discovering..." : "Discover"}
-              </Button>
+              <div className="flex gap-2 items-center">
+                <Select value={timeFilter} onValueChange={setTimeFilter}>
+                  <SelectTrigger className="w-[140px]" data-testid="select-time-filter">
+                    <SelectValue placeholder="Time range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="1h">Last Hour</SelectItem>
+                    <SelectItem value="6h">Last 6 Hours</SelectItem>
+                    <SelectItem value="24h">Last 24 Hours</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={() => discoverMutation.mutate()}
+                  disabled={discoverMutation.isPending || !knowledgeBase}
+                  size="lg"
+                  className="gap-2"
+                  data-testid="button-discover-customer-insights"
+                >
+                  <Play className="h-4 w-4" />
+                  {discoverMutation.isPending ? "Discovering..." : "Discover"}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -565,7 +668,7 @@ export default function CustomerIntelligenceHub() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {!isExpanded && (
-                        <div>
+                        <div className="space-y-3">
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {insight.summary}
                           </p>
@@ -578,6 +681,32 @@ export default function CustomerIntelligenceHub() {
                           >
                             Read More →
                           </Button>
+                          
+                          {/* Approval Buttons */}
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => approveInsightMutation.mutate(insight.id)}
+                              disabled={approveInsightMutation.isPending}
+                              data-testid={`button-approve-${insight.id}`}
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => rejectInsightMutation.mutate(insight.id)}
+                              disabled={rejectInsightMutation.isPending}
+                              data-testid={`button-reject-${insight.id}`}
+                            >
+                              <X className="h-3 w-3" />
+                              Reject
+                            </Button>
+                          </div>
                         </div>
                       )}
                       
@@ -637,6 +766,32 @@ export default function CustomerIntelligenceHub() {
                               Collapse
                             </Button>
                           </div>
+                          
+                          {/* Approval Buttons */}
+                          <div className="flex gap-2 pt-3 border-t">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => approveInsightMutation.mutate(insight.id)}
+                              disabled={approveInsightMutation.isPending}
+                              data-testid={`button-approve-expanded-${insight.id}`}
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Approve & Add to Library
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => rejectInsightMutation.mutate(insight.id)}
+                              disabled={rejectInsightMutation.isPending}
+                              data-testid={`button-reject-expanded-${insight.id}`}
+                            >
+                              <X className="h-3 w-3" />
+                              Reject
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </CardContent>
@@ -659,12 +814,12 @@ export default function CustomerIntelligenceHub() {
                     Customer Personas
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    AI-synthesized target avatars with pain points and angle propositions
+                    AI-synthesized target avatars generated from your approved research insights
                   </CardDescription>
                 </div>
                 <Button
                   onClick={() => generateAvatarsMutation.mutate()}
-                  disabled={generateAvatarsMutation.isPending || insightsData.length === 0}
+                  disabled={generateAvatarsMutation.isPending || approvedInsights.length === 0}
                   className="gap-2"
                   data-testid="button-generate-avatars"
                 >
@@ -699,11 +854,11 @@ export default function CustomerIntelligenceHub() {
                 <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No target avatars yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {insightsData.length === 0 
-                    ? "Discover customer insights first, then generate target avatars to identify who to target and with what pain points."
-                    : "Click 'Generate Avatars' to synthesize your research into actionable customer personas."}
+                  {approvedInsights.length === 0 
+                    ? "Approve customer insights from Latest Discoveries first, then generate target avatars based on your approved research."
+                    : "Click 'Generate Avatars' to synthesize your approved research into actionable customer personas."}
                 </p>
-                {insightsData.length === 0 && (
+                {approvedInsights.length === 0 && pendingInsights.length === 0 && (
                   <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                     <Play className="h-4 w-4 mr-2" />
                     {discoverMutation.isPending ? "Discovering..." : "Discover Insights First"}
@@ -834,8 +989,8 @@ export default function CustomerIntelligenceHub() {
                     <Brain className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{insightsData.length}</p>
-                    <p className="text-xs text-muted-foreground">Total Insights</p>
+                    <p className="text-2xl font-bold">{approvedInsights.length}</p>
+                    <p className="text-xs text-muted-foreground">Approved Insights</p>
                   </div>
                 </div>
               </CardContent>
@@ -983,7 +1138,7 @@ export default function CustomerIntelligenceHub() {
 
               {/* Results Count */}
               <div className="text-sm text-muted-foreground">
-                Showing {insightsData.filter((insight: any) => {
+                Showing {approvedInsights.filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
                   if (librarySearch) {
@@ -995,7 +1150,7 @@ export default function CustomerIntelligenceHub() {
                     );
                   }
                   return true;
-                }).length} of {insightsData.length} insights
+                }).length} of {approvedInsights.length} approved insights
               </div>
             </CardContent>
           </Card>
@@ -1003,7 +1158,7 @@ export default function CustomerIntelligenceHub() {
           {/* Library Content */}
           {libraryViewMode === 'grid' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {insightsData
+              {approvedInsights
                 .filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
@@ -1097,7 +1252,7 @@ export default function CustomerIntelligenceHub() {
 
           {libraryViewMode === 'list' && (
             <div className="space-y-3">
-              {insightsData
+              {approvedInsights
                 .filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
@@ -1152,14 +1307,27 @@ export default function CustomerIntelligenceHub() {
             </div>
           )}
 
-          {insightsData.length === 0 && (
+          {approvedInsights.length === 0 && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No Research Yet</h3>
-                <p className="text-muted-foreground">
-                  Start discovering insights to build your research library
+                <h3 className="text-lg font-semibold mb-2">No Approved Research Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  {pendingInsights.length > 0 
+                    ? `You have ${pendingInsights.length} pending insight${pendingInsights.length !== 1 ? 's' : ''} in Latest Discoveries waiting for approval.`
+                    : "Start discovering insights, then approve them to build your research library."}
                 </p>
+                {pendingInsights.length === 0 && (
+                  <Button onClick={() => {setActiveTab('latest'); discoverMutation.mutate();}} disabled={discoverMutation.isPending || !knowledgeBase}>
+                    <Play className="h-4 w-4 mr-2" />
+                    {discoverMutation.isPending ? "Discovering..." : "Discover Insights"}
+                  </Button>
+                )}
+                {pendingInsights.length > 0 && (
+                  <Button onClick={() => setActiveTab('latest')}>
+                    Review Pending Insights
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
