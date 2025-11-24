@@ -158,21 +158,21 @@ export function AppSidebar() {
               {otherAgents.map((agent) => (
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
-                    <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
+                    <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(/\s+/g, '-')}`} className="min-h-[72px] py-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 shrink-0 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
                         <agent.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" />
                       </div>
-                      <div className="flex flex-col flex-1">
-                        <div className="flex items-center gap-2">
-                          <span>{agent.title}</span>
+                      <div className="flex flex-col flex-1 gap-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{agent.title}</span>
                           {agent.locked && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 shrink-0">
                               <Lock className="h-3 w-3 mr-1" />
                               Locked
                             </Badge>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">{agent.description}</span>
+                        <span className="text-xs text-muted-foreground leading-tight">{agent.description}</span>
                       </div>
                     </Link>
                   </SidebarMenuButton>
