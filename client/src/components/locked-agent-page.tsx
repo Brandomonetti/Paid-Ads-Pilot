@@ -39,27 +39,9 @@ export function LockedAgentPage({ agentName, description, icon: Icon }: LockedAg
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-6 space-y-3">
-              <h3 className="font-semibold text-lg">What to expect:</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>AI-powered content generation based on your research insights</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>Automated workflows integrated with your knowledge base</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>Real-time collaboration and iteration capabilities</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>Export and share functionality for seamless team workflows</span>
-                </li>
-              </ul>
-            </div>
+            <p className="text-sm text-muted-foreground text-right">
+              Generate world-class creative briefs and ad scripts—automatically powered by your brand insights, customer data, and performance learnings.
+            </p>
 
             <div className="pt-4">
               <p className="text-sm text-muted-foreground">
