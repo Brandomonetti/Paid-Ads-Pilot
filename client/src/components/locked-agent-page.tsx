@@ -34,20 +34,14 @@ export function LockedAgentPage({ agentName, description, icon: Icon }: LockedAg
               <Sparkles className="h-5 w-5 text-yellow-500" />
               Coming Soon
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-left">
               This agent is currently under development and will be available soon.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-right">
-              Generate world-class creative briefs and ad scripts—automatically powered by your brand insights, customer data, and performance learnings.
+          <CardContent>
+            <p className="text-sm text-muted-foreground text-center">
+              Generate world-class creative briefs and ad scripts—automatically powered by your brand insights, customer data, and performance learnings. In the meantime, continue building your knowledge base and discovering insights with the Research Agent.
             </p>
-
-            <div className="pt-4">
-              <p className="text-sm text-muted-foreground">
-                In the meantime, continue building your knowledge base and discovering insights with the Research Agent.
-              </p>
-            </div>
           </CardContent>
         </Card>
 
