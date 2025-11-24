@@ -461,15 +461,12 @@ export default function CustomerIntelligenceHub() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
             Latest Discoveries ({filteredInsights.length})
           </TabsTrigger>
           <TabsTrigger value="library" data-testid="tab-research-library">
             Research Library
-          </TabsTrigger>
-          <TabsTrigger value="sources" data-testid="tab-source-tracker">
-            Source Tracker ({sourcesData.length})
           </TabsTrigger>
           <TabsTrigger value="avatars" data-testid="tab-target-avatars">
             Target Avatars ({avatarsData.length})
@@ -1165,80 +1162,6 @@ export default function CustomerIntelligenceHub() {
                 </p>
               </CardContent>
             </Card>
-          )}
-        </TabsContent>
-
-        {/* Tab 3: Source Tracker */}
-        <TabsContent value="sources" className="space-y-4">
-          {isLoadingSources && (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-full mt-2" />
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {!isLoadingSources && sourcesData.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No sources discovered yet</h3>
-                <p className="text-muted-foreground">
-                  Sources will appear here as the AI discovers valuable platforms
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {!isLoadingSources && sourcesData.length > 0 && (
-            <div className="space-y-4">
-              {sourcesData.map((source: any) => (
-                <Card key={source.id} className="hover-elevate" data-testid={`card-source-${source.id}`}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={`${platformConfig[source.platform]?.color || 'bg-gray-500'} text-white`}>
-                            {source.platform}
-                          </Badge>
-                          <Badge variant="outline">{source.sourceType}</Badge>
-                          <Badge variant="secondary">{source.insightsDiscovered} insights</Badge>
-                        </div>
-                        <CardTitle className="text-base">{source.title}</CardTitle>
-                        {source.description && (
-                          <CardDescription className="mt-2">{source.description}</CardDescription>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Last checked: {new Date(source.lastChecked).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      asChild
-                      className="gap-2"
-                      data-testid={`button-view-source-url-${source.id}`}
-                    >
-                      <a href={source.url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3" />
-                        Visit Source
-                      </a>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           )}
         </TabsContent>
       </Tabs>
