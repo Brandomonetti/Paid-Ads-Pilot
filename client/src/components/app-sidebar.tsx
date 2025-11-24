@@ -118,7 +118,7 @@ export function AppSidebar() {
             </Button>
           </div>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-3">
+            <SidebarMenu className="space-y-5">
               {/* Research Agent with collapsible subsections */}
               <Collapsible open={isResearchOpen} onOpenChange={setIsResearchOpen} className="group/collapsible">
                 <SidebarMenuItem>
@@ -135,7 +135,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <SidebarMenuSub>
+                    <SidebarMenuSub className="mb-3">
                       {researchSubsections.map((subsection) => {
                         const Icon = subsection.icon
                         return (
