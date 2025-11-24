@@ -126,6 +126,10 @@ export function CreativeResearchCenter() {
   // Approve concept mutation
   const approveConceptMutation = useMutation({
     mutationFn: async (conceptId: string) => {
+      // Guard: Prevent backend calls for mock concepts
+      if (isMockMode) {
+        throw new Error('MOCK_MODE');
+      }
       return await apiRequest('PATCH', `/api/concepts/${conceptId}/approve`, {});
     },
     onSuccess: () => {
@@ -136,6 +140,15 @@ export function CreativeResearchCenter() {
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
     },
     onError: (error: any) => {
+      // Gracefully handle mock mode errors
+      if (error.message === 'MOCK_MODE') {
+        toast({
+          title: "Demo Mode",
+          description: "Run Discovery to enable approval workflow for real concepts.",
+          variant: "default",
+        });
+        return;
+      }
       const message = error.response?.data?.message || "Failed to approve creative";
       toast({
         title: "Approval failed",
@@ -148,6 +161,10 @@ export function CreativeResearchCenter() {
   // Reject concept mutation
   const rejectConceptMutation = useMutation({
     mutationFn: async (conceptId: string) => {
+      // Guard: Prevent backend calls for mock concepts
+      if (isMockMode) {
+        throw new Error('MOCK_MODE');
+      }
       return await apiRequest('PATCH', `/api/concepts/${conceptId}/reject`, {});
     },
     onSuccess: () => {
@@ -158,6 +175,15 @@ export function CreativeResearchCenter() {
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
     },
     onError: (error: any) => {
+      // Gracefully handle mock mode errors
+      if (error.message === 'MOCK_MODE') {
+        toast({
+          title: "Demo Mode",
+          description: "Run Discovery to enable approval workflow for real concepts.",
+          variant: "default",
+        });
+        return;
+      }
       const message = error.response?.data?.message || "Failed to reject creative";
       toast({
         title: "Rejection failed",
@@ -560,7 +586,9 @@ export function CreativeResearchCenter() {
     queryKey: ['/api/concepts'],
   });
 
-  const conceptsData = (concepts as CreativeConcept[]).length > 0 ? concepts : mockConcepts;
+  // Detect if we're using mock data (no real concepts from API yet)
+  const isMockMode = (concepts as CreativeConcept[]).length === 0;
+  const conceptsData = isMockMode ? mockConcepts : (concepts as CreativeConcept[]);
 
   // Search for competitor/brand content
   const searchMutation = useMutation({
@@ -744,6 +772,23 @@ export function CreativeResearchCenter() {
 
         {/* Latest Discoveries Tab */}
         <TabsContent value="latest" className="space-y-4">
+          {/* Demo Mode Banner */}
+          {isMockMode && (
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Demo Mode Active
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    You're viewing sample concepts for demonstration. Click the <strong>Discover</strong> button below to fetch real viral creatives based on your knowledge base and enable the approval workflow.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Header Section with Time Filter and Discover Button */}
           <Card>
             <CardHeader className="border-b">
@@ -883,7 +928,7 @@ export function CreativeResearchCenter() {
                               variant="outline"
                               className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
                               onClick={() => approveConceptMutation.mutate(concept.id)}
-                              disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                              disabled={isMockMode || approveConceptMutation.isPending || rejectConceptMutation.isPending}
                               data-testid={`button-approve-concept-${concept.id}`}
                             >
                               <CheckCircle2 className="h-4 w-4" />
@@ -894,7 +939,7 @@ export function CreativeResearchCenter() {
                               variant="outline"
                               className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
                               onClick={() => rejectConceptMutation.mutate(concept.id)}
-                              disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                              disabled={isMockMode || approveConceptMutation.isPending || rejectConceptMutation.isPending}
                               data-testid={`button-reject-concept-${concept.id}`}
                             >
                               <XCircle className="h-4 w-4" />
