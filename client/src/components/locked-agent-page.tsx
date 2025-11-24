@@ -30,7 +30,7 @@ export function LockedAgentPage({ agentName, description, icon: Icon }: LockedAg
 
         <Card className="max-w-2xl w-full mt-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center justify-center gap-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
               Coming Soon
             </CardTitle>
