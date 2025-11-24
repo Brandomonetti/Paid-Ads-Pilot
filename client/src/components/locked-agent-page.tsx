@@ -40,7 +40,7 @@ export function LockedAgentPage({ agentName, description, icon: Icon }: LockedAg
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center">
-              Generate world-class creative briefs and ad scripts—automatically powered by your brand insights, customer data, and performance learnings. In the meantime, continue building your knowledge base and discovering insights with the Research Agent.
+              Turn raw performance into crystal-clear insights, creative learnings, and a weekly roadmap for scaling.
             </p>
           </CardContent>
         </Card>
