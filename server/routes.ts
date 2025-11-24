@@ -201,6 +201,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve insight endpoint
+  app.patch("/api/insights/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify the insight belongs to this user before updating
+      const existingInsight = await storage.getInsight(id);
+      if (!existingInsight || existingInsight.userId !== userId) {
+        res.status(404).json({ error: "Insight not found" });
+        return;
+      }
+      
+      // Update insight status to approved
+      const updatedInsight = await storage.updateInsight(id, { status: "approved" });
+      
+      res.json({ success: true, insight: updatedInsight });
+    } catch (error) {
+      console.error("Error approving insight:", error);
+      res.status(500).json({ error: "Failed to approve insight" });
+    }
+  });
+
+  // Reject insight endpoint
+  app.patch("/api/insights/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify the insight belongs to this user before updating
+      const existingInsight = await storage.getInsight(id);
+      if (!existingInsight || existingInsight.userId !== userId) {
+        res.status(404).json({ error: "Insight not found" });
+        return;
+      }
+      
+      // Update insight status to rejected
+      const updatedInsight = await storage.updateInsight(id, { status: "rejected" });
+      
+      res.json({ success: true, insight: updatedInsight });
+    } catch (error) {
+      console.error("Error rejecting insight:", error);
+      res.status(500).json({ error: "Failed to reject insight" });
+    }
+  });
+
   // Customer Intelligence Hub - Sources endpoints (stub)
   app.get("/api/sources", isAuthenticated, async (req: any, res) => {
     try {
