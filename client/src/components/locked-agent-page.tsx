@@ -34,7 +34,7 @@ export function LockedAgentPage({ agentName, description, icon: Icon }: LockedAg
               <Sparkles className="h-5 w-5 text-yellow-500" />
               Coming Soon
             </CardTitle>
-            <CardDescription className="text-left">
+            <CardDescription>
               This agent is currently under development and will be available soon.
             </CardDescription>
           </CardHeader>
