@@ -411,11 +411,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Performance Overview */}
-      <div>
-        <PerformanceChart />
-      </div>
-
       {/* Agent Results Modal */}
       <AgentModal
         open={modalOpen}
