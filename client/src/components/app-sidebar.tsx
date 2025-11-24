@@ -1,4 +1,4 @@
-import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb, Database, Users, Sparkles, ChevronRight } from "lucide-react"
+import { Brain, BarChart3, FileText, Settings, Plus, Zap, Lightbulb, Database, Users, Sparkles, ChevronRight, Lock } from "lucide-react"
 import logoPath from "@assets/b52CH3jEBgKI03ajauLebDVQ3o_1758796736572.webp"
 import { Link, useLocation } from "wouter"
 import { useState } from "react"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -39,22 +40,18 @@ const researchSubsections = [
 
 const otherAgents = [
   {
-    title: "Script Agent", 
-    url: "/script",
-    icon: FileText,
-    description: "Create UGC scripts"
-  },
-  {
     title: "Creative Brief Agent",
     url: "/creative-brief", 
     icon: Lightbulb,
-    description: "Generate creative briefs"
+    description: "Generate briefs & scripts",
+    locked: true
   },
   {
     title: "Performance Agent",
     url: "/performance", 
     icon: BarChart3,
-    description: "Analyze ad performance"
+    description: "Analyze ad performance",
+    locked: true
   },
 ]
 
@@ -161,12 +158,20 @@ export function AppSidebar() {
               {otherAgents.map((agent) => (
                 <SidebarMenuItem key={agent.title}>
                   <SidebarMenuButton asChild isActive={location === agent.url}>
-                    <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(' ', '-')}`}>
+                    <Link href={agent.url} data-testid={`link-agent-${agent.title.toLowerCase().replace(/\s+/g, '-')}`}>
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9">
                         <agent.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" />
                       </div>
-                      <div className="flex flex-col">
-                        <span>{agent.title}</span>
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2">
+                          <span>{agent.title}</span>
+                          {agent.locked && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Locked
+                            </Badge>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground">{agent.description}</span>
                       </div>
                     </Link>
