@@ -247,6 +247,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve concept endpoint
+  app.patch("/api/concepts/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify the concept belongs to this user before updating
+      const existingConcept = await storage.getConcept(id);
+      if (!existingConcept || existingConcept.userId !== userId) {
+        res.status(404).json({ error: "Concept not found" });
+        return;
+      }
+      
+      // Update concept status to approved
+      const updatedConcept = await storage.updateConcept(id, userId, { status: "approved" });
+      
+      res.json({ success: true, concept: updatedConcept });
+    } catch (error) {
+      console.error("Error approving concept:", error);
+      res.status(500).json({ error: "Failed to approve concept" });
+    }
+  });
+
+  // Reject concept endpoint
+  app.patch("/api/concepts/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify the concept belongs to this user before updating
+      const existingConcept = await storage.getConcept(id);
+      if (!existingConcept || existingConcept.userId !== userId) {
+        res.status(404).json({ error: "Concept not found" });
+        return;
+      }
+      
+      // Update concept status to rejected
+      const updatedConcept = await storage.updateConcept(id, userId, { status: "rejected" });
+      
+      res.json({ success: true, concept: updatedConcept });
+    } catch (error) {
+      console.error("Error rejecting concept:", error);
+      res.status(500).json({ error: "Failed to reject concept" });
+    }
+  });
+
   // Customer Intelligence Hub - Sources endpoints (stub)
   app.get("/api/sources", isAuthenticated, async (req: any, res) => {
     try {

@@ -26,7 +26,11 @@ import {
   ExternalLink,
   Download,
   Bookmark,
-  BarChart3
+  BarChart3,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Database
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +60,9 @@ interface CreativeConcept {
   shares?: number;
   views?: number;
   engagementRate?: number;
+  status?: 'pending' | 'approved' | 'rejected' | 'discovered' | 'tested' | 'proven';
   createdAt?: string;
+  discoveredAt?: string;
 }
 
 export function CreativeResearchCenter() {
@@ -65,6 +71,8 @@ export function CreativeResearchCenter() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'page'>('brand');
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [librarySearch, setLibrarySearch] = useState("");
   
   const [filters, setFilters] = useState({
     platform: "all",
@@ -100,9 +108,10 @@ export function CreativeResearchCenter() {
     onSuccess: () => {
       toast({
         title: "Discovery started!",
-        description: "AI is now searching for customer insights based on your knowledge base.",
+        description: "AI is now searching for viral creative concepts based on your brand.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
+      setActiveTab('latest'); // Switch to Latest Discoveries tab
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to start research discovery";
@@ -114,9 +123,53 @@ export function CreativeResearchCenter() {
     },
   });
 
+  // Approve concept mutation
+  const approveConceptMutation = useMutation({
+    mutationFn: async (conceptId: string) => {
+      return await apiRequest('PATCH', `/api/concepts/${conceptId}/approve`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Creative approved!",
+        description: "This creative has been added to your Creative Library.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to approve creative";
+      toast({
+        title: "Approval failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reject concept mutation
+  const rejectConceptMutation = useMutation({
+    mutationFn: async (conceptId: string) => {
+      return await apiRequest('PATCH', `/api/concepts/${conceptId}/reject`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Creative rejected",
+        description: "This creative has been removed from Latest Discoveries.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to reject creative";
+      toast({
+        title: "Rejection failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mock data for development visualization
   const mockConcepts: CreativeConcept[] = [
-    // LATEST DISCOVERIES (Last 24 hours)
+    // LATEST DISCOVERIES (Last 24 hours) - PENDING
     {
       id: 'c-latest-1',
       platform: 'tiktok',
@@ -138,7 +191,9 @@ export function CreativeResearchCenter() {
       shares: 45000,
       views: 6800000,
       engagementRate: 0.19,
-      createdAt: new Date(Date.now() - 3 * 3600000).toISOString() // 3 hours ago
+      status: 'pending',
+      createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), // 3 hours ago
+      discoveredAt: new Date(Date.now() - 3 * 3600000).toISOString()
     },
     {
       id: 'c-latest-2',
@@ -161,7 +216,9 @@ export function CreativeResearchCenter() {
       shares: 34100,
       views: 4500000,
       engagementRate: 0.21,
-      createdAt: new Date(Date.now() - 6 * 3600000).toISOString() // 6 hours ago
+      status: 'pending',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(), // 6 hours ago
+      discoveredAt: new Date(Date.now() - 6 * 3600000).toISOString()
     },
     {
       id: 'c-latest-3',
@@ -184,10 +241,13 @@ export function CreativeResearchCenter() {
       shares: 67800,
       views: 1200000,
       engagementRate: 0.20,
-      createdAt: new Date(Date.now() - 10 * 3600000).toISOString() // 10 hours ago
+      status: 'pending',
+      createdAt: new Date(Date.now() - 10 * 3600000).toISOString(), // 10 hours ago
+      discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString()
     },
+    // APPROVED - Shows in Creative Library
     {
-      id: 'c-latest-4',
+      id: 'c-approved-1',
       platform: 'tiktok',
       title: 'Jump-Cut Energy: "Day in My Life" Montage',
       description: 'Fast-paced day-in-life showing person crushing tasks with visible energy. Quick cuts, upbeat music, timestamps showing packed schedule. Caption: "This used to be impossible for me". Aspirational yet achievable.',
@@ -207,7 +267,9 @@ export function CreativeResearchCenter() {
       shares: 28300,
       views: 3900000,
       engagementRate: 0.20,
-      createdAt: new Date(Date.now() - 15 * 3600000).toISOString() // 15 hours ago
+      status: 'approved',
+      createdAt: new Date(Date.now() - 15 * 3600000).toISOString(), // 15 hours ago
+      discoveredAt: new Date(Date.now() - 30 * 3600000).toISOString() // Discovered 30 hours ago
     },
     {
       id: 'c-latest-5',
@@ -230,7 +292,9 @@ export function CreativeResearchCenter() {
       shares: 8900,
       views: 890000,
       engagementRate: 0.28,
-      createdAt: new Date(Date.now() - 20 * 3600000).toISOString() // 20 hours ago
+      status: 'pending',
+      createdAt: new Date(Date.now() - 20 * 3600000).toISOString(), // 20 hours ago
+      discoveredAt: new Date(Date.now() - 20 * 3600000).toISOString()
     },
     {
       id: 'c-latest-6',
@@ -253,7 +317,9 @@ export function CreativeResearchCenter() {
       shares: 19200,
       views: 2800000,
       engagementRate: 0.22,
-      createdAt: new Date(Date.now() - 22 * 3600000).toISOString() // 22 hours ago
+      status: 'pending',
+      createdAt: new Date(Date.now() - 22 * 3600000).toISOString(), // 22 hours ago
+      discoveredAt: new Date(Date.now() - 22 * 3600000).toISOString()
     },
 
     // OLDER CONCEPTS (7+ days ago for Curated tab)
@@ -563,6 +629,61 @@ export function CreativeResearchCenter() {
       return 0;
     });
 
+  // Filter concepts by status (strict filtering - only explicit status values)
+  const pendingConcepts = conceptsData.filter(c => c.status === 'pending');
+  const approvedConcepts = conceptsData.filter(c => c.status === 'approved');
+
+  // Filter pending concepts by time
+  const getTimeFilteredConcepts = () => {
+    const now = Date.now();
+    return pendingConcepts.filter(c => {
+      if (timeFilter === 'all') return true;
+      const discoveredTime = new Date(c.discoveredAt || c.createdAt || 0).getTime();
+      const hoursDiff = (now - discoveredTime) / (1000 * 60 * 60);
+      
+      if (timeFilter === '24h') return hoursDiff <= 24;
+      if (timeFilter === '7d') return hoursDiff <= 168;
+      if (timeFilter === '30d') return hoursDiff <= 720;
+      if (timeFilter === '90d') return hoursDiff <= 2160;
+      return true;
+    });
+  };
+
+  // Filter approved concepts by search query
+  const getLibraryFilteredConcepts = () => {
+    return approvedConcepts.filter(c => {
+      if (!librarySearch) return true;
+      const query = librarySearch.toLowerCase();
+      return (
+        c.title?.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query) ||
+        c.brandName?.toLowerCase().includes(query) ||
+        c.hooks?.some(hook => hook.toLowerCase().includes(query))
+      );
+    }).filter((concept) => {
+      if (filters.platform !== "all" && concept.platform !== filters.platform) return false;
+      if (filters.engagement !== "all") {
+        const rate = Number(concept.engagementRate) || 0;
+        if (filters.engagement === "high" && rate <= 10) return false;
+        if (filters.engagement === "medium" && (rate <= 5 || rate > 10)) return false;
+        if (filters.engagement === "low" && rate > 5) return false;
+      }
+      if (filters.format !== "all" && concept.format !== filters.format) return false;
+      return true;
+    }).sort((a, b) => {
+      if (filters.sortBy === "engagement") {
+        return (b.engagementScore || 0) - (a.engagementScore || 0);
+      }
+      if (filters.sortBy === "likes") {
+        return (b.likes || 0) - (a.likes || 0);
+      }
+      if (filters.sortBy === "recent") {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      return 0;
+    });
+  };
+
   const toggleSave = (conceptId: string) => {
     const newSaved = new Set(savedConcepts);
     if (newSaved.has(conceptId)) {
@@ -612,62 +733,79 @@ export function CreativeResearchCenter() {
             Explore Creatives
           </TabsTrigger>
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Latest Discoveries ({conceptsData.filter(c => {
-              const hoursAgo = (Date.now() - new Date(c.createdAt || 0).getTime()) / (1000 * 60 * 60);
-              return hoursAgo <= 24;
-            }).length})
+            <Clock className="h-4 w-4 mr-2" />
+            Latest Discoveries ({pendingConcepts.length})
           </TabsTrigger>
-          <TabsTrigger value="curated" data-testid="tab-curated-creatives">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Curated Creatives ({filteredConcepts.length})
+          <TabsTrigger value="curated" data-testid="tab-creative-library">
+            <Database className="h-4 w-4 mr-2" />
+            Creative Library ({approvedConcepts.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* Latest Discoveries Tab (24h) */}
+        {/* Latest Discoveries Tab */}
         <TabsContent value="latest" className="space-y-4">
+          {/* Header Section with Time Filter and Discover Button */}
           <Card>
-            <CardHeader>
+            <CardHeader className="border-b">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Latest Discoveries (Last 24 Hours)
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Latest Discoveries
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Fresh viral content discovered in the past 24 hours - trending right now
+                    Review and approve creatives to add them to your Creative Library
                   </p>
                 </div>
-                <Button
-                  onClick={() => discoverMutation.mutate()}
-                  disabled={discoverMutation.isPending || !knowledgeBase}
-                  size="lg"
-                  className="gap-2"
-                  data-testid="button-discover-insights"
-                >
-                  <Play className="h-4 w-4" />
-                  {discoverMutation.isPending ? "Discovering..." : "Discover"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Select value={timeFilter} onValueChange={setTimeFilter}>
+                    <SelectTrigger className="w-[150px]" data-testid="select-time-filter">
+                      <SelectValue placeholder="Time Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="24h">Last 24 Hours</SelectItem>
+                      <SelectItem value="7d">Last 7 Days</SelectItem>
+                      <SelectItem value="30d">Last 30 Days</SelectItem>
+                      <SelectItem value="90d">Last 90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => discoverMutation.mutate()}
+                    disabled={discoverMutation.isPending || !knowledgeBase}
+                    size="default"
+                    className="gap-2"
+                    data-testid="button-discover-creatives"
+                  >
+                    <Play className="h-4 w-4" />
+                    {discoverMutation.isPending ? "Discovering..." : "Discover"}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               {(() => {
-                const latestConcepts = conceptsData.filter(c => {
-                  const hoursAgo = (Date.now() - new Date(c.createdAt || 0).getTime()) / (1000 * 60 * 60);
-                  return hoursAgo <= 24;
-                });
+                const filteredPendingConcepts = getTimeFilteredConcepts();
 
-                return latestConcepts.length === 0 ? (
+                return filteredPendingConcepts.length === 0 ? (
                   <div className="py-12 text-center">
-                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="font-medium mb-2">No New Discoveries</h3>
-                    <p className="text-sm text-muted-foreground">
-                      No new viral content has been discovered in the last 24 hours. Check back soon!
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="font-medium mb-2">No Pending Discoveries</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {pendingConcepts.length > 0 
+                        ? "No discoveries match the selected time filter. Try selecting a different time range."
+                        : "No new creatives pending approval. Click Discover to find viral content."}
                     </p>
+                    {pendingConcepts.length === 0 && (
+                      <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
+                        <Play className="h-4 w-4 mr-2" />
+                        {discoverMutation.isPending ? "Discovering..." : "Discover Creatives"}
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {latestConcepts.map((concept) => (
+                    {filteredPendingConcepts.map((concept) => (
                       <Card 
                         key={concept.id}
                         className="hover-elevate overflow-hidden"
@@ -738,29 +876,29 @@ export function CreativeResearchCenter() {
                             )}
                           </div>
 
-                          {/* Actions */}
+                          {/* Approval Actions */}
                           <div className="flex gap-2 pt-2">
-                            {concept.postUrl && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                asChild
-                                className="flex-1"
-                                data-testid={`button-latest-view-${concept.id}`}
-                              >
-                                <a href={concept.postUrl} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
                             <Button
                               size="sm"
-                              variant={savedConcepts.has(concept.id) ? 'default' : 'outline'}
-                              onClick={() => toggleSave(concept.id)}
-                              className="flex-1"
-                              data-testid={`button-latest-save-${concept.id}`}
+                              variant="outline"
+                              className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+                              onClick={() => approveConceptMutation.mutate(concept.id)}
+                              disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                              data-testid={`button-approve-concept-${concept.id}`}
                             >
-                              <Bookmark className="h-4 w-4" />
+                              <CheckCircle2 className="h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                              onClick={() => rejectConceptMutation.mutate(concept.id)}
+                              disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                              data-testid={`button-reject-concept-${concept.id}`}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Reject
                             </Button>
                           </div>
                         </CardContent>
@@ -773,17 +911,30 @@ export function CreativeResearchCenter() {
           </Card>
         </TabsContent>
 
-        {/* Curated Creatives Tab */}
+        {/* Creative Library Tab */}
         <TabsContent value="curated" className="space-y-4">
-          {/* Filters for Curated Tab */}
+          {/* Search and Filters for Library */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filter Creatives
+                <Database className="h-4 w-4" />
+                Creative Library
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Browse and search your approved viral creative concepts
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Search Bar */}
+              <Input
+                placeholder="Search approved creatives by title, description, brand, or hooks..."
+                value={librarySearch}
+                onChange={(e) => setLibrarySearch(e.target.value)}
+                className="w-full"
+                data-testid="input-library-search"
+              />
+
+              {/* Filters */}
               <div className="flex flex-wrap gap-3">
                 <Select 
                   value={filters.platform} 
@@ -857,19 +1008,13 @@ export function CreativeResearchCenter() {
               </div>
 
               <div className="text-sm text-muted-foreground">
-                Showing {filteredConcepts.length} of {conceptsData.length} creatives
+                Showing {getLibraryFilteredConcepts().length} of {approvedConcepts.length} approved creatives
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>AI-Discovered Viral Content</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                High-performing ads curated by AI
-              </p>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -885,20 +1030,33 @@ export function CreativeResearchCenter() {
                 </Card>
               ))}
             </div>
-          ) : filteredConcepts.length === 0 ? (
-            <div className="py-12 text-center" data-testid="empty-concepts">
-              <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-medium mb-2">No Curated Creatives Yet</h3>
-              <p className="text-sm text-muted-foreground">
-                {concepts.length === 0 
-                  ? "Use the exploration section below to search for competitor creatives."
-                  : "No creatives match the current filters. Try adjusting your filter criteria."
+          ) : getLibraryFilteredConcepts().length === 0 ? (
+            <div className="py-12 text-center" data-testid="empty-library">
+              <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="font-medium mb-2">No Approved Creatives Yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {approvedConcepts.length === 0 
+                  ? pendingConcepts.length > 0
+                    ? `You have ${pendingConcepts.length} creative${pendingConcepts.length !== 1 ? 's' : ''} in Latest Discoveries waiting for approval.`
+                    : "Discover viral creatives and approve them to build your Creative Library."
+                  : "No creatives match your search or filters. Try different search terms or adjust your filter criteria."
                 }
               </p>
+              {approvedConcepts.length === 0 && pendingConcepts.length > 0 && (
+                <Button onClick={() => setActiveTab('latest')}>
+                  Review Pending Creatives
+                </Button>
+              )}
+              {approvedConcepts.length === 0 && pendingConcepts.length === 0 && (
+                <Button onClick={() => {setActiveTab('latest'); discoverMutation.mutate();}} disabled={discoverMutation.isPending || !knowledgeBase}>
+                  <Play className="h-4 w-4 mr-2" />
+                  {discoverMutation.isPending ? "Discovering..." : "Discover Creatives"}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredConcepts.map((concept) => (
+              {getLibraryFilteredConcepts().map((concept) => (
                 <Card 
                   key={concept.id}
                   className="hover-elevate overflow-hidden"
