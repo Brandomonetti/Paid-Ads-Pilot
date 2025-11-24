@@ -61,7 +61,7 @@ interface CreativeConcept {
 
 export function CreativeResearchCenter() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('latest');
+  const [activeTab, setActiveTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'page'>('brand');
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
@@ -607,6 +607,10 @@ export function CreativeResearchCenter() {
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="explore" data-testid="tab-explore-creatives">
+            <Search className="h-4 w-4 mr-2" />
+            Explore Creatives
+          </TabsTrigger>
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
             <TrendingUp className="h-4 w-4 mr-2" />
             Latest Discoveries ({conceptsData.filter(c => {
@@ -617,10 +621,6 @@ export function CreativeResearchCenter() {
           <TabsTrigger value="curated" data-testid="tab-curated-creatives">
             <Sparkles className="h-4 w-4 mr-2" />
             Curated Creatives ({filteredConcepts.length})
-          </TabsTrigger>
-          <TabsTrigger value="explore" data-testid="tab-explore-creatives">
-            <Search className="h-4 w-4 mr-2" />
-            Explore Creatives
           </TabsTrigger>
         </TabsList>
 
