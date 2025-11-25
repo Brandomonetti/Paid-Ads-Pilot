@@ -1059,10 +1059,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conceptData = req.body;
       
       // Create concept with the provided status (typically 'approved' from Explore)
+      // Remove auto-generated fields and let DB handle timestamps
+      const { 
+        id, 
+        createdAt, 
+        discoveredAt,
+        runningSince, // Frontend-only field
+        ...cleanData 
+      } = conceptData;
+      
       const newConcept = await storage.createConcept({
-        ...conceptData,
+        platform: cleanData.platform || 'unknown',
+        title: cleanData.title || 'Untitled',
+        description: cleanData.description || '',
+        format: cleanData.format || 'Unknown',
+        hooks: cleanData.hooks || [],
+        status: cleanData.status || 'approved',
         userId,
-        createdAt: new Date().toISOString(),
+        thumbnailUrl: cleanData.thumbnailUrl,
+        videoUrl: cleanData.videoUrl,
+        postUrl: cleanData.postUrl,
+        brandName: cleanData.brandName,
+        industry: cleanData.industry,
+        engagementScore: cleanData.engagementScore || 0,
+        likes: cleanData.likes,
+        comments: cleanData.comments,
+        shares: cleanData.shares,
+        views: cleanData.views,
+        engagementRate: cleanData.engagementRate ? String(cleanData.engagementRate) : undefined,
       });
       
       res.json({ success: true, concept: newConcept });
