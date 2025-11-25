@@ -720,6 +720,33 @@ export default function CustomerIntelligenceHub() {
   // Research Library: only show approved insights
   const approvedInsights = insightsData.filter((insight: any) => insight.status === 'approved');
 
+  // Helper function to filter by date range (used in Research Library)
+  const filterByDateRange = (insight: any, dateRange: string): boolean => {
+    if (dateRange === 'all') return true;
+    
+    // Use createdAt as the "date added to library" timestamp
+    const addedDate = insight.createdAt ? new Date(insight.createdAt) : null;
+    if (!addedDate) return true;
+    
+    const now = new Date();
+    const hourInMs = 3600000;
+    const dayInMs = 24 * hourInMs;
+    const timeDiff = now.getTime() - addedDate.getTime();
+    
+    switch (dateRange) {
+      case '24h':
+        return timeDiff <= dayInMs;
+      case '7d':
+        return timeDiff <= 7 * dayInMs;
+      case '30d':
+        return timeDiff <= 30 * dayInMs;
+      case '90d':
+        return timeDiff <= 90 * dayInMs;
+      default:
+        return true;
+    }
+  };
+
   // Calculate category counts for approved insights (used in Research Library)
   const categoryCounts = {
     'pain-point': approvedInsights.filter((i: any) => i.category === 'pain-point').length,
@@ -1472,14 +1499,14 @@ export default function CustomerIntelligenceHub() {
 
                 <Select value={libraryDateRange} onValueChange={setLibraryDateRange}>
                   <SelectTrigger className="w-[180px]" data-testid="select-library-date">
-                    <SelectValue placeholder="Date Range" />
+                    <SelectValue placeholder="Date Added" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="24h">Last 24 Hours</SelectItem>
-                    <SelectItem value="7d">Last 7 Days</SelectItem>
-                    <SelectItem value="30d">Last 30 Days</SelectItem>
-                    <SelectItem value="90d">Last 90 Days</SelectItem>
+                    <SelectItem value="24h">Added Today</SelectItem>
+                    <SelectItem value="7d">Added This Week</SelectItem>
+                    <SelectItem value="30d">Added This Month</SelectItem>
+                    <SelectItem value="90d">Last 3 Months</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -1503,6 +1530,7 @@ export default function CustomerIntelligenceHub() {
                 Showing {approvedInsights.filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (!filterByDateRange(insight, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
@@ -1524,6 +1552,7 @@ export default function CustomerIntelligenceHub() {
                 .filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (!filterByDateRange(insight, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
@@ -1618,6 +1647,7 @@ export default function CustomerIntelligenceHub() {
                 .filter((insight: any) => {
                   if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
                   if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
+                  if (!filterByDateRange(insight, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
