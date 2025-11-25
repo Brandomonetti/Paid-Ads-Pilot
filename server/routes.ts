@@ -213,15 +213,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/insights", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Remove fields that shouldn't be passed to the insert
+      const { id, discoveredAt, createdAt, confidence, ...bodyData } = req.body;
+      
       const insightData = {
-        ...req.body,
+        ...bodyData,
         userId,
-        id: crypto.randomUUID(),
-        discoveredAt: req.body.discoveredAt || new Date().toISOString(),
+        // Drizzle expects Date objects for timestamp fields
+        discoveredAt: discoveredAt ? new Date(discoveredAt) : new Date(),
       };
       
+      console.log("Creating insight with data:", JSON.stringify(insightData, null, 2));
+      
       const newInsight = await storage.createInsight(insightData);
-      res.json(newInsight);
+      res.json({ success: true, insight: newInsight });
     } catch (error) {
       console.error("Error creating insight:", error);
       res.status(500).json({ error: "Failed to create insight" });
