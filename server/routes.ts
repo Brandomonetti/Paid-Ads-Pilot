@@ -1052,6 +1052,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create a new concept (used by Explore Creatives to save to library)
+  app.post("/api/concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conceptData = req.body;
+      
+      // Create concept with the provided status (typically 'approved' from Explore)
+      const newConcept = await storage.createConcept({
+        ...conceptData,
+        userId,
+        createdAt: new Date().toISOString(),
+      });
+      
+      res.json({ success: true, concept: newConcept });
+    } catch (error) {
+      console.error("Error creating concept:", error);
+      res.status(500).json({ error: "Failed to create concept" });
+    }
+  });
+
   app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
