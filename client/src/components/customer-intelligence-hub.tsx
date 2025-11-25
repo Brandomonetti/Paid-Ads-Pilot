@@ -503,14 +503,23 @@ export default function CustomerIntelligenceHub() {
     }
   ];
 
-  // Fetch insights - use mock data if empty
+  // Fetch insights from API - build query string for proper URL
+  const insightsQueryString = new URLSearchParams({
+    ...(selectedCategory !== 'all' && { category: selectedCategory }),
+    ...(selectedPlatform !== 'all' && { platform: selectedPlatform }),
+  }).toString();
+  const insightsUrl = insightsQueryString ? `/api/insights?${insightsQueryString}` : '/api/insights';
+  
   const { data: insights = [], isLoading: isLoadingInsights } = useQuery({
-    queryKey: ['/api/insights', { category: selectedCategory, platform: selectedPlatform }],
+    queryKey: [insightsUrl],
   });
 
-  // Fetch sources - use mock data if empty
+  // Fetch sources from API - build query string for proper URL
+  const sourcesQueryString = selectedPlatform !== 'all' ? `platform=${selectedPlatform}` : '';
+  const sourcesUrl = sourcesQueryString ? `/api/sources?${sourcesQueryString}` : '/api/sources';
+  
   const { data: sources = [], isLoading: isLoadingSources } = useQuery({
-    queryKey: ['/api/sources', { platform: selectedPlatform }],
+    queryKey: [sourcesUrl],
   });
   
   const sourcesData = (sources as any[]).length > 0 ? (sources as any[]) : mockSources;
@@ -558,8 +567,11 @@ export default function CustomerIntelligenceHub() {
         title: "Discovery started!",
         description: "AI is now searching for customer insights based on your knowledge base.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sources'] });
+      // Invalidate all insight and source queries
+      queryClient.invalidateQueries({ predicate: (query) => 
+        String(query.queryKey[0]).startsWith('/api/insights') || 
+        String(query.queryKey[0]).startsWith('/api/sources')
+      });
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to start customer research discovery";
@@ -581,7 +593,9 @@ export default function CustomerIntelligenceHub() {
         title: "Insight approved!",
         description: "This insight has been added to your Research Library.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        String(query.queryKey[0]).startsWith('/api/insights')
+      });
     },
     onError: (error: any) => {
       toast({
@@ -602,7 +616,9 @@ export default function CustomerIntelligenceHub() {
         title: "Insight rejected",
         description: "This insight has been removed from Latest Discoveries.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        String(query.queryKey[0]).startsWith('/api/insights')
+      });
     },
     onError: (error: any) => {
       toast({
@@ -627,7 +643,9 @@ export default function CustomerIntelligenceHub() {
         title: "Insight approved!",
         description: "This insight has been added to your Research Library.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        String(query.queryKey[0]).startsWith('/api/insights')
+      });
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to save insight";
