@@ -2,28 +2,82 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { apiRequest, queryClient } from "@/lib/queryClient"
 import type { PlatformSettings } from "@shared/schema"
 import { 
-  Settings, Target, BarChart3, TrendingUp, Lock, Crown, 
-  CheckCircle, AlertCircle, Zap, Brain, Rocket, Shield
+  Settings, Lock, Crown, CheckCircle, AlertCircle, Zap, Brain, 
+  Shield, Sparkles, FileText, BarChart3, Search, Users, Lightbulb,
+  ArrowRight, Check
 } from "lucide-react"
+
+const PACKAGES = [
+  {
+    id: "starter",
+    name: "Starter",
+    price: 49,
+    monthlyCredits: 50,
+    description: "Perfect for small brands getting started",
+    features: [
+      "50 research credits/month",
+      "Customer Intelligence Hub",
+      "5 Target Avatars",
+      "Basic insights export"
+    ],
+    color: "border-blue-500",
+    bgColor: "bg-blue-500/10",
+    textColor: "text-blue-600 dark:text-blue-400",
+    icon: Zap
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    price: 149,
+    monthlyCredits: 200,
+    description: "For growing brands scaling their ads",
+    popular: true,
+    features: [
+      "200 research credits/month",
+      "Customer Intelligence Hub",
+      "Unlimited Target Avatars",
+      "Creative Research Center",
+      "Priority support"
+    ],
+    color: "border-purple-500",
+    bgColor: "bg-purple-500/10",
+    textColor: "text-purple-600 dark:text-purple-400",
+    icon: Crown
+  },
+  {
+    id: "scale",
+    name: "Scale",
+    price: 399,
+    monthlyCredits: 500,
+    description: "For agencies and high-volume brands",
+    features: [
+      "500 research credits/month",
+      "All Growth features",
+      "Creative Brief Agent (Coming Soon)",
+      "Performance Agent (Coming Soon)",
+      "Dedicated account manager",
+      "Custom integrations"
+    ],
+    color: "border-amber-500",
+    bgColor: "bg-amber-500/10",
+    textColor: "text-amber-600 dark:text-amber-400",
+    icon: Shield
+  }
+]
 
 export function SettingsDashboard() {
   const { toast } = useToast()
   
-  // Fetch platform settings
   const { data: settings, isLoading, isError } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
   })
 
-  // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: (updates: Partial<PlatformSettings>) => 
       apiRequest("PATCH", "/api/settings", updates),
@@ -31,7 +85,7 @@ export function SettingsDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] })
       toast({
         title: "Settings Saved",
-        description: "Your platform preferences have been updated successfully.",
+        description: "Your preferences have been updated.",
       })
     },
     onError: () => {
@@ -53,15 +107,10 @@ export function SettingsDashboard() {
             <div className="h-4 w-64 bg-muted animate-pulse rounded mt-2"></div>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="h-96 bg-muted animate-pulse rounded-lg"></div>
-            <div className="h-64 bg-muted animate-pulse rounded-lg"></div>
-          </div>
-          <div className="space-y-6">
-            <div className="h-48 bg-muted animate-pulse rounded-lg"></div>
-            <div className="h-32 bg-muted animate-pulse rounded-lg"></div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-96 bg-muted animate-pulse rounded-lg"></div>
+          ))}
         </div>
       </div>
     )
@@ -79,54 +128,11 @@ export function SettingsDashboard() {
     )
   }
 
-  const handlePercentageChange = (value: number[]) => {
-    updateSettingsMutation.mutate({
-      provenConceptsPercentage: value[0]
-    })
-  }
-
-  const handleVolumeChange = (volume: string) => {
-    const numVolume = parseInt(volume)
-    if (numVolume > 20 && settings.subscriptionTier === "free") {
-      toast({
-        title: "Upgrade Required",
-        description: "Free tier is limited to 20 briefs per week. Upgrade to Pro for unlimited access.",
-        variant: "destructive"
-      })
-      return
-    }
-    
-    updateSettingsMutation.mutate({
-      weeklyBriefsVolume: numVolume
-    })
-  }
-
-  const getTierIcon = (tier: string) => {
-    switch (tier) {
-      case "pro": return <Crown className="h-4 w-4 text-yellow-600" />
-      case "enterprise": return <Shield className="h-4 w-4 text-purple-600" />
-      default: return <Zap className="h-4 w-4 text-blue-600" />
-    }
-  }
-
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case "pro": return "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-300"
-      case "enterprise": return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/20 dark:text-purple-300"
-      default: return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-300"
-    }
-  }
-
-  const getMaxBriefs = () => {
-    switch (settings.subscriptionTier) {
-      case "pro": return 50
-      case "enterprise": return 200
-      default: return 20
-    }
-  }
+  const currentPackage = PACKAGES.find(p => p.id === settings.subscriptionTier) || PACKAGES[0]
+  const PackageIcon = currentPackage.icon
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -134,245 +140,279 @@ export function SettingsDashboard() {
             <Settings className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Platform Settings</h1>
-            <p className="text-muted-foreground">Configure your Creative Strategist AI preferences</p>
+            <h1 className="text-2xl font-bold">Settings</h1>
+            <p className="text-muted-foreground">Manage your subscription and preferences</p>
           </div>
         </div>
-        <Badge className={getTierColor(settings.subscriptionTier)}>
-          {getTierIcon(settings.subscriptionTier)}
-          {settings.subscriptionTier.toUpperCase()}
-        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Settings */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Brief Generation Strategy */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Brief Generation Strategy
-              </CardTitle>
-              <CardDescription>
-                Control how your AI agents balance proven concepts versus experimental creative exploration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-medium">Proven Concepts vs Experimental Tests</Label>
-                  <Badge variant="outline" className="text-sm">
-                    {settings.provenConceptsPercentage}% / {100 - settings.provenConceptsPercentage}%
+      {/* Current Plan Overview */}
+      <Card className={`${currentPackage.color} border-2`}>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${currentPackage.bgColor}`}>
+                <PackageIcon className={`h-6 w-6 ${currentPackage.textColor}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">{currentPackage.name} Plan</h2>
+                  <Badge className={currentPackage.bgColor + " " + currentPackage.textColor + " border-0"}>
+                    Current Plan
                   </Badge>
                 </div>
-                
-                <div className="space-y-3">
-                  <Slider
-                    value={[settings.provenConceptsPercentage]}
-                    onValueChange={handlePercentageChange}
-                    max={100}
-                    min={0}
-                    step={5}
-                    className="w-full"
-                    data-testid="slider-proven-concepts"
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-green-800 dark:text-green-200">Proven Concepts ({settings.provenConceptsPercentage}%)</span>
-                      </div>
-                      <ul className="text-xs text-green-600 dark:text-green-300 space-y-1">
-                        <li>• Winning ad concepts from your account</li>
-                        <li>• Data-backed creative strategies</li>
-                        <li>• Viral concepts with proven performance</li>
-                        <li>• Lower risk, predictable results</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Rocket className="h-4 w-4 text-purple-600" />
-                        <span className="font-medium text-purple-800 dark:text-purple-200">Experimental Tests ({100 - settings.provenConceptsPercentage}%)</span>
-                      </div>
-                      <ul className="text-xs text-purple-600 dark:text-purple-300 space-y-1">
-                        <li>• New creative angles and hooks</li>
-                        <li>• Fresh avatar explorations</li>
-                        <li>• Innovative format testing</li>
-                        <li>• Higher risk, breakthrough potential</li>
-                      </ul>
-                    </div>
-                  </div>
+                <p className="text-muted-foreground">{currentPackage.description}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold">${currentPackage.price}<span className="text-base font-normal text-muted-foreground">/mo</span></p>
+              <p className="text-sm text-muted-foreground">{currentPackage.monthlyCredits} credits/month</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Usage Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
+                <Search className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{settings.weeklyBriefsVolume || 0}</p>
+                <p className="text-xs text-muted-foreground">Research Credits Used</p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(((settings.weeklyBriefsVolume || 0) / currentPackage.monthlyCredits) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {currentPackage.monthlyCredits - (settings.weeklyBriefsVolume || 0)} credits remaining
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+                <Users className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">4</p>
+                <p className="text-xs text-muted-foreground">Target Avatars</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                <Lightbulb className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">12</p>
+                <p className="text-xs text-muted-foreground">Approved Insights</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Agents Status */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">AI Agents</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Research Agent - Active */}
+          <Card className="border-green-500/50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
+                  <Brain className="h-5 w-5 text-green-600" />
                 </div>
+                <Badge className="bg-green-500/10 text-green-600 border-0">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Active
+                </Badge>
               </div>
-              
-              <Separator />
-              
-              {/* Strategic Recommendations */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <h4 className="font-semibold mb-2 text-blue-800 dark:text-blue-200 flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  AI Strategic Recommendation
-                </h4>
-                {settings.provenConceptsPercentage >= 85 ? (
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
-                    <strong>Conservative Strategy:</strong> Great for stable scaling and predictable growth. Consider increasing experimental percentage to 15-20% for breakthrough opportunities.
-                  </p>
-                ) : settings.provenConceptsPercentage >= 70 ? (
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
-                    <strong>Balanced Strategy:</strong> Optimal mix for most 8-figure brands. Strong foundation with room for innovation and creative breakthroughs.
-                  </p>
-                ) : (
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
-                    <strong>Innovation Strategy:</strong> High-risk, high-reward approach. Recommended for brands looking to disrupt their market or overcome performance plateaus.
-                  </p>
-                )}
-              </div>
+              <h4 className="font-semibold mb-1">Research Agent</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Discover customer insights and build target avatars from real data
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Check className="h-3 w-3 text-green-600" />
+                  Customer Intelligence Hub
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3 w-3 text-green-600" />
+                  Creative Research Center
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3 w-3 text-green-600" />
+                  Target Avatar Generation
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
-          {/* Weekly Brief Volume */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Weekly Brief Volume
-              </CardTitle>
-              <CardDescription>
-                Set how many creative briefs and research outputs you want per week
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-medium">Briefs per Week</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-primary">{settings.weeklyBriefsVolume}</span>
-                    <span className="text-sm text-muted-foreground">/ {getMaxBriefs()} max</span>
-                  </div>
+          {/* Creative Brief Agent - Locked */}
+          <Card className="opacity-75">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
                 </div>
-                
-                <Select value={settings.weeklyBriefsVolume.toString()} onValueChange={handleVolumeChange}>
-                  <SelectTrigger data-testid="select-weekly-volume">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: getMaxBriefs() }, (_, i) => i + 1).map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} brief{num !== 1 ? 's' : ''} per week
-                        {num > 20 && settings.subscriptionTier === "free" && (
-                          <Lock className="h-3 w-3 ml-2 text-muted-foreground" />
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {settings.weeklyBriefsVolume > 20 && settings.subscriptionTier === "free" && (
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm font-medium">Upgrade Required</span>
-                    </div>
-                    <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
-                      Free tier limited to 20 briefs/week. Upgrade to Pro for up to 50 briefs/week.
-                    </p>
-                  </div>
-                )}
+                <Badge variant="outline" className="text-muted-foreground">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Coming Soon
+                </Badge>
               </div>
-              
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">Research Outputs</p>
-                  <p className="text-lg font-bold text-green-600">{Math.ceil(settings.weeklyBriefsVolume * 0.4)}</p>
-                  <p className="text-xs text-muted-foreground">Avatar & Concept Analysis</p>
+              <h4 className="font-semibold mb-1 text-muted-foreground">Creative Brief Agent</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Generate detailed creative briefs for your production team
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  UGC Script Generation
+                </li>
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  Visual Direction Briefs
+                </li>
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  Format Recommendations
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* Performance Agent - Locked */}
+          <Card className="opacity-75">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">Script Briefs</p>
-                  <p className="text-lg font-bold text-blue-600">{Math.ceil(settings.weeklyBriefsVolume * 0.4)}</p>
-                  <p className="text-xs text-muted-foreground">Video Script Templates</p>
-                </div>
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">Creative Briefs</p>
-                  <p className="text-lg font-bold text-purple-600">{Math.floor(settings.weeklyBriefsVolume * 0.2)}</p>
-                  <p className="text-xs text-muted-foreground">Design & Format Guides</p>
-                </div>
+                <Badge variant="outline" className="text-muted-foreground">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Coming Soon
+                </Badge>
               </div>
+              <h4 className="font-semibold mb-1 text-muted-foreground">Performance Agent</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Analyze ad performance and optimize creative strategy
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  Meta Ads Integration
+                </li>
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  Performance Analysis
+                </li>
+                <li className="flex items-center gap-2">
+                  <Lock className="h-3 w-3" />
+                  AI Recommendations
+                </li>
+              </ul>
             </CardContent>
           </Card>
         </div>
+      </div>
 
-        {/* Subscription & Plan Info */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {getTierIcon(settings.subscriptionTier)}
-                Current Plan
-              </CardTitle>
-              <CardDescription>
-                {settings.subscriptionTier === "free" ? "Free tier with basic features" : 
-                 settings.subscriptionTier === "pro" ? "Pro tier with advanced AI capabilities" :
-                 "Enterprise tier with unlimited access"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Weekly Briefs</span>
-                  <span className="font-medium">{settings.weeklyBriefsVolume} / {getMaxBriefs()}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">AI Agents</span>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Performance Analytics</span>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Meta Integration</span>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Premium Support</span>
-                  {settings.subscriptionTier === "free" ? 
-                    <Lock className="h-4 w-4 text-muted-foreground" /> :
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  }
-                </div>
-              </div>
-              
-              {settings.subscriptionTier === "free" && (
-                <Button className="w-full" data-testid="button-upgrade-plan">
-                  <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+      <Separator />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">This Week</span>
-                <span className="font-medium">{settings.weeklyBriefsVolume} briefs generated</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Strategy Mix</span>
-                <span className="font-medium">{settings.provenConceptsPercentage}%/{100 - settings.provenConceptsPercentage}%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Active Campaigns</span>
-                <span className="font-medium">12 campaigns</span>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Pricing Plans */}
+      <div>
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold mb-2">Choose Your Plan</h3>
+          <p className="text-muted-foreground">Scale your creative research as you grow</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {PACKAGES.map((pkg) => {
+            const Icon = pkg.icon
+            const isCurrent = pkg.id === settings.subscriptionTier
+            
+            return (
+              <Card 
+                key={pkg.id} 
+                className={`relative ${isCurrent ? pkg.color + ' border-2' : ''} ${pkg.popular ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-background' : ''}`}
+              >
+                {pkg.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-purple-500 text-white border-0">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Most Popular
+                    </Badge>
+                  </div>
+                )}
+                <CardHeader className="text-center pb-2">
+                  <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-lg ${pkg.bgColor} mb-2`}>
+                    <Icon className={`h-6 w-6 ${pkg.textColor}`} />
+                  </div>
+                  <CardTitle>{pkg.name}</CardTitle>
+                  <CardDescription>{pkg.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center">
+                    <span className="text-4xl font-bold">${pkg.price}</span>
+                    <span className="text-muted-foreground">/month</span>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {pkg.monthlyCredits} research credits
+                    </p>
+                  </div>
+                  
+                  <ul className="space-y-2">
+                    {pkg.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        {feature.includes("Coming Soon") ? (
+                          <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                        )}
+                        <span className={feature.includes("Coming Soon") ? "text-muted-foreground" : ""}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button 
+                    className="w-full" 
+                    variant={isCurrent ? "outline" : "default"}
+                    disabled={isCurrent}
+                    data-testid={`button-select-${pkg.id}`}
+                  >
+                    {isCurrent ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Current Plan
+                      </>
+                    ) : (
+                      <>
+                        {pkg.price > currentPackage.price ? "Upgrade" : "Downgrade"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
 
