@@ -1346,20 +1346,6 @@ export default function CustomerIntelligenceHub() {
                         </div>
                       </div>
                     )}
-
-                    {/* Approval Actions (for future functionality) */}
-                    <div className="pt-2 flex gap-2">
-                      <Button
-                        variant={avatar.status === 'approved' ? 'default' : 'outline'}
-                        size="sm"
-                        className="flex-1 gap-2"
-                        data-testid={`button-approve-avatar-${avatar.id}`}
-                        disabled
-                      >
-                        <CheckCircle2 className="h-3 w-3" />
-                        {avatar.status === 'approved' ? 'Approved' : 'Approve for Scripts'}
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
