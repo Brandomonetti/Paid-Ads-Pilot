@@ -92,7 +92,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'reddit',
       sourceUrl: 'https://reddit.com/r/ecommerce/example',
-      confidence: 94,
+      sourceType: 'post',
+      engagementScore: 342,
+      confidenceScore: 0.94,
       status: 'pending',
       discoveredAt: new Date(Date.now() - 2 * 3600000).toISOString()
     },
@@ -115,7 +117,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'youtube',
       sourceUrl: 'https://youtube.com/watch?v=example',
-      confidence: 91,
+      sourceType: 'comment',
+      engagementScore: 1250,
+      confidenceScore: 0.91,
       status: 'pending',
       discoveredAt: new Date(Date.now() - 5 * 3600000).toISOString()
     },
@@ -138,7 +142,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'amazon',
       sourceUrl: 'https://amazon.com/reviews/example',
-      confidence: 88,
+      sourceType: 'review',
+      engagementScore: 89,
+      confidenceScore: 0.88,
       status: 'pending',
       discoveredAt: new Date(Date.now() - 8 * 3600000).toISOString()
     },
@@ -161,7 +167,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'tiktok',
       sourceUrl: 'https://tiktok.com/@user/video/example',
-      confidence: 92,
+      sourceType: 'comment',
+      engagementScore: 5420,
+      confidenceScore: 0.92,
       status: 'pending',
       discoveredAt: new Date(Date.now() - 4 * 3600000).toISOString()
     },
@@ -184,7 +192,9 @@ export default function CustomerIntelligenceHub() {
       ],
       sourcePlatform: 'instagram',
       sourceUrl: 'https://instagram.com/p/example',
-      confidence: 89,
+      sourceType: 'comment',
+      engagementScore: 2340,
+      confidenceScore: 0.89,
       status: 'pending',
       discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString()
     }
