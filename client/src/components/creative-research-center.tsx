@@ -1818,7 +1818,7 @@ export function CreativeResearchCenter() {
                           data-testid={`button-approve-${example.id}`}
                         >
                           <CheckCircle2 className="h-4 w-4" />
-                          Save to Library
+                          Approve
                         </Button>
                         <Button
                           size="sm"
@@ -1828,7 +1828,7 @@ export function CreativeResearchCenter() {
                           data-testid={`button-reject-${example.id}`}
                         >
                           <XCircle className="h-4 w-4" />
-                          Hide
+                          Reject
                         </Button>
                       </div>
                     </CardContent>
