@@ -74,6 +74,7 @@ export function CreativeResearchCenter() {
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
   const [timeFilter, setTimeFilter] = useState('all');
   const [librarySearch, setLibrarySearch] = useState("");
+  const [rejectedExploreIds, setRejectedExploreIds] = useState<Set<string>>(new Set());
   
   const [filters, setFilters] = useState({
     platform: "all",
@@ -193,6 +194,172 @@ export function CreativeResearchCenter() {
       });
     },
   });
+
+  // Save explored concept to library (creates with approved status)
+  const saveToLibraryMutation = useMutation({
+    mutationFn: async (concept: Omit<CreativeConcept, 'id' | 'status'>) => {
+      return await apiRequest('POST', '/api/concepts', {
+        ...concept,
+        status: 'approved',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Saved to Library!",
+        description: "This creative has been added to your Creative Library.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to save creative";
+      toast({
+        title: "Save failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle approve from explore - saves concept to library
+  const handleApproveExplore = (conceptData: Omit<CreativeConcept, 'id' | 'status'>) => {
+    saveToLibraryMutation.mutate(conceptData);
+  };
+
+  // Handle reject from explore - temporarily hides (session only)
+  const handleRejectExplore = (conceptId: string) => {
+    setRejectedExploreIds(prev => new Set(Array.from(prev).concat(conceptId)));
+    toast({
+      title: "Hidden for this session",
+      description: "This creative will reappear if you search again.",
+    });
+  };
+
+  // Explore section example data
+  const exploreExamples: (CreativeConcept & { runningSince: string })[] = [
+    {
+      id: 'explore-1',
+      platform: 'facebook',
+      title: '30-Day Transformation Challenge - Join Now!',
+      description: 'Join thousands who transformed their bodies in 30 days. No gym required - just 20 minutes per day.',
+      format: 'Video Ad',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=400',
+      brandName: 'FitnessFirst Pro',
+      industry: 'Health & Fitness',
+      views: 2400000,
+      likes: 156000,
+      comments: 8200,
+      shares: 12300,
+      engagementRate: 0.073,
+      engagementScore: 92,
+      createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+      runningSince: '14 days ago',
+      hooks: ['Transform your body', 'No gym required', '20 minutes per day'],
+      status: 'pending',
+    },
+    {
+      id: 'explore-2',
+      platform: 'instagram',
+      title: 'Summer Collection - Up to 50% Off',
+      description: 'Swipe to see our hottest summer picks. Limited time offer - shop before its gone!',
+      format: 'Carousel',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?w=400',
+      brandName: 'StyleHub',
+      industry: 'Fashion',
+      views: 892000,
+      likes: 45000,
+      comments: 3100,
+      shares: 18700,
+      engagementRate: 0.075,
+      engagementScore: 88,
+      createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+      runningSince: '7 days ago',
+      hooks: ['50% off summer sale', 'Limited time offer'],
+      status: 'pending',
+    },
+    {
+      id: 'explore-3',
+      platform: 'tiktok',
+      title: 'I tried this skincare routine for 7 days...',
+      description: 'You wont believe the results! Check out my before & after.',
+      format: 'UGC Video',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1611432579699-484f7990b127?w=400',
+      brandName: 'GlowUp Beauty',
+      industry: 'Beauty',
+      views: 4800000,
+      likes: 567000,
+      comments: 23400,
+      shares: 89200,
+      engagementRate: 0.142,
+      engagementScore: 97,
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      runningSince: '3 days ago',
+      hooks: ['Before & after reveal', '7-day transformation'],
+      status: 'pending',
+    },
+    {
+      id: 'explore-4',
+      platform: 'facebook',
+      title: 'Workspace Essentials for Productivity',
+      description: 'Upgrade your home office with ergonomic furniture & accessories. Free shipping on orders $100+',
+      format: 'Image Ad',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=400',
+      brandName: 'DeskLife Co.',
+      industry: 'Home Office',
+      views: 1200000,
+      likes: 67000,
+      comments: 4500,
+      shares: 9800,
+      engagementRate: 0.068,
+      engagementScore: 85,
+      createdAt: new Date(Date.now() - 21 * 86400000).toISOString(),
+      runningSince: '21 days ago',
+      hooks: ['Work from home upgrade', 'Free shipping'],
+      status: 'pending',
+    },
+    {
+      id: 'explore-5',
+      platform: 'instagram',
+      title: 'Noise-Cancelling Earbuds - 60% Off Today',
+      description: 'Experience studio-quality sound anywhere. Limited flash sale - 24 hours only!',
+      format: 'Video Ad',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1526178613552-2b45c6c302f0?w=400',
+      brandName: 'AudioTech',
+      industry: 'Electronics',
+      views: 3100000,
+      likes: 234000,
+      comments: 15600,
+      shares: 45200,
+      engagementRate: 0.095,
+      engagementScore: 94,
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      runningSince: '2 days ago',
+      hooks: ['Flash sale 60% off', 'Studio-quality sound'],
+      status: 'pending',
+    },
+    {
+      id: 'explore-6',
+      platform: 'tiktok',
+      title: 'This meal prep hack saved me HOURS',
+      description: 'Healthy eating doesnt have to be hard. Watch how I prep a whole weeks meals in 2 hours.',
+      format: 'UGC Video',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400',
+      brandName: 'MealPrepPro',
+      industry: 'Food & Nutrition',
+      views: 2300000,
+      likes: 189000,
+      comments: 12100,
+      shares: 56700,
+      engagementRate: 0.112,
+      engagementScore: 91,
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+      runningSince: '5 days ago',
+      hooks: ['Meal prep hack', 'Save hours weekly'],
+      status: 'pending',
+    },
+  ];
+
+  // Filter out rejected explore examples
+  const visibleExploreExamples = exploreExamples.filter(e => !rejectedExploreIds.has(e.id));
 
   // Mock data for development visualization
   const mockConcepts: CreativeConcept[] = [
@@ -1539,7 +1706,7 @@ export function CreativeResearchCenter() {
             </CardContent>
           </Card>
 
-          {/* Search Results Examples */}
+          {/* Search Results with Approve/Reject */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1547,398 +1714,128 @@ export function CreativeResearchCenter() {
                 Search Results
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Example results from live web research - search above to discover competitor ads
+                {visibleExploreExamples.length > 0 
+                  ? `Showing ${visibleExploreExamples.length} results - approve to save to your Creative Library`
+                  : "All results hidden. Search again to see more creatives."}
               </p>
             </CardHeader>
             <CardContent>
+              {visibleExploreExamples.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="font-medium mb-2">No Results to Show</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    You've hidden all current results. Search again to discover more creatives.
+                  </p>
+                  <Button onClick={() => setRejectedExploreIds(new Set())} variant="outline">
+                    Show Hidden Results
+                  </Button>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Example Result 1 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-1">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=400" 
-                      alt="Fitness brand video ad"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play className="h-12 w-12 text-white" />
-                    </div>
-                    <Badge className="absolute top-2 right-2 bg-blue-500 text-white">
-                      Facebook
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Video Ad
-                          </Badge>
-                          <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                            Active
-                          </Badge>
+                {visibleExploreExamples.map((example) => (
+                  <Card 
+                    key={example.id}
+                    className="hover-elevate overflow-hidden" 
+                    data-testid={`card-${example.id}`}
+                  >
+                    <div className="relative aspect-video bg-muted">
+                      <img 
+                        src={example.thumbnailUrl} 
+                        alt={example.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {example.format.toLowerCase().includes('video') && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <Play className="h-12 w-12 text-white" />
                         </div>
-                        <CardTitle className="text-base line-clamp-2">30-Day Transformation Challenge - Join Now!</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by FitnessFirst Pro</p>
-                      </div>
+                      )}
+                      <Badge className={`absolute top-2 right-2 ${
+                        example.platform === 'facebook' ? 'bg-blue-500' :
+                        example.platform === 'instagram' ? 'bg-pink-500' :
+                        'bg-black'
+                      } text-white`}>
+                        {example.platform.charAt(0).toUpperCase() + example.platform.slice(1)}
+                      </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      Join thousands who transformed their bodies in 30 days. No gym required - just 20 minutes per day.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>2.4M</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>156K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>8.2K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3 text-muted-foreground" />
-                        <span>12.3K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">14 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Example Result 2 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-2">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1556742044-3c52d6e88c62?w=400" 
-                      alt="Product carousel ad"
-                      className="w-full h-full object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-pink-500 text-white">
-                      Instagram
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Carousel
-                          </Badge>
-                          <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                            Active
-                          </Badge>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
+                              {example.format}
+                            </Badge>
+                            <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
+                              Active
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-base line-clamp-2">{example.title}</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-1">by {example.brandName}</p>
                         </div>
-                        <CardTitle className="text-base line-clamp-2">Summer Collection - Up to 50% Off</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by StyleHub</p>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      Swipe to see our hottest summer picks. Limited time offer - shop before it's gone!
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>892K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>45K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>3.1K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Bookmark className="h-3 w-3 text-muted-foreground" />
-                        <span>18.7K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">7 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Example Result 3 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-3">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1611432579699-484f7990b127?w=400" 
-                      alt="TikTok UGC style ad"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play className="h-12 w-12 text-white" />
-                    </div>
-                    <Badge className="absolute top-2 right-2 bg-black text-white">
-                      TikTok
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            UGC Video
-                          </Badge>
-                          <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
-                            Trending
-                          </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {example.description}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3 text-muted-foreground" />
+                          <span>{formatNumber(example.views || 0)}</span>
                         </div>
-                        <CardTitle className="text-base line-clamp-2">I tried this skincare routine for 7 days...</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by GlowUp Beauty</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      You won't believe the results! Check out my before & after. Link in bio 🔥
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>4.8M</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>567K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>23.4K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3 text-muted-foreground" />
-                        <span>89.2K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">3 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Example Result 4 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-4">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=400" 
-                      alt="Lifestyle brand image ad"
-                      className="w-full h-full object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-blue-500 text-white">
-                      Facebook
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Image Ad
-                          </Badge>
-                          <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                            Active
-                          </Badge>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-3 w-3 text-muted-foreground" />
+                          <span>{formatNumber(example.likes || 0)}</span>
                         </div>
-                        <CardTitle className="text-base line-clamp-2">Workspace Essentials for Productivity</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by DeskLife Co.</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      Upgrade your home office with ergonomic furniture & accessories. Free shipping on orders $100+
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>1.2M</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>67K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>4.5K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3 text-muted-foreground" />
-                        <span>9.8K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">21 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Example Result 5 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-5">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1526178613552-2b45c6c302f0?w=400" 
-                      alt="Tech product video"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play className="h-12 w-12 text-white" />
-                    </div>
-                    <Badge className="absolute top-2 right-2 bg-pink-500 text-white">
-                      Instagram
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Video Ad
-                          </Badge>
-                          <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                            Active
-                          </Badge>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                          <span>{formatNumber(example.comments || 0)}</span>
                         </div>
-                        <CardTitle className="text-base line-clamp-2">Noise-Cancelling Earbuds - 60% Off Today</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by AudioTech</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      Experience studio-quality sound anywhere. Limited flash sale - 24 hours only!
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>3.1M</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>234K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>15.6K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3 text-muted-foreground" />
-                        <span>45.2K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">2 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Example Result 6 */}
-                <Card className="hover-elevate overflow-hidden" data-testid="card-explore-example-6">
-                  <div className="relative aspect-video bg-muted">
-                    <img 
-                      src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400" 
-                      alt="Food delivery ad"
-                      className="w-full h-full object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-black text-white">
-                      TikTok
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Image Ad
-                          </Badge>
-                          <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                            Active
-                          </Badge>
+                        <div className="flex items-center gap-1">
+                          <Share2 className="h-3 w-3 text-muted-foreground" />
+                          <span>{formatNumber(example.shares || 0)}</span>
                         </div>
-                        <CardTitle className="text-base line-clamp-2">Fresh Meals Delivered Daily - $10 Off First Order</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">by MealPrep Plus</p>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      Healthy, chef-prepared meals to your door. No cooking required. Use code FRESH10
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        <span>1.8M</span>
+                      <div className="pt-2 border-t">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Running Since</span>
+                          <span className="font-medium">{example.runningSince}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <span>98K</span>
+                      
+                      {/* Approve/Reject Actions */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+                          onClick={() => {
+                            const { id, runningSince, ...conceptData } = example;
+                            handleApproveExplore(conceptData);
+                            handleRejectExplore(example.id);
+                          }}
+                          disabled={saveToLibraryMutation.isPending}
+                          data-testid={`button-approve-${example.id}`}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Save to Library
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                          onClick={() => handleRejectExplore(example.id)}
+                          data-testid={`button-reject-${example.id}`}
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Hide
+                        </Button>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                        <span>7.3K</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3 text-muted-foreground" />
-                        <span>21.5K</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Running Since</span>
-                        <span className="font-medium">10 days ago</span>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      View Full Ad
-                    </Button>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
