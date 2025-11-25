@@ -191,13 +191,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Customer Intelligence Hub - Insights endpoints (stub)
+  // Customer Intelligence Hub - Insights endpoints
   app.get("/api/insights", isAuthenticated, async (req: any, res) => {
     try {
-      // Stub endpoint - returns empty array for now
-      res.json([]);
+      const userId = req.user.claims.sub;
+      const { category, platform, status } = req.query;
+      const filters: any = {};
+      if (category && category !== 'all') filters.category = category;
+      if (platform && platform !== 'all') filters.platform = platform;
+      if (status) filters.status = status;
+      
+      const insights = await storage.getInsights(userId, filters);
+      res.json(insights);
     } catch (error) {
+      console.error("Error fetching insights:", error);
       res.status(500).json({ error: "Failed to fetch insights" });
+    }
+  });
+
+  // Create insight endpoint (for demo insights)
+  app.post("/api/insights", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const insightData = {
+        ...req.body,
+        userId,
+        id: crypto.randomUUID(),
+        discoveredAt: req.body.discoveredAt || new Date().toISOString(),
+      };
+      
+      const newInsight = await storage.createInsight(insightData);
+      res.json(newInsight);
+    } catch (error) {
+      console.error("Error creating insight:", error);
+      res.status(500).json({ error: "Failed to create insight" });
     }
   });
 

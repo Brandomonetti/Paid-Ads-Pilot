@@ -67,6 +67,131 @@ export default function CustomerIntelligenceHub() {
   const [librarySearch, setLibrarySearch] = useState('');
   const [libraryDateRange, setLibraryDateRange] = useState('all');
   const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Demo insights tracking
+  const [rejectedDemoIds, setRejectedDemoIds] = useState<Set<string>>(new Set());
+  
+  // Demo insights for Latest Discoveries (shown when no real insights exist)
+  const demoInsights = [
+    {
+      id: 'demo-insight-1',
+      category: 'pain-point',
+      title: 'Shipping costs driving cart abandonment',
+      rawQuote: 'I was about to checkout but $15 shipping for a $20 item? No thanks. I found free shipping elsewhere.',
+      summary: 'Customers frequently abandon carts when shipping costs are perceived as disproportionate to product value, especially for lower-priced items.',
+      observations: [
+        'Free shipping threshold motivates larger orders',
+        'Unexpected costs at checkout cause frustration',
+        'Competitors offering free shipping win business',
+        'Shipping cost visibility earlier reduces abandonment'
+      ],
+      marketingAngles: [
+        'Free shipping on all orders - no surprises at checkout',
+        'Why pay more for shipping than the product?',
+        'Transparent pricing from start to finish'
+      ],
+      sourcePlatform: 'reddit',
+      sourceUrl: 'https://reddit.com/r/ecommerce/example',
+      confidence: 94,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'demo-insight-2',
+      category: 'desire',
+      title: 'Customers want authentic social proof',
+      rawQuote: 'Im so tired of obviously fake reviews. Show me real people, real results, unfiltered. I can spot a fake review from a mile away.',
+      summary: 'Modern consumers are increasingly skeptical of polished testimonials and demand authentic, unfiltered social proof from real customers.',
+      observations: [
+        'Video testimonials more trusted than text',
+        'User-generated content outperforms polished ads',
+        'Customers research reviews across multiple platforms',
+        'Negative reviews actually increase trust when handled well'
+      ],
+      marketingAngles: [
+        'Real customers, real stories, no scripts',
+        '10,000+ verified reviews - see what real users say',
+        'We dont hide the bad reviews - read them all'
+      ],
+      sourcePlatform: 'youtube',
+      sourceUrl: 'https://youtube.com/watch?v=example',
+      confidence: 91,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'demo-insight-3',
+      category: 'objection',
+      title: 'Subscription fatigue and commitment fears',
+      rawQuote: 'I already have like 10 subscriptions. I dont want another recurring charge I forget about. Just let me buy when I need it.',
+      summary: 'Customers express strong resistance to subscription models due to subscription fatigue and fear of forgotten recurring charges.',
+      observations: [
+        'One-time purchase option preferred initially',
+        'Cancellation difficulty is major concern',
+        'Auto-renewal without reminder frustrates users',
+        'Flexible pause/skip options reduce resistance'
+      ],
+      marketingAngles: [
+        'Subscribe and save OR buy once - your choice',
+        'Cancel anytime, no questions asked',
+        'We remind you before every renewal'
+      ],
+      sourcePlatform: 'amazon',
+      sourceUrl: 'https://amazon.com/reviews/example',
+      confidence: 88,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 8 * 3600000).toISOString()
+    },
+    {
+      id: 'demo-insight-4',
+      category: 'trigger',
+      title: 'Limited time offers create urgency',
+      rawQuote: 'I wasnt going to buy but then I saw the sale ending in 2 hours and I just pulled the trigger. FOMO is real lol',
+      summary: 'Time-limited promotions effectively trigger purchase decisions by creating fear of missing out on deals.',
+      observations: [
+        'Countdown timers increase conversion',
+        'Flash sales outperform always-on discounts',
+        'Scarcity messaging boosts urgency',
+        'Authenticity of deadlines is crucial'
+      ],
+      marketingAngles: [
+        'Sale ends tonight at midnight',
+        'Only 50 units left at this price',
+        'Early bird pricing closes in 24 hours'
+      ],
+      sourcePlatform: 'tiktok',
+      sourceUrl: 'https://tiktok.com/@user/video/example',
+      confidence: 92,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'demo-insight-5',
+      category: 'desire',
+      title: 'Personalized recommendations valued highly',
+      rawQuote: 'I love when brands actually understand what I need instead of showing me random stuff. Makes shopping so much easier.',
+      summary: 'Customers appreciate personalized product recommendations that demonstrate understanding of their specific needs and preferences.',
+      observations: [
+        'Quiz-based recommendations increase engagement',
+        'Personalization reduces decision fatigue',
+        'Relevant suggestions improve customer loyalty',
+        'Data-driven recommendations outperform generic lists'
+      ],
+      marketingAngles: [
+        'Take our 2-minute quiz for your perfect match',
+        'Curated just for you based on your needs',
+        'Stop scrolling, start finding what you actually need'
+      ],
+      sourcePlatform: 'instagram',
+      sourceUrl: 'https://instagram.com/p/example',
+      confidence: 89,
+      status: 'pending',
+      discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString()
+    }
+  ];
+  
+  // Filter visible demo insights (exclude rejected ones)
+  const visibleDemoInsights = demoInsights.filter(i => !rejectedDemoIds.has(i.id));
 
   // Mock data for development visualization
   const mockInsights = [
@@ -478,6 +603,48 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
+  // Save demo insight to library mutation
+  const saveDemoInsightMutation = useMutation({
+    mutationFn: async (insight: typeof demoInsights[0]) => {
+      const { id, ...insightData } = insight;
+      return await apiRequest('POST', '/api/insights', {
+        ...insightData,
+        status: 'approved',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Insight approved!",
+        description: "This insight has been added to your Research Library.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/insights'] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to save insight";
+      toast({
+        title: "Save failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle approve demo insight
+  const handleApproveDemoInsight = (insight: typeof demoInsights[0]) => {
+    saveDemoInsightMutation.mutate(insight);
+    // Also hide the demo insight after approval
+    setRejectedDemoIds(prev => new Set(Array.from(prev).concat(insight.id)));
+  };
+
+  // Handle reject demo insight (temporarily hides for this session)
+  const handleRejectDemoInsight = (insightId: string) => {
+    setRejectedDemoIds(prev => new Set(Array.from(prev).concat(insightId)));
+    toast({
+      title: "Insight dismissed",
+      description: "This insight has been hidden for this session.",
+    });
+  };
+
   // Filter insights by search - use mock data if empty
   const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
   
@@ -552,7 +719,7 @@ export default function CustomerIntelligenceHub() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
-            Latest Discoveries ({filteredInsights.length})
+            Latest Discoveries ({filteredInsights.length > 0 ? filteredInsights.length : visibleDemoInsights.length})
           </TabsTrigger>
           <TabsTrigger value="library" data-testid="tab-research-library">
             Research Library
@@ -620,13 +787,179 @@ export default function CustomerIntelligenceHub() {
             </div>
           )}
 
-          {!isLoadingInsights && filteredInsights.length === 0 && (
+          {/* Show demo insights when no real pending insights */}
+          {!isLoadingInsights && filteredInsights.length === 0 && visibleDemoInsights.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {visibleDemoInsights.map((insight) => {
+                const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+                const CategoryIcon = categoryInfo?.icon || Brain;
+                const isExpanded = expandedInsight === insight.id;
+                
+                return (
+                  <Card key={insight.id} className="hover-elevate" data-testid={`card-demo-insight-${insight.id}`}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <Badge variant="outline" className={`${categoryInfo?.color} gap-1`}>
+                              <CategoryIcon className="h-3 w-3" />
+                              {categoryInfo?.label}
+                            </Badge>
+                            <Badge
+                              className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}
+                            >
+                              {insight.sourcePlatform}
+                            </Badge>
+                            <Badge className="bg-green-500 text-white text-xs">New</Badge>
+                          </div>
+                          <CardTitle className="text-base">{insight.title}</CardTitle>
+                        </div>
+                      </div>
+                      <CardDescription className="text-sm italic mt-2">
+                        "{insight.rawQuote}"
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {!isExpanded && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {insight.summary}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedInsight(insight.id)}
+                            className="p-0 h-auto mt-2"
+                            data-testid={`button-expand-demo-${insight.id}`}
+                          >
+                            Read More →
+                          </Button>
+                          
+                          {/* Approval Buttons */}
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => handleApproveDemoInsight(insight)}
+                              disabled={saveDemoInsightMutation.isPending}
+                              data-testid={`button-approve-demo-${insight.id}`}
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => handleRejectDemoInsight(insight.id)}
+                              data-testid={`button-reject-demo-${insight.id}`}
+                            >
+                              <X className="h-3 w-3" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {isExpanded && (
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">Summary</h4>
+                            <p className="text-sm text-muted-foreground">{insight.summary}</p>
+                          </div>
+                          
+                          {insight.observations && insight.observations.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-sm mb-2">Key Observations</h4>
+                              <ul className="space-y-1">
+                                {insight.observations.map((obs: string, idx: number) => (
+                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                    <span className="text-primary">•</span>
+                                    {obs}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {insight.marketingAngles && insight.marketingAngles.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-sm mb-2">Marketing Angles</h4>
+                              <div className="space-y-1">
+                                {insight.marketingAngles.map((angle: string, idx: number) => (
+                                  <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
+                                    {angle}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="gap-2"
+                              data-testid={`button-view-source-demo-${insight.id}`}
+                            >
+                              <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3 w-3" />
+                                View Original
+                              </a>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExpandedInsight(null)}
+                              data-testid={`button-collapse-demo-${insight.id}`}
+                            >
+                              Collapse
+                            </Button>
+                          </div>
+                          
+                          {/* Approval Buttons */}
+                          <div className="flex gap-2 pt-3 border-t">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => handleApproveDemoInsight(insight)}
+                              disabled={saveDemoInsightMutation.isPending}
+                              data-testid={`button-approve-demo-expanded-${insight.id}`}
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Approve & Add to Library
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={() => handleRejectDemoInsight(insight.id)}
+                              data-testid={`button-reject-demo-expanded-${insight.id}`}
+                            >
+                              <X className="h-3 w-3" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* All demos reviewed state */}
+          {!isLoadingInsights && filteredInsights.length === 0 && visibleDemoInsights.length === 0 && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Brain className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No insights discovered yet</h3>
+                <h3 className="text-lg font-semibold mb-2">All Demos Reviewed</h3>
                 <p className="text-muted-foreground mb-4">
-                  Click "Discover New Insights" to start finding valuable customer intelligence
+                  You've reviewed all demo insights. Click "Discover" to find real customer intelligence.
                 </p>
                 <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                   <Play className="h-4 w-4 mr-2" />
@@ -636,6 +969,7 @@ export default function CustomerIntelligenceHub() {
             </Card>
           )}
 
+          {/* Real pending insights */}
           {!isLoadingInsights && filteredInsights.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredInsights.map((insight: any) => {
