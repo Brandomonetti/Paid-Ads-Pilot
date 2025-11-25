@@ -21,10 +21,10 @@ const PACKAGES = [
     monthlyCredits: 50,
     description: "Perfect for small brands getting started",
     features: [
-      "50 research credits/month",
-      "Customer Intelligence Hub",
-      "5 Target Avatars",
-      "Basic insights export"
+      "50 AI generations per month",
+      "Unlimited competitor ad browsing",
+      "Up to 5 customer profiles",
+      "Save and organize your research"
     ],
     color: "border-blue-500",
     bgColor: "bg-blue-500/10",
@@ -39,10 +39,10 @@ const PACKAGES = [
     description: "For growing brands scaling their ads",
     popular: true,
     features: [
-      "200 research credits/month",
-      "Customer Intelligence Hub",
-      "Unlimited Target Avatars",
-      "Creative Research Center",
+      "200 AI generations per month",
+      "Unlimited competitor ad browsing",
+      "Unlimited customer profiles",
+      "Full research library access",
       "Priority support"
     ],
     color: "border-purple-500",
@@ -57,12 +57,11 @@ const PACKAGES = [
     monthlyCredits: 500,
     description: "For agencies and high-volume brands",
     features: [
-      "500 research credits/month",
-      "All Growth features",
-      "Creative Brief Agent (Coming Soon)",
-      "Performance Agent (Coming Soon)",
-      "Dedicated account manager",
-      "Custom integrations"
+      "500 AI generations per month",
+      "Everything in Growth",
+      "Script Generator (Coming Soon)",
+      "Performance Analytics (Coming Soon)",
+      "Dedicated account manager"
     ],
     color: "border-amber-500",
     bgColor: "bg-amber-500/10",
@@ -166,7 +165,7 @@ export function SettingsDashboard() {
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold">${currentPackage.price}<span className="text-base font-normal text-muted-foreground">/mo</span></p>
-              <p className="text-sm text-muted-foreground">{currentPackage.monthlyCredits} credits/month</p>
+              <p className="text-sm text-muted-foreground">{currentPackage.monthlyCredits} AI generations/month</p>
             </div>
           </div>
         </CardContent>
@@ -178,11 +177,11 @@ export function SettingsDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
-                <Search className="h-5 w-5 text-green-600" />
+                <Sparkles className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{settings.weeklyBriefsVolume || 0}</p>
-                <p className="text-xs text-muted-foreground">Research Credits Used</p>
+                <p className="text-xs text-muted-foreground">AI Generations Used</p>
               </div>
             </div>
             <div className="mt-3">
@@ -193,7 +192,7 @@ export function SettingsDashboard() {
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {currentPackage.monthlyCredits - (settings.weeklyBriefsVolume || 0)} credits remaining
+                {currentPackage.monthlyCredits - (settings.weeklyBriefsVolume || 0)} generations remaining
               </p>
             </div>
           </CardContent>
@@ -207,7 +206,7 @@ export function SettingsDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">4</p>
-                <p className="text-xs text-muted-foreground">Target Avatars</p>
+                <p className="text-xs text-muted-foreground">Customer Profiles</p>
               </div>
             </div>
           </CardContent>
@@ -221,7 +220,7 @@ export function SettingsDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">12</p>
-                <p className="text-xs text-muted-foreground">Approved Insights</p>
+                <p className="text-xs text-muted-foreground">Saved Research</p>
               </div>
             </div>
           </CardContent>
@@ -230,7 +229,7 @@ export function SettingsDashboard() {
 
       {/* AI Agents Status */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">AI Agents</h3>
+        <h3 className="text-lg font-semibold mb-4">What You Can Do</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Research Agent - Active */}
           <Card className="border-green-500/50">
@@ -244,28 +243,28 @@ export function SettingsDashboard() {
                   Active
                 </Badge>
               </div>
-              <h4 className="font-semibold mb-1">Research Agent</h4>
+              <h4 className="font-semibold mb-1">Customer Research</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Discover customer insights and build target avatars from real data
+                Find what your customers want and create targeted marketing angles
               </p>
               <ul className="space-y-1 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Check className="h-3 w-3 text-green-600" />
-                  Customer Intelligence Hub
+                  AI-generated customer insights
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-3 w-3 text-green-600" />
-                  Creative Research Center
+                  Browse competitor ads (unlimited)
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-3 w-3 text-green-600" />
-                  Target Avatar Generation
+                  Build customer profiles
                 </li>
               </ul>
             </CardContent>
           </Card>
 
-          {/* Creative Brief Agent - Locked */}
+          {/* Script Generator - Locked */}
           <Card className="opacity-75">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
@@ -277,28 +276,28 @@ export function SettingsDashboard() {
                   Coming Soon
                 </Badge>
               </div>
-              <h4 className="font-semibold mb-1 text-muted-foreground">Creative Brief Agent</h4>
+              <h4 className="font-semibold mb-1 text-muted-foreground">Script Generator</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Generate detailed creative briefs for your production team
+                Create ready-to-use video scripts for your ads
               </p>
               <ul className="space-y-1 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  UGC Script Generation
+                  UGC video scripts
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  Visual Direction Briefs
+                  Hook variations
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  Format Recommendations
+                  Call-to-action templates
                 </li>
               </ul>
             </CardContent>
           </Card>
 
-          {/* Performance Agent - Locked */}
+          {/* Performance Analytics - Locked */}
           <Card className="opacity-75">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
@@ -310,22 +309,22 @@ export function SettingsDashboard() {
                   Coming Soon
                 </Badge>
               </div>
-              <h4 className="font-semibold mb-1 text-muted-foreground">Performance Agent</h4>
+              <h4 className="font-semibold mb-1 text-muted-foreground">Performance Analytics</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Analyze ad performance and optimize creative strategy
+                See what's working and get AI recommendations
               </p>
               <ul className="space-y-1 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  Meta Ads Integration
+                  Connect your ad accounts
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  Performance Analysis
+                  Performance reports
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-3 w-3" />
-                  AI Recommendations
+                  AI optimization tips
                 </li>
               </ul>
             </CardContent>
@@ -372,7 +371,7 @@ export function SettingsDashboard() {
                     <span className="text-4xl font-bold">${pkg.price}</span>
                     <span className="text-muted-foreground">/month</span>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {pkg.monthlyCredits} research credits
+                      {pkg.monthlyCredits} AI generations
                     </p>
                   </div>
                   
