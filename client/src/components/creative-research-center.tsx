@@ -1810,7 +1810,7 @@ export function CreativeResearchCenter() {
                           variant="outline"
                           className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
                           onClick={() => {
-                            const { id, runningSince, ...conceptData } = example;
+                            const { id, runningSince, status, createdAt, discoveredAt, ...conceptData } = example;
                             handleApproveExplore(conceptData);
                             handleRejectExplore(example.id);
                           }}

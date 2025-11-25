@@ -1058,6 +1058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const conceptData = req.body;
       
+      console.log("Creating concept - received data:", JSON.stringify(conceptData, null, 2));
+      
       // Create concept with the provided status (typically 'approved' from Explore)
       // Remove auto-generated fields and let DB handle timestamps
       const { 
@@ -1068,7 +1070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...cleanData 
       } = conceptData;
       
-      const newConcept = await storage.createConcept({
+      const insertData = {
         platform: cleanData.platform || 'unknown',
         title: cleanData.title || 'Untitled',
         description: cleanData.description || '',
@@ -1076,23 +1078,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hooks: cleanData.hooks || [],
         status: cleanData.status || 'approved',
         userId,
-        thumbnailUrl: cleanData.thumbnailUrl,
-        videoUrl: cleanData.videoUrl,
-        postUrl: cleanData.postUrl,
-        brandName: cleanData.brandName,
-        industry: cleanData.industry,
+        thumbnailUrl: cleanData.thumbnailUrl || null,
+        videoUrl: cleanData.videoUrl || null,
+        postUrl: cleanData.postUrl || null,
+        brandName: cleanData.brandName || null,
+        industry: cleanData.industry || null,
         engagementScore: cleanData.engagementScore || 0,
-        likes: cleanData.likes,
-        comments: cleanData.comments,
-        shares: cleanData.shares,
-        views: cleanData.views,
-        engagementRate: cleanData.engagementRate ? String(cleanData.engagementRate) : undefined,
-      });
+        likes: cleanData.likes || null,
+        comments: cleanData.comments || null,
+        shares: cleanData.shares || null,
+        views: cleanData.views || null,
+        engagementRate: cleanData.engagementRate ? String(cleanData.engagementRate) : null,
+      };
+      
+      console.log("Creating concept - insert data:", JSON.stringify(insertData, null, 2));
+      
+      const newConcept = await storage.createConcept(insertData);
+      
+      console.log("Created concept:", JSON.stringify(newConcept, null, 2));
       
       res.json({ success: true, concept: newConcept });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating concept:", error);
-      res.status(500).json({ error: "Failed to create concept" });
+      console.error("Error stack:", error.stack);
+      res.status(500).json({ error: "Failed to create concept", message: error.message });
     }
   });
 
