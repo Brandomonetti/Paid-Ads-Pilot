@@ -655,10 +655,10 @@ export default function CustomerIntelligenceHub() {
     });
   };
 
-  // Filter insights by search - use mock data if empty
-  const insightsData = (insights as any[]).length > 0 ? (insights as any[]) : mockInsights;
+  // Filter insights by search - use real API data only (demo insights shown separately)
+  const insightsData = insights as any[];
   
-  // Latest Discoveries: only show pending insights
+  // Latest Discoveries: only show pending insights from real API data
   const pendingInsights = insightsData.filter((insight: any) => insight.status === 'pending');
   
   // Apply search and time filter to pending insights
