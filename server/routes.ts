@@ -1078,7 +1078,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hooks: cleanData.hooks || [],
         status: cleanData.status || 'approved',
         userId,
-        url: cleanData.postUrl || cleanData.url || '', // Required field - use postUrl as fallback
         thumbnailUrl: cleanData.thumbnailUrl || null,
         videoUrl: cleanData.videoUrl || null,
         postUrl: cleanData.postUrl || null,
