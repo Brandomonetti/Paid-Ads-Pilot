@@ -17,7 +17,7 @@ const PACKAGES = [
   {
     id: "starter",
     name: "Starter",
-    price: 49,
+    price: 99,
     monthlyCredits: 50,
     description: "Perfect for small brands getting started",
     features: [
@@ -53,7 +53,7 @@ const PACKAGES = [
   {
     id: "scale",
     name: "Scale",
-    price: 399,
+    price: 199,
     monthlyCredits: 500,
     description: "For agencies and high-volume brands",
     features: [
