@@ -75,6 +75,7 @@ export function CreativeResearchCenter() {
   const [timeFilter, setTimeFilter] = useState('all');
   const [librarySearch, setLibrarySearch] = useState("");
   const [rejectedExploreIds, setRejectedExploreIds] = useState<Set<string>>(new Set());
+  const [rejectedLatestIds, setRejectedLatestIds] = useState<Set<string>>(new Set());
   
   const [filters, setFilters] = useState({
     platform: "all",
@@ -233,6 +234,132 @@ export function CreativeResearchCenter() {
       description: "This creative will reappear if you search again.",
     });
   };
+
+  // Handle approve from latest discoveries - saves concept to library
+  const handleApproveLatest = (conceptData: Omit<CreativeConcept, 'id' | 'status'>) => {
+    saveToLibraryMutation.mutate(conceptData);
+  };
+
+  // Handle reject from latest discoveries - temporarily hides (session only)
+  const handleRejectLatest = (conceptId: string) => {
+    setRejectedLatestIds(prev => new Set(Array.from(prev).concat(conceptId)));
+    toast({
+      title: "Creative rejected",
+      description: "This creative has been hidden for this session.",
+    });
+  };
+
+  // Latest Discoveries demo data
+  const latestExamples: CreativeConcept[] = [
+    {
+      id: 'latest-demo-1',
+      platform: 'tiktok',
+      title: 'Viral Hook: "Nobody told me this about..."',
+      description: 'Short-form UGC using the "nobody told me" hook format. Creator shares surprising benefit discovered after 2 weeks. Raw, authentic delivery with trending sound overlay.',
+      format: 'Raw UGC Video',
+      hooks: ['Nobody told me this would happen', 'Why didnt anyone tell me sooner', 'The thing they dont show you'],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1611432579699-484f7990b127?w=400',
+      postUrl: 'https://tiktok.com/@creator/video/latest1',
+      brandName: 'HonestWellness',
+      industry: 'Health & Wellness',
+      engagementScore: 98,
+      likes: 1200000,
+      comments: 18500,
+      shares: 45000,
+      views: 6800000,
+      engagementRate: 0.19,
+      status: 'pending',
+      createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+      discoveredAt: new Date(Date.now() - 3 * 3600000).toISOString()
+    },
+    {
+      id: 'latest-demo-2',
+      platform: 'instagram',
+      title: 'Trending Reel: Side-by-Side Comparison',
+      description: 'Split-screen format showing "me using cheap products" vs "me using this". Funny, relatable, and visually striking with trending audio.',
+      format: 'Before/After',
+      hooks: ['The upgrade I didnt know I needed', 'Why did I wait so long', 'Left side broke, right side woke'],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400',
+      postUrl: 'https://instagram.com/reel/comparison',
+      brandName: 'UpgradeYourLife',
+      industry: 'Lifestyle',
+      engagementScore: 95,
+      likes: 892000,
+      comments: 12300,
+      shares: 34100,
+      views: 4500000,
+      engagementRate: 0.21,
+      status: 'pending',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      discoveredAt: new Date(Date.now() - 6 * 3600000).toISOString()
+    },
+    {
+      id: 'latest-demo-3',
+      platform: 'facebook',
+      title: 'Emotional Story: "I almost gave up..."',
+      description: 'Longer-form testimonial video with genuine emotion. Person shares their lowest point and transformation journey. Comments are extremely supportive.',
+      format: 'Testimonial',
+      hooks: ['I was ready to give up until...', 'This is the story I never thought Id tell', 'Rock bottom became my foundation'],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1552581234-26160f608093?w=400',
+      postUrl: 'https://facebook.com/watch/transformation',
+      brandName: 'SecondChance',
+      industry: 'Health & Wellness',
+      engagementScore: 96,
+      likes: 145000,
+      comments: 23400,
+      shares: 67800,
+      views: 1200000,
+      engagementRate: 0.20,
+      status: 'pending',
+      createdAt: new Date(Date.now() - 10 * 3600000).toISOString(),
+      discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString()
+    },
+    {
+      id: 'latest-demo-4',
+      platform: 'tiktok',
+      title: 'POV: When you finally find THE product',
+      description: 'POV-style video capturing that moment of discovery. Authentic reaction format thats highly shareable and relatable.',
+      format: 'POV Storytelling',
+      hooks: ['POV you finally found it', 'When it actually works', 'The moment everything changed'],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400',
+      postUrl: 'https://tiktok.com/@creator/video/pov',
+      brandName: 'DiscoveryBrand',
+      industry: 'Beauty',
+      engagementScore: 94,
+      likes: 567000,
+      comments: 8900,
+      shares: 23400,
+      views: 3200000,
+      engagementRate: 0.19,
+      status: 'pending',
+      createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+      discoveredAt: new Date(Date.now() - 12 * 3600000).toISOString()
+    },
+    {
+      id: 'latest-demo-5',
+      platform: 'instagram',
+      title: 'Day in My Life with [Product]',
+      description: 'DIML format showing how product fits into everyday routine. Aesthetic visuals with subtle product integration that feels natural.',
+      format: 'DIML Storytelling',
+      hooks: ['A day in my life', 'My morning routine', 'How I stay productive'],
+      thumbnailUrl: 'https://images.unsplash.com/photo-1616530940355-351fabd9524b?w=400',
+      postUrl: 'https://instagram.com/reel/diml',
+      brandName: 'DailyEssentials',
+      industry: 'Lifestyle',
+      engagementScore: 91,
+      likes: 234000,
+      comments: 5600,
+      shares: 12300,
+      views: 1800000,
+      engagementRate: 0.14,
+      status: 'pending',
+      createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
+      discoveredAt: new Date(Date.now() - 18 * 3600000).toISOString()
+    },
+  ];
+
+  // Filter out rejected latest examples
+  const visibleLatestExamples = latestExamples.filter(e => !rejectedLatestIds.has(e.id));
 
   // Explore section example data
   const exploreExamples: (CreativeConcept & { runningSince: string })[] = [
@@ -930,7 +1057,7 @@ export function CreativeResearchCenter() {
           </TabsTrigger>
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
             <Clock className="h-4 w-4 mr-2" />
-            Latest Discoveries ({pendingConcepts.length})
+            Latest Discoveries ({pendingConcepts.length > 0 ? pendingConcepts.length : visibleLatestExamples.length})
           </TabsTrigger>
           <TabsTrigger value="curated" data-testid="tab-creative-library">
             <Database className="h-4 w-4 mr-2" />
@@ -997,129 +1124,245 @@ export function CreativeResearchCenter() {
               </div>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const filteredPendingConcepts = getTimeFilteredConcepts();
+              {/* Show demo examples when no real pending concepts */}
+              {pendingConcepts.length === 0 && visibleLatestExamples.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {visibleLatestExamples.map((example) => (
+                    <Card 
+                      key={example.id}
+                      className="hover-elevate overflow-hidden"
+                      data-testid={`card-latest-${example.id}`}
+                    >
+                      {example.thumbnailUrl && (
+                        <div className="relative aspect-video bg-muted">
+                          <img 
+                            src={example.thumbnailUrl} 
+                            alt={example.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <Badge className="absolute top-2 left-2" variant="secondary">
+                            {example.platform === 'facebook' ? 'Facebook' : 
+                             example.platform === 'instagram' ? 'Instagram' : 'TikTok'}
+                          </Badge>
+                          <Badge className="absolute top-2 right-2 bg-green-500 text-white">
+                            New
+                          </Badge>
+                        </div>
+                      )}
 
-                return filteredPendingConcepts.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="font-medium mb-2">No Pending Discoveries</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {pendingConcepts.length > 0 
-                        ? "No discoveries match the selected time filter. Try selecting a different time range."
-                        : "No new creatives pending approval. Click Discover to find viral content."}
-                    </p>
-                    {pendingConcepts.length === 0 && (
-                      <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
-                        <Play className="h-4 w-4 mr-2" />
-                        {discoverMutation.isPending ? "Discovering..." : "Discover Creatives"}
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPendingConcepts.map((concept) => (
-                      <Card 
-                        key={concept.id}
-                        className="hover-elevate overflow-hidden"
-                        data-testid={`card-latest-${concept.id}`}
-                      >
-                        {concept.thumbnailUrl && (
-                          <div className="relative aspect-video bg-muted">
-                            <img 
-                              src={concept.thumbnailUrl} 
-                              alt={concept.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {concept.videoUrl && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <Play className="h-12 w-12 text-white" />
-                              </div>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="text-lg">{getPlatformIcon(example.platform)}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {example.format}
+                              </Badge>
+                              <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
+                                {new Date(example.createdAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-base line-clamp-2">{example.title}</CardTitle>
+                            {example.brandName && (
+                              <p className="text-xs text-muted-foreground mt-1">by {example.brandName}</p>
                             )}
-                            <Badge className="absolute top-2 right-2 bg-green-500 text-white">
-                              New
-                            </Badge>
                           </div>
-                        )}
+                        </div>
+                      </CardHeader>
 
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="text-lg">{getPlatformIcon(concept.platform)}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {concept.format}
-                                </Badge>
-                                <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
-                                  {new Date(concept.createdAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </Badge>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {example.description}
+                        </p>
+
+                        {/* Engagement Metrics */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(example.views || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(example.likes || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(example.comments || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Share2 className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(example.shares || 0)}</span>
+                          </div>
+                        </div>
+
+                        {/* Engagement Rate */}
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Engagement Rate</span>
+                            <span className="font-medium">{((example.engagementRate || 0) * 100).toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Approval Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+                            onClick={() => {
+                              const { id, status, createdAt, discoveredAt, ...conceptData } = example;
+                              handleApproveLatest(conceptData);
+                              handleRejectLatest(example.id);
+                            }}
+                            disabled={saveToLibraryMutation.isPending}
+                            data-testid={`button-approve-${example.id}`}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                            onClick={() => handleRejectLatest(example.id)}
+                            data-testid={`button-reject-${example.id}`}
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Reject
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : pendingConcepts.length === 0 && visibleLatestExamples.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="font-medium mb-2">All Demos Reviewed</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    You've reviewed all demo creatives. Click Discover to find real viral content.
+                  </p>
+                  <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
+                    <Play className="h-4 w-4 mr-2" />
+                    {discoverMutation.isPending ? "Discovering..." : "Discover Creatives"}
+                  </Button>
+                </div>
+              ) : (
+                (() => {
+                  const filteredPendingConcepts = getTimeFilteredConcepts();
+                  return filteredPendingConcepts.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                      <h3 className="font-medium mb-2">No Matching Discoveries</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        No discoveries match the selected time filter. Try selecting a different time range.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredPendingConcepts.map((concept) => (
+                        <Card 
+                          key={concept.id}
+                          className="hover-elevate overflow-hidden"
+                          data-testid={`card-latest-${concept.id}`}
+                        >
+                          {concept.thumbnailUrl && (
+                            <div className="relative aspect-video bg-muted">
+                              <img 
+                                src={concept.thumbnailUrl} 
+                                alt={concept.title}
+                                className="w-full h-full object-cover"
+                              />
+                              {concept.videoUrl && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                  <Play className="h-12 w-12 text-white" />
+                                </div>
+                              )}
+                              <Badge className="absolute top-2 right-2 bg-green-500 text-white">
+                                New
+                              </Badge>
+                            </div>
+                          )}
+
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <span className="text-lg">{getPlatformIcon(concept.platform)}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {concept.format}
+                                  </Badge>
+                                  <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
+                                    {new Date(concept.createdAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </Badge>
+                                </div>
+                                <CardTitle className="text-base line-clamp-2">{concept.title}</CardTitle>
+                                {concept.brandName && (
+                                  <p className="text-xs text-muted-foreground mt-1">by {concept.brandName}</p>
+                                )}
                               </div>
-                              <CardTitle className="text-base line-clamp-2">{concept.title}</CardTitle>
-                              {concept.brandName && (
-                                <p className="text-xs text-muted-foreground mt-1">by {concept.brandName}</p>
+                            </div>
+                          </CardHeader>
+
+                          <CardContent className="space-y-3">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {concept.description}
+                            </p>
+
+                            {/* Engagement Metrics */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {concept.views && (
+                                <div className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3 text-muted-foreground" />
+                                  <span>{formatNumber(concept.views)}</span>
+                                </div>
+                              )}
+                              {concept.likes && (
+                                <div className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-muted-foreground" />
+                                  <span>{formatNumber(concept.likes)}</span>
+                                </div>
+                              )}
+                              {concept.engagementRate && (
+                                <div className="flex items-center gap-1">
+                                  <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                                  <span>{(Number(concept.engagementRate) * 100).toFixed(1)}%</span>
+                                </div>
                               )}
                             </div>
-                          </div>
-                        </CardHeader>
 
-                        <CardContent className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {concept.description}
-                          </p>
-
-                          {/* Engagement Metrics */}
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {concept.views && (
-                              <div className="flex items-center gap-1">
-                                <Eye className="h-3 w-3 text-muted-foreground" />
-                                <span>{formatNumber(concept.views)}</span>
-                              </div>
-                            )}
-                            {concept.likes && (
-                              <div className="flex items-center gap-1">
-                                <Heart className="h-3 w-3 text-muted-foreground" />
-                                <span>{formatNumber(concept.likes)}</span>
-                              </div>
-                            )}
-                            {concept.engagementRate && (
-                              <div className="flex items-center gap-1">
-                                <BarChart3 className="h-3 w-3 text-muted-foreground" />
-                                <span>{(Number(concept.engagementRate) * 100).toFixed(1)}%</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Approval Actions */}
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
-                              onClick={() => approveConceptMutation.mutate(concept.id)}
-                              disabled={isMockMode || approveConceptMutation.isPending || rejectConceptMutation.isPending}
-                              data-testid={`button-approve-concept-${concept.id}`}
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-                              onClick={() => rejectConceptMutation.mutate(concept.id)}
-                              disabled={isMockMode || approveConceptMutation.isPending || rejectConceptMutation.isPending}
-                              data-testid={`button-reject-concept-${concept.id}`}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Reject
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                );
-              })()}
+                            {/* Approval Actions */}
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+                                onClick={() => approveConceptMutation.mutate(concept.id)}
+                                disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                                data-testid={`button-approve-concept-${concept.id}`}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                                onClick={() => rejectConceptMutation.mutate(concept.id)}
+                                disabled={approveConceptMutation.isPending || rejectConceptMutation.isPending}
+                                data-testid={`button-reject-concept-${concept.id}`}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                Reject
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
             </CardContent>
           </Card>
         </TabsContent>
