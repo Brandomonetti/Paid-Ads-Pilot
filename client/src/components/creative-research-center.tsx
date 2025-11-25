@@ -30,7 +30,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Database
+  Database,
+  Info
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
