@@ -68,282 +68,6 @@ export default function CustomerIntelligenceHub() {
   const [libraryDateRange, setLibraryDateRange] = useState('all');
   const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
   
-  // Demo insights tracking
-  const [rejectedDemoIds, setRejectedDemoIds] = useState<Set<string>>(new Set());
-  
-  // Demo insights for Latest Discoveries (shown when no real insights exist)
-  const demoInsights = [
-    {
-      id: 'demo-insight-1',
-      category: 'pain-point',
-      title: 'Shipping costs driving cart abandonment',
-      rawQuote: 'I was about to checkout but $15 shipping for a $20 item? No thanks. I found free shipping elsewhere.',
-      summary: 'Customers frequently abandon carts when shipping costs are perceived as disproportionate to product value, especially for lower-priced items.',
-      observations: [
-        'Free shipping threshold motivates larger orders',
-        'Unexpected costs at checkout cause frustration',
-        'Competitors offering free shipping win business',
-        'Shipping cost visibility earlier reduces abandonment'
-      ],
-      marketingAngles: [
-        'Free shipping on all orders - no surprises at checkout',
-        'Why pay more for shipping than the product?',
-        'Transparent pricing from start to finish'
-      ],
-      sourcePlatform: 'reddit',
-      sourceUrl: 'https://reddit.com/r/ecommerce/example',
-      sourceType: 'post',
-      engagementScore: 342,
-      confidenceScore: 0.94,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 2 * 3600000).toISOString()
-    },
-    {
-      id: 'demo-insight-2',
-      category: 'desire',
-      title: 'Customers want authentic social proof',
-      rawQuote: 'Im so tired of obviously fake reviews. Show me real people, real results, unfiltered. I can spot a fake review from a mile away.',
-      summary: 'Modern consumers are increasingly skeptical of polished testimonials and demand authentic, unfiltered social proof from real customers.',
-      observations: [
-        'Video testimonials more trusted than text',
-        'User-generated content outperforms polished ads',
-        'Customers research reviews across multiple platforms',
-        'Negative reviews actually increase trust when handled well'
-      ],
-      marketingAngles: [
-        'Real customers, real stories, no scripts',
-        '10,000+ verified reviews - see what real users say',
-        'We dont hide the bad reviews - read them all'
-      ],
-      sourcePlatform: 'youtube',
-      sourceUrl: 'https://youtube.com/watch?v=example',
-      sourceType: 'comment',
-      engagementScore: 1250,
-      confidenceScore: 0.91,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 5 * 3600000).toISOString()
-    },
-    {
-      id: 'demo-insight-3',
-      category: 'objection',
-      title: 'Subscription fatigue and commitment fears',
-      rawQuote: 'I already have like 10 subscriptions. I dont want another recurring charge I forget about. Just let me buy when I need it.',
-      summary: 'Customers express strong resistance to subscription models due to subscription fatigue and fear of forgotten recurring charges.',
-      observations: [
-        'One-time purchase option preferred initially',
-        'Cancellation difficulty is major concern',
-        'Auto-renewal without reminder frustrates users',
-        'Flexible pause/skip options reduce resistance'
-      ],
-      marketingAngles: [
-        'Subscribe and save OR buy once - your choice',
-        'Cancel anytime, no questions asked',
-        'We remind you before every renewal'
-      ],
-      sourcePlatform: 'amazon',
-      sourceUrl: 'https://amazon.com/reviews/example',
-      sourceType: 'review',
-      engagementScore: 89,
-      confidenceScore: 0.88,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 8 * 3600000).toISOString()
-    },
-    {
-      id: 'demo-insight-4',
-      category: 'trigger',
-      title: 'Limited time offers create urgency',
-      rawQuote: 'I wasnt going to buy but then I saw the sale ending in 2 hours and I just pulled the trigger. FOMO is real lol',
-      summary: 'Time-limited promotions effectively trigger purchase decisions by creating fear of missing out on deals.',
-      observations: [
-        'Countdown timers increase conversion',
-        'Flash sales outperform always-on discounts',
-        'Scarcity messaging boosts urgency',
-        'Authenticity of deadlines is crucial'
-      ],
-      marketingAngles: [
-        'Sale ends tonight at midnight',
-        'Only 50 units left at this price',
-        'Early bird pricing closes in 24 hours'
-      ],
-      sourcePlatform: 'tiktok',
-      sourceUrl: 'https://tiktok.com/@user/video/example',
-      sourceType: 'comment',
-      engagementScore: 5420,
-      confidenceScore: 0.92,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 4 * 3600000).toISOString()
-    },
-    {
-      id: 'demo-insight-5',
-      category: 'desire',
-      title: 'Personalized recommendations valued highly',
-      rawQuote: 'I love when brands actually understand what I need instead of showing me random stuff. Makes shopping so much easier.',
-      summary: 'Customers appreciate personalized product recommendations that demonstrate understanding of their specific needs and preferences.',
-      observations: [
-        'Quiz-based recommendations increase engagement',
-        'Personalization reduces decision fatigue',
-        'Relevant suggestions improve customer loyalty',
-        'Data-driven recommendations outperform generic lists'
-      ],
-      marketingAngles: [
-        'Take our 2-minute quiz for your perfect match',
-        'Curated just for you based on your needs',
-        'Stop scrolling, start finding what you actually need'
-      ],
-      sourcePlatform: 'instagram',
-      sourceUrl: 'https://instagram.com/p/example',
-      sourceType: 'comment',
-      engagementScore: 2340,
-      confidenceScore: 0.89,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString()
-    }
-  ];
-  
-  // Filter visible demo insights (exclude rejected ones)
-  const visibleDemoInsights = demoInsights.filter(i => !rejectedDemoIds.has(i.id));
-
-  // Mock data for development visualization
-  const mockInsights = [
-    {
-      id: '1',
-      category: 'pain-point',
-      title: 'Post-workout muscle soreness preventing consistent training',
-      rawQuote: 'I love working out but the next-day soreness is brutal. I can barely walk after leg day and it keeps me from going back to the gym.',
-      summary: 'Customers experience severe delayed onset muscle soreness (DOMS) that creates a barrier to consistent workout routines, leading to missed gym sessions and fitness goal abandonment.',
-      observations: [
-        'DOMS severity peaks 24-48 hours post-workout',
-        'Pain is worse after lower body exercises',
-        'Creates fear of returning to gym',
-        'Most acute in beginners and after breaks'
-      ],
-      marketingAngles: [
-        'Recovery so fast, you\'ll wonder if you even worked out',
-        'Say goodbye to leg-day dread',
-        'Train harder, recover faster - no more missed gym days'
-      ],
-      sourcePlatform: 'reddit',
-      sourceUrl: 'https://reddit.com/r/fitness/example',
-      confidence: 92,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: '2',
-      category: 'desire',
-      title: 'Want to feel confident and energized without relying on pre-workout',
-      rawQuote: 'I wish I could just wake up with natural energy and not need caffeine or pre-workout to feel motivated. My body feels dependent and I crash hard.',
-      summary: 'Customers desire sustained, natural energy throughout the day without stimulant dependency, crashes, or the jittery side effects of traditional pre-workout supplements.',
-      observations: [
-        'Caffeine tolerance builds quickly',
-        'Afternoon energy crashes are common',
-        'Desire for sustainable energy solutions',
-        'Concern about stimulant dependency'
-      ],
-      marketingAngles: [
-        'All-day energy without the crash or jitters',
-        'Natural energy that lasts - no caffeine needed',
-        'Feel energized from sunrise to sunset, naturally'
-      ],
-      sourcePlatform: 'youtube',
-      sourceUrl: 'https://youtube.com/watch?v=example',
-      confidence: 88,
-      status: 'approved',
-      discoveredAt: new Date(Date.now() - 7200000).toISOString()
-    },
-    {
-      id: '3',
-      category: 'objection',
-      title: 'Skeptical of supplement quality and ingredient transparency',
-      rawQuote: 'How do I know what\'s actually in these supplements? The industry is so unregulated. I don\'t trust brands that hide behind proprietary blends.',
-      summary: 'Customers express deep skepticism about supplement ingredient quality, manufacturing practices, and transparency, especially regarding proprietary blends and third-party testing.',
-      observations: [
-        'Lack of trust in supplement industry',
-        'Demand for third-party testing certificates',
-        'Proprietary blends seen as hiding poor ingredients',
-        'Want to see exact ingredient doses'
-      ],
-      marketingAngles: [
-        'Every ingredient listed. Every dose shown. No secrets.',
-        'Third-party tested for purity and potency - see the proof',
-        'Transparent ingredients you can pronounce and trust'
-      ],
-      sourcePlatform: 'amazon',
-      sourceUrl: 'https://amazon.com/product/reviews/example',
-      confidence: 95,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 1800000).toISOString()
-    },
-    {
-      id: '4',
-      category: 'trigger',
-      title: 'Friends\' visible fitness transformations create urgency to start',
-      rawQuote: 'Seeing my friend\'s before/after pics made me realize I need to get serious. If she can do it with her busy schedule, I have no excuse.',
-      summary: 'Social proof from peers\' successful transformations triggers immediate motivation and removes mental barriers, creating a "if they can, I can" mindset shift.',
-      observations: [
-        'Peer transformations more motivating than celebrity endorsements',
-        'Visual proof creates belief in possibility',
-        'Busy schedule relatability is key',
-        'Creates sense of urgency to start now'
-      ],
-      marketingAngles: [
-        'Join 50,000+ people transforming their bodies this month',
-        'Real people. Real results. Your turn.',
-        'See what happens when you commit for just 30 days'
-      ],
-      sourcePlatform: 'instagram',
-      sourceUrl: 'https://instagram.com/p/example',
-      confidence: 90,
-      status: 'approved',
-      discoveredAt: new Date(Date.now() - 10800000).toISOString()
-    },
-    {
-      id: '5',
-      category: 'pain-point',
-      title: 'Difficulty tracking progress and staying accountable alone',
-      rawQuote: 'I start strong but lose motivation after 2 weeks. I need someone to hold me accountable but personal trainers are too expensive.',
-      summary: 'Customers struggle with self-accountability and motivation sustainability, leading to program abandonment. They need external accountability structures but cost is prohibitive.',
-      observations: [
-        'Motivation peaks in week 1-2 then drops',
-        'Lack of progress tracking leads to discouragement',
-        'Community accountability more sustainable than solo efforts',
-        'Cost barrier prevents hiring personal trainers'
-      ],
-      marketingAngles: [
-        'Your personal accountability partner - at a fraction of the cost',
-        'Track every win. Celebrate every milestone. Stay motivated.',
-        'Join a community that won\'t let you quit on yourself'
-      ],
-      sourcePlatform: 'tiktok',
-      sourceUrl: 'https://tiktok.com/@user/video/example',
-      confidence: 87,
-      status: 'pending',
-      discoveredAt: new Date(Date.now() - 5400000).toISOString()
-    },
-    {
-      id: '6',
-      category: 'desire',
-      title: 'Want to look toned and fit without spending hours at the gym',
-      rawQuote: 'I don\'t have 2 hours a day for the gym. I just want to look good in a bikini with like 30 min workouts max. Is that even possible?',
-      summary: 'Time-constrained customers desire efficient workouts that deliver visible aesthetic results without lengthy gym sessions, prioritizing appearance over performance.',
-      observations: [
-        'Time scarcity is primary barrier',
-        'Aesthetic goals over strength/performance',
-        '30-45 minutes is ideal workout duration',
-        'Convenience and efficiency highly valued'
-      ],
-      marketingAngles: [
-        'Get toned in just 30 minutes a day',
-        'Efficient workouts for busy people who want results',
-        'Look great, feel confident - no 2-hour gym sessions required'
-      ],
-      sourcePlatform: 'facebook',
-      sourceUrl: 'https://facebook.com/groups/fitness/posts/example',
-      confidence: 91,
-      status: 'approved',
-      discoveredAt: new Date(Date.now() - 14400000).toISOString()
-    }
-  ];
 
   const mockSources = [
     {
@@ -388,130 +112,9 @@ export default function CustomerIntelligenceHub() {
     }
   ];
 
-  const mockAvatars = [
-    {
-      id: 'a1',
-      name: 'Time-Crunched Taylor',
-      ageRange: '28-35',
-      demographics: 'Working professional, Urban, Mid-income',
-      psychographics: 'Highly motivated but time-poor. Values efficiency and results over process. Struggles with consistency due to demanding career. Wants to look good and feel confident without fitness consuming their life.',
-      painPoints: [
-        'Only has 30-45 minutes max for workouts',
-        'Inconsistent schedule makes routine difficult',
-        'Previous programs required too much time commitment',
-        'Feels guilty about not prioritizing fitness more'
-      ],
-      desires: [
-        'Visible results from short, efficient workouts',
-        'Flexibility to workout at home or gym',
-        'Simple nutrition plan that fits busy lifestyle',
-        'Look toned and feel energized for work'
-      ],
-      hooks: [
-        'Get fit in less time than your commute - 30 min max',
-        'Designed for people who are too busy to waste time',
-        'Results-driven workouts for your packed schedule',
-        'Efficiency meets effectiveness - no fluff, just results'
-      ],
-      priority: 'high',
-      confidence: 94,
-      status: 'approved'
-    },
-    {
-      id: 'a2',
-      name: 'Recovery-Focused Rachel',
-      ageRange: '25-40',
-      demographics: 'Fitness enthusiast, Suburban/Urban, Middle-class',
-      psychographics: 'Loves working out but constantly battling soreness and fatigue. Knows recovery is important but doesn\'t know how to optimize it. Willing to invest in quality recovery products. Wants to train harder without burning out.',
-      painPoints: [
-        'Severe muscle soreness prevents consistent training',
-        'Energy crashes after intense workouts',
-        'Takes too long to recover between sessions',
-        'Feels guilty taking rest days but body demands it'
-      ],
-      desires: [
-        'Faster recovery to train more frequently',
-        'Natural energy without stimulant dependency',
-        'Reduced inflammation and muscle soreness',
-        'Sustainable training schedule year-round'
-      ],
-      hooks: [
-        'Train harder, recover faster - never miss a workout',
-        'Say goodbye to 3-day DOMS and hello to daily training',
-        'Natural recovery support your body will thank you for',
-        'Bounce back in 24 hours, not 72'
-      ],
-      priority: 'high',
-      confidence: 92,
-      status: 'pending'
-    },
-    {
-      id: 'a3',
-      name: 'Skeptical Steve',
-      ageRange: '30-45',
-      demographics: 'Educated professional, Research-oriented, Higher income',
-      psychographics: 'Highly skeptical of supplement industry claims. Demands scientific evidence and transparency. Won\'t buy based on marketing hype alone. Values third-party testing and clean ingredients. Willing to pay premium for quality.',
-      painPoints: [
-        'Can\'t trust most supplement brands\' claims',
-        'Proprietary blends hide poor quality ingredients',
-        'No way to verify purity and potency',
-        'Wasted money on ineffective products before'
-      ],
-      desires: [
-        'Complete ingredient transparency',
-        'Third-party tested products with certificates',
-        'Science-backed formulations',
-        'Brand that treats customers with intelligence'
-      ],
-      hooks: [
-        'Every ingredient listed. Every dose shown. Proof provided.',
-        'Third-party tested for purity - see the certificates',
-        'Science-backed formulas for people who do their research',
-        'Transparency you can trust. Results you can measure.'
-      ],
-      priority: 'medium',
-      confidence: 89,
-      status: 'pending'
-    },
-    {
-      id: 'a4',
-      name: 'Accountability-Seeking Amy',
-      ageRange: '22-35',
-      demographics: 'Young professional, Social, Entry to mid-level income',
-      psychographics: 'Struggles with self-motivation and consistency. Thrives in community environments. Starts strong but loses momentum without external accountability. Influenced by social proof and peer success stories.',
-      painPoints: [
-        'Loses motivation after 2-3 weeks solo',
-        'No one to hold her accountable to goals',
-        'Feels isolated in fitness journey',
-        'Can\'t afford expensive personal trainers'
-      ],
-      desires: [
-        'Community of like-minded people',
-        'Regular check-ins and progress tracking',
-        'Affordable accountability system',
-        'Celebration of small wins along the way'
-      ],
-      hooks: [
-        'Join 10,000+ members who won\'t let you quit',
-        'Your accountability partner at 1/10th the cost of a trainer',
-        'Track every win. Celebrate every milestone. Together.',
-        'Community-powered motivation that actually works'
-      ],
-      priority: 'medium',
-      confidence: 85,
-      status: 'pending'
-    }
-  ];
-
-  // Fetch insights from API - build query string for proper URL
-  const insightsQueryString = new URLSearchParams({
-    ...(selectedCategory !== 'all' && { category: selectedCategory }),
-    ...(selectedPlatform !== 'all' && { platform: selectedPlatform }),
-  }).toString();
-  const insightsUrl = insightsQueryString ? `/api/insights?${insightsQueryString}` : '/api/insights';
-  
-  const { data: insights = [], isLoading: isLoadingInsights } = useQuery({
-    queryKey: [insightsUrl],
+  // Fetch avatars from API (used for first tab - Latest Discoveries)
+  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery<any[]>({
+    queryKey: ['/api/avatars'],
   });
 
   // Fetch sources from API - build query string for proper URL
@@ -524,12 +127,8 @@ export default function CustomerIntelligenceHub() {
   
   const sourcesData = (sources as any[]).length > 0 ? (sources as any[]) : mockSources;
 
-  // Fetch avatars - use mock data if empty
-  const { data: avatars = [], isLoading: isLoadingAvatars } = useQuery({
-    queryKey: ['/api/avatars'],
-  });
-
-  const avatarsData = (avatars as any[]).length > 0 ? (avatars as any[]) : mockAvatars;
+  // Use avatars data directly (no mock fallback)
+  const avatarsData = avatars as any[];
 
   // Generate avatars mutation
   const generateAvatarsMutation = useMutation({
@@ -568,11 +167,8 @@ export default function CustomerIntelligenceHub() {
         description: data.message,
         variant: data.success ? "default" : "destructive",
       });
-      // Invalidate all insight and source queries
-      queryClient.invalidateQueries({ predicate: (query) => 
-        String(query.queryKey[0]).startsWith('/api/insights') || 
-        String(query.queryKey[0]).startsWith('/api/sources')
-      });
+      // Invalidate avatars query to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Failed to start customer research discovery";
@@ -584,19 +180,17 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Approve insight mutation
-  const approveInsightMutation = useMutation({
-    mutationFn: async (insightId: string) => {
-      return await apiRequest('PATCH', `/api/insights/${insightId}/approve`, {});
+  // Approve avatar mutation
+  const approveAvatarMutation = useMutation({
+    mutationFn: async (avatarId: string) => {
+      return await apiRequest('PATCH', `/api/avatars/${avatarId}/approve`, {});
     },
     onSuccess: () => {
       toast({
         title: "Insight approved!",
         description: "This insight has been added to your Research Library.",
       });
-      queryClient.invalidateQueries({ predicate: (query) => 
-        String(query.queryKey[0]).startsWith('/api/insights')
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
     },
     onError: (error: any) => {
       toast({
@@ -607,19 +201,17 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Reject insight mutation
-  const rejectInsightMutation = useMutation({
-    mutationFn: async (insightId: string) => {
-      return await apiRequest('PATCH', `/api/insights/${insightId}/reject`, {});
+  // Reject avatar mutation
+  const rejectAvatarMutation = useMutation({
+    mutationFn: async (avatarId: string) => {
+      return await apiRequest('PATCH', `/api/avatars/${avatarId}/reject`, {});
     },
     onSuccess: () => {
       toast({
         title: "Insight rejected",
         description: "This insight has been removed from Latest Discoveries.",
       });
-      queryClient.invalidateQueries({ predicate: (query) => 
-        String(query.queryKey[0]).startsWith('/api/insights')
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
     },
     onError: (error: any) => {
       toast({
@@ -630,87 +222,50 @@ export default function CustomerIntelligenceHub() {
     },
   });
 
-  // Save demo insight to library mutation
-  const saveDemoInsightMutation = useMutation({
-    mutationFn: async (insight: typeof demoInsights[0]) => {
-      const { id, ...insightData } = insight;
-      return await apiRequest('POST', '/api/insights', {
-        ...insightData,
-        status: 'approved',
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Insight approved!",
-        description: "This insight has been added to your Research Library.",
-      });
-      queryClient.invalidateQueries({ predicate: (query) => 
-        String(query.queryKey[0]).startsWith('/api/insights')
-      });
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || "Failed to save insight";
-      toast({
-        title: "Save failed",
-        description: message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle approve demo insight
-  const handleApproveDemoInsight = (insight: typeof demoInsights[0]) => {
-    saveDemoInsightMutation.mutate(insight);
-    // Also hide the demo insight after approval
-    setRejectedDemoIds(prev => new Set(Array.from(prev).concat(insight.id)));
-  };
-
-  // Handle reject demo insight (temporarily hides for this session)
-  const handleRejectDemoInsight = (insightId: string) => {
-    setRejectedDemoIds(prev => new Set(Array.from(prev).concat(insightId)));
-    toast({
-      title: "Insight dismissed",
-      description: "This insight has been hidden for this session.",
-    });
-  };
-
-  // Filter insights by search - use real API data only (demo insights shown separately)
-  const insightsData = insights as any[];
+  // Latest Discoveries: only show pending avatars
+  const pendingAvatars = avatarsData.filter((avatar: any) => avatar.status === 'pending');
   
-  // Latest Discoveries: only show pending insights from real API data
-  const pendingInsights = insightsData.filter((insight: any) => insight.status === 'pending');
-  
-  // Apply search and time filter to pending insights
-  const filteredInsights = pendingInsights.filter((insight: any) => {
+  // Apply search, category, platform and time filter to pending avatars
+  const filteredAvatars = pendingAvatars.filter((avatar: any) => {
+    // Category filter
+    if (selectedCategory !== 'all' && avatar.category !== selectedCategory) {
+      return false;
+    }
+    
+    // Platform filter
+    if (selectedPlatform !== 'all' && avatar.platform !== selectedPlatform) {
+      return false;
+    }
+    
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = (
-        insight.title?.toLowerCase().includes(query) ||
-        insight.rawQuote?.toLowerCase().includes(query) ||
-        insight.summary?.toLowerCase().includes(query)
+        avatar.title?.toLowerCase().includes(query) ||
+        avatar.message?.toLowerCase().includes(query) ||
+        avatar.summary?.toLowerCase().includes(query)
       );
       if (!matchesSearch) return false;
     }
     
     // Time filter (for Latest Discoveries)
-    if (timeFilter !== 'all' && insight.discoveredAt) {
-      const discoveryTime = new Date(insight.discoveredAt).getTime();
+    if (timeFilter !== 'all' && avatar.createdAt) {
+      const createdTime = new Date(avatar.createdAt).getTime();
       const now = Date.now();
       const hourInMs = 3600000;
       
       switch (timeFilter) {
         case '1h':
-          if (now - discoveryTime > hourInMs) return false;
+          if (now - createdTime > hourInMs) return false;
           break;
         case '6h':
-          if (now - discoveryTime > 6 * hourInMs) return false;
+          if (now - createdTime > 6 * hourInMs) return false;
           break;
         case '24h':
-          if (now - discoveryTime > 24 * hourInMs) return false;
+          if (now - createdTime > 24 * hourInMs) return false;
           break;
         case '7d':
-          if (now - discoveryTime > 7 * 24 * hourInMs) return false;
+          if (now - createdTime > 7 * 24 * hourInMs) return false;
           break;
       }
     }
@@ -718,15 +273,15 @@ export default function CustomerIntelligenceHub() {
     return true;
   });
   
-  // Research Library: only show approved insights
-  const approvedInsights = insightsData.filter((insight: any) => insight.status === 'approved');
+  // Research Library: only show approved avatars
+  const approvedAvatars = avatarsData.filter((avatar: any) => avatar.status === 'approved');
 
   // Helper function to filter by date range (used in Research Library)
-  const filterByDateRange = (insight: any, dateRange: string): boolean => {
+  const filterByDateRange = (avatar: any, dateRange: string): boolean => {
     if (dateRange === 'all') return true;
     
     // Use createdAt as the "date added to library" timestamp
-    const addedDate = insight.createdAt ? new Date(insight.createdAt) : null;
+    const addedDate = avatar.createdAt ? new Date(avatar.createdAt) : null;
     if (!addedDate) return true;
     
     const now = new Date();
@@ -748,12 +303,12 @@ export default function CustomerIntelligenceHub() {
     }
   };
 
-  // Calculate category counts for approved insights (used in Research Library)
+  // Calculate category counts for approved avatars (used in Research Library)
   const categoryCounts = {
-    'pain-point': approvedInsights.filter((i: any) => i.category === 'pain-point').length,
-    'desire': approvedInsights.filter((i: any) => i.category === 'desire').length,
-    'objection': approvedInsights.filter((i: any) => i.category === 'objection').length,
-    'trigger': approvedInsights.filter((i: any) => i.category === 'trigger').length,
+    'pain-point': approvedAvatars.filter((a: any) => a.category === 'pain-point').length,
+    'desire': approvedAvatars.filter((a: any) => a.category === 'desire').length,
+    'objection': approvedAvatars.filter((a: any) => a.category === 'objection').length,
+    'trigger': approvedAvatars.filter((a: any) => a.category === 'trigger').length,
   };
 
   return (
@@ -775,10 +330,10 @@ export default function CustomerIntelligenceHub() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="latest" data-testid="tab-latest-discoveries">
-            Latest Discoveries ({filteredInsights.length > 0 ? filteredInsights.length : visibleDemoInsights.length})
+            Latest Discoveries ({filteredAvatars.length})
           </TabsTrigger>
           <TabsTrigger value="library" data-testid="tab-research-library">
-            Research Library
+            Research Library ({approvedAvatars.length})
           </TabsTrigger>
           <TabsTrigger value="avatars" data-testid="tab-target-avatars">
             Target Avatars ({avatarsData.length})
@@ -826,8 +381,8 @@ export default function CustomerIntelligenceHub() {
             </div>
           </div>
 
-          {/* Insights Grid */}
-          {isLoadingInsights && (
+          {/* Loading State */}
+          {isLoadingAvatars && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <Card key={i}>
@@ -843,179 +398,14 @@ export default function CustomerIntelligenceHub() {
             </div>
           )}
 
-          {/* Show demo insights when no real pending insights */}
-          {!isLoadingInsights && filteredInsights.length === 0 && visibleDemoInsights.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {visibleDemoInsights.map((insight) => {
-                const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
-                const CategoryIcon = categoryInfo?.icon || Brain;
-                const isExpanded = expandedInsight === insight.id;
-                
-                return (
-                  <Card key={insight.id} className="hover-elevate" data-testid={`card-demo-insight-${insight.id}`}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge variant="outline" className={`${categoryInfo?.color} gap-1`}>
-                              <CategoryIcon className="h-3 w-3" />
-                              {categoryInfo?.label}
-                            </Badge>
-                            <Badge
-                              className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}
-                            >
-                              {insight.sourcePlatform}
-                            </Badge>
-                            <Badge className="bg-green-500 text-white text-xs">New</Badge>
-                          </div>
-                          <CardTitle className="text-base">{insight.title}</CardTitle>
-                        </div>
-                      </div>
-                      <CardDescription className="text-sm italic mt-2">
-                        "{insight.rawQuote}"
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {!isExpanded && (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {insight.summary}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpandedInsight(insight.id)}
-                            className="p-0 h-auto mt-2"
-                            data-testid={`button-expand-demo-${insight.id}`}
-                          >
-                            Read More →
-                          </Button>
-                          
-                          {/* Approval Buttons */}
-                          <div className="flex gap-2 pt-2 border-t">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => handleApproveDemoInsight(insight)}
-                              disabled={saveDemoInsightMutation.isPending}
-                              data-testid={`button-approve-demo-${insight.id}`}
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => handleRejectDemoInsight(insight.id)}
-                              data-testid={`button-reject-demo-${insight.id}`}
-                            >
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {isExpanded && (
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold text-sm mb-2">Summary</h4>
-                            <p className="text-sm text-muted-foreground">{insight.summary}</p>
-                          </div>
-                          
-                          {insight.observations && insight.observations.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-sm mb-2">Key Observations</h4>
-                              <ul className="space-y-1">
-                                {insight.observations.map((obs: string, idx: number) => (
-                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                    <span className="text-primary">•</span>
-                                    {obs}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          {insight.marketingAngles && insight.marketingAngles.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-sm mb-2">Marketing Angles</h4>
-                              <div className="space-y-1">
-                                {insight.marketingAngles.map((angle: string, idx: number) => (
-                                  <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
-                                    {angle}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              asChild
-                              className="gap-2"
-                              data-testid={`button-view-source-demo-${insight.id}`}
-                            >
-                              <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3 w-3" />
-                                View Original
-                              </a>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedInsight(null)}
-                              data-testid={`button-collapse-demo-${insight.id}`}
-                            >
-                              Collapse
-                            </Button>
-                          </div>
-                          
-                          {/* Approval Buttons */}
-                          <div className="flex gap-2 pt-3 border-t">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => handleApproveDemoInsight(insight)}
-                              disabled={saveDemoInsightMutation.isPending}
-                              data-testid={`button-approve-demo-expanded-${insight.id}`}
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Approve & Add to Library
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => handleRejectDemoInsight(insight.id)}
-                              data-testid={`button-reject-demo-expanded-${insight.id}`}
-                            >
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {/* All demos reviewed state */}
-          {!isLoadingInsights && filteredInsights.length === 0 && visibleDemoInsights.length === 0 && (
+          {/* Empty state */}
+          {!isLoadingAvatars && filteredAvatars.length === 0 && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Brain className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">All Demos Reviewed</h3>
+                <h3 className="text-lg font-semibold mb-2">No Pending Discoveries</h3>
                 <p className="text-muted-foreground mb-4">
-                  You've reviewed all demo insights. Click "Discover" to find real customer intelligence.
+                  Click "Discover" to find customer insights from across the web.
                 </p>
                 <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                   <Play className="h-4 w-4 mr-2" />
@@ -1025,51 +415,51 @@ export default function CustomerIntelligenceHub() {
             </Card>
           )}
 
-          {/* Real pending insights */}
-          {!isLoadingInsights && filteredInsights.length > 0 && (
+          {/* Pending avatars grid */}
+          {!isLoadingAvatars && filteredAvatars.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredInsights.map((insight: any) => {
-                const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+              {filteredAvatars.map((avatar: any) => {
+                const categoryInfo = categoryConfig[avatar.category as keyof typeof categoryConfig];
                 const CategoryIcon = categoryInfo?.icon || Brain;
-                const isExpanded = expandedInsight === insight.id;
+                const isExpanded = expandedInsight === avatar.id;
                 
                 return (
-                  <Card key={insight.id} className="hover-elevate" data-testid={`card-insight-${insight.id}`}>
+                  <Card key={avatar.id} className="hover-elevate" data-testid={`card-avatar-${avatar.id}`}>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <Badge variant="outline" className={`${categoryInfo?.color} gap-1`}>
                               <CategoryIcon className="h-3 w-3" />
                               {categoryInfo?.label}
                             </Badge>
                             <Badge
-                              className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}
+                              className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}
                             >
-                              {insight.sourcePlatform}
+                              {avatar.platform}
                             </Badge>
                           </div>
-                          <CardTitle className="text-base">{insight.title}</CardTitle>
+                          <CardTitle className="text-base">{avatar.title}</CardTitle>
                         </div>
                       </div>
                       <CardDescription className="text-sm italic mt-2">
-                        "{insight.rawQuote}"
+                        "{avatar.message}"
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {!isExpanded && (
                         <div className="space-y-3">
                           <p className="text-sm text-muted-foreground line-clamp-2">
-                            {insight.summary}
+                            {avatar.summary}
                           </p>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setExpandedInsight(insight.id)}
+                            onClick={() => setExpandedInsight(avatar.id)}
                             className="p-0 h-auto mt-2"
-                            data-testid={`button-expand-${insight.id}`}
+                            data-testid={`button-expand-${avatar.id}`}
                           >
-                            Read More →
+                            Read More
                           </Button>
                           
                           {/* Approval Buttons */}
@@ -1078,9 +468,9 @@ export default function CustomerIntelligenceHub() {
                               variant="default"
                               size="sm"
                               className="flex-1 gap-2"
-                              onClick={() => approveInsightMutation.mutate(insight.id)}
-                              disabled={approveInsightMutation.isPending}
-                              data-testid={`button-approve-${insight.id}`}
+                              onClick={() => approveAvatarMutation.mutate(avatar.id)}
+                              disabled={approveAvatarMutation.isPending}
+                              data-testid={`button-approve-${avatar.id}`}
                             >
                               <CheckCircle2 className="h-3 w-3" />
                               Approve
@@ -1089,9 +479,9 @@ export default function CustomerIntelligenceHub() {
                               variant="outline"
                               size="sm"
                               className="flex-1 gap-2"
-                              onClick={() => rejectInsightMutation.mutate(insight.id)}
-                              disabled={rejectInsightMutation.isPending}
-                              data-testid={`button-reject-${insight.id}`}
+                              onClick={() => rejectAvatarMutation.mutate(avatar.id)}
+                              disabled={rejectAvatarMutation.isPending}
+                              data-testid={`button-reject-${avatar.id}`}
                             >
                               <X className="h-3 w-3" />
                               Reject
@@ -1104,16 +494,16 @@ export default function CustomerIntelligenceHub() {
                         <div className="space-y-4">
                           <div>
                             <h4 className="font-semibold text-sm mb-2">Summary</h4>
-                            <p className="text-sm text-muted-foreground">{insight.summary}</p>
+                            <p className="text-sm text-muted-foreground">{avatar.summary}</p>
                           </div>
                           
-                          {insight.observations && insight.observations.length > 0 && (
+                          {avatar.observations && avatar.observations.length > 0 && (
                             <div>
                               <h4 className="font-semibold text-sm mb-2">Key Observations</h4>
                               <ul className="space-y-1">
-                                {insight.observations.map((obs: string, idx: number) => (
+                                {avatar.observations.map((obs: string, idx: number) => (
                                   <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                    <span className="text-primary">•</span>
+                                    <span className="text-primary">-</span>
                                     {obs}
                                   </li>
                                 ))}
@@ -1121,13 +511,13 @@ export default function CustomerIntelligenceHub() {
                             </div>
                           )}
                           
-                          {insight.marketingAngles && insight.marketingAngles.length > 0 && (
+                          {avatar.marketingAngles && avatar.marketingAngles.length > 0 && (
                             <div>
                               <h4 className="font-semibold text-sm mb-2">Marketing Angles</h4>
                               <div className="space-y-1">
-                                {insight.marketingAngles.map((angle: string, idx: number) => (
+                                {avatar.marketingAngles.map((angle: string, idx: number) => (
                                   <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
-                                    💡 {angle}
+                                    {angle}
                                   </div>
                                 ))}
                               </div>
@@ -1135,23 +525,25 @@ export default function CustomerIntelligenceHub() {
                           )}
                           
                           <div className="flex gap-2 pt-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              asChild
-                              className="gap-2"
-                              data-testid={`button-view-source-${insight.id}`}
-                            >
-                              <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3 w-3" />
-                                View Original
-                              </a>
-                            </Button>
+                            {avatar.url && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="gap-2"
+                                data-testid={`button-view-source-${avatar.id}`}
+                              >
+                                <a href={avatar.url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3 w-3" />
+                                  View Original
+                                </a>
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => setExpandedInsight(null)}
-                              data-testid={`button-collapse-${insight.id}`}
+                              data-testid={`button-collapse-${avatar.id}`}
                             >
                               Collapse
                             </Button>
@@ -1163,9 +555,9 @@ export default function CustomerIntelligenceHub() {
                               variant="default"
                               size="sm"
                               className="flex-1 gap-2"
-                              onClick={() => approveInsightMutation.mutate(insight.id)}
-                              disabled={approveInsightMutation.isPending}
-                              data-testid={`button-approve-expanded-${insight.id}`}
+                              onClick={() => approveAvatarMutation.mutate(avatar.id)}
+                              disabled={approveAvatarMutation.isPending}
+                              data-testid={`button-approve-expanded-${avatar.id}`}
                             >
                               <CheckCircle2 className="h-3 w-3" />
                               Approve & Add to Library
@@ -1174,9 +566,9 @@ export default function CustomerIntelligenceHub() {
                               variant="outline"
                               size="sm"
                               className="flex-1 gap-2"
-                              onClick={() => rejectInsightMutation.mutate(insight.id)}
-                              disabled={rejectInsightMutation.isPending}
-                              data-testid={`button-reject-expanded-${insight.id}`}
+                              onClick={() => rejectAvatarMutation.mutate(avatar.id)}
+                              disabled={rejectAvatarMutation.isPending}
+                              data-testid={`button-reject-expanded-${avatar.id}`}
                             >
                               <X className="h-3 w-3" />
                               Reject
@@ -1209,7 +601,7 @@ export default function CustomerIntelligenceHub() {
                 </div>
                 <Button
                   onClick={() => generateAvatarsMutation.mutate()}
-                  disabled={generateAvatarsMutation.isPending || approvedInsights.length === 0}
+                  disabled={generateAvatarsMutation.isPending || approvedAvatars.length === 0}
                   className="gap-2"
                   data-testid="button-generate-avatars"
                 >
@@ -1244,11 +636,11 @@ export default function CustomerIntelligenceHub() {
                 <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No target avatars yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {approvedInsights.length === 0 
+                  {approvedAvatars.length === 0 
                     ? "Approve customer insights from Latest Discoveries first, then generate target avatars based on your approved research."
                     : "Click 'Generate Avatars' to synthesize your approved research into actionable customer personas."}
                 </p>
-                {approvedInsights.length === 0 && pendingInsights.length === 0 && (
+                {approvedAvatars.length === 0 && pendingAvatars.length === 0 && (
                   <Button onClick={() => discoverMutation.mutate()} disabled={discoverMutation.isPending || !knowledgeBase}>
                     <Play className="h-4 w-4 mr-2" />
                     {discoverMutation.isPending ? "Discovering..." : "Discover Insights First"}
@@ -1365,7 +757,7 @@ export default function CustomerIntelligenceHub() {
                     <Brain className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{approvedInsights.length}</p>
+                    <p className="text-2xl font-bold">{approvedAvatars.length}</p>
                     <p className="text-xs text-muted-foreground">Approved Insights</p>
                   </div>
                 </div>
@@ -1514,20 +906,20 @@ export default function CustomerIntelligenceHub() {
 
               {/* Results Count */}
               <div className="text-sm text-muted-foreground">
-                Showing {approvedInsights.filter((insight: any) => {
-                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
-                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
-                  if (!filterByDateRange(insight, libraryDateRange)) return false;
+                Showing {approvedAvatars.filter((avatar: any) => {
+                  if (libraryCategory !== 'all' && avatar.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && avatar.platform !== libraryPlatform) return false;
+                  if (!filterByDateRange(avatar, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
-                      insight.title?.toLowerCase().includes(query) ||
-                      insight.summary?.toLowerCase().includes(query) ||
-                      insight.rawQuote?.toLowerCase().includes(query)
+                      avatar.title?.toLowerCase().includes(query) ||
+                      avatar.summary?.toLowerCase().includes(query) ||
+                      avatar.message?.toLowerCase().includes(query)
                     );
                   }
                   return true;
-                }).length} of {approvedInsights.length} approved insights
+                }).length} of {approvedAvatars.length} approved insights
               </div>
             </CardContent>
           </Card>
@@ -1535,27 +927,27 @@ export default function CustomerIntelligenceHub() {
           {/* Library Content */}
           {libraryViewMode === 'grid' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {approvedInsights
-                .filter((insight: any) => {
-                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
-                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
-                  if (!filterByDateRange(insight, libraryDateRange)) return false;
+              {approvedAvatars
+                .filter((avatar: any) => {
+                  if (libraryCategory !== 'all' && avatar.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && avatar.platform !== libraryPlatform) return false;
+                  if (!filterByDateRange(avatar, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
-                      insight.title?.toLowerCase().includes(query) ||
-                      insight.summary?.toLowerCase().includes(query) ||
-                      insight.rawQuote?.toLowerCase().includes(query)
+                      avatar.title?.toLowerCase().includes(query) ||
+                      avatar.summary?.toLowerCase().includes(query) ||
+                      avatar.message?.toLowerCase().includes(query)
                     );
                   }
                   return true;
                 })
-                .map((insight: any) => {
-                  const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+                .map((avatar: any) => {
+                  const categoryInfo = categoryConfig[avatar.category as keyof typeof categoryConfig];
                   const CategoryIcon = categoryInfo?.icon || Brain;
                   
                   return (
-                    <Card key={insight.id} className="hover-elevate" data-testid={`card-library-insight-${insight.id}`}>
+                    <Card key={avatar.id} className="hover-elevate" data-testid={`card-library-avatar-${avatar.id}`}>
                       <CardHeader>
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
@@ -1565,30 +957,30 @@ export default function CustomerIntelligenceHub() {
                                 {categoryInfo?.label}
                               </Badge>
                               <Badge
-                                className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}
+                                className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}
                               >
-                                {insight.sourcePlatform}
+                                {avatar.platform}
                               </Badge>
                             </div>
-                            <CardTitle className="text-base">{insight.title}</CardTitle>
+                            <CardTitle className="text-base">{avatar.title}</CardTitle>
                           </div>
                         </div>
                         <CardDescription className="text-sm italic mt-2">
-                          "{insight.rawQuote}"
+                          "{avatar.message}"
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div>
-                          <p className="text-sm text-muted-foreground">{insight.summary}</p>
+                          <p className="text-sm text-muted-foreground">{avatar.summary}</p>
                         </div>
                         
-                        {insight.observations && insight.observations.length > 0 && (
+                        {avatar.observations && avatar.observations.length > 0 && (
                           <div>
                             <h4 className="font-semibold text-sm mb-2">Key Observations</h4>
                             <ul className="space-y-1">
-                              {insight.observations.slice(0, 2).map((obs: string, idx: number) => (
+                              {avatar.observations.slice(0, 2).map((obs: string, idx: number) => (
                                 <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                  <span className="text-primary">•</span>
+                                  <span className="text-primary">-</span>
                                   {obs}
                                 </li>
                               ))}
@@ -1596,31 +988,33 @@ export default function CustomerIntelligenceHub() {
                           </div>
                         )}
                         
-                        {insight.marketingAngles && insight.marketingAngles.length > 0 && (
+                        {avatar.marketingAngles && avatar.marketingAngles.length > 0 && (
                           <div>
                             <h4 className="font-semibold text-sm mb-2">Marketing Angles</h4>
                             <div className="space-y-1">
-                              {insight.marketingAngles.slice(0, 2).map((angle: string, idx: number) => (
+                              {avatar.marketingAngles.slice(0, 2).map((angle: string, idx: number) => (
                                 <div key={idx} className="text-sm bg-primary/5 p-2 rounded">
-                                  💡 {angle}
+                                  {angle}
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                          className="gap-2 w-full"
-                          data-testid={`button-library-view-source-${insight.id}`}
-                        >
-                          <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3 w-3" />
-                            View Original Source
-                          </a>
-                        </Button>
+                        {avatar.url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="gap-2 w-full"
+                            data-testid={`button-library-view-source-${avatar.id}`}
+                          >
+                            <a href={avatar.url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3" />
+                              View Original Source
+                            </a>
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -1630,27 +1024,27 @@ export default function CustomerIntelligenceHub() {
 
           {libraryViewMode === 'list' && (
             <div className="space-y-3">
-              {approvedInsights
-                .filter((insight: any) => {
-                  if (libraryCategory !== 'all' && insight.category !== libraryCategory) return false;
-                  if (libraryPlatform !== 'all' && insight.sourcePlatform !== libraryPlatform) return false;
-                  if (!filterByDateRange(insight, libraryDateRange)) return false;
+              {approvedAvatars
+                .filter((avatar: any) => {
+                  if (libraryCategory !== 'all' && avatar.category !== libraryCategory) return false;
+                  if (libraryPlatform !== 'all' && avatar.platform !== libraryPlatform) return false;
+                  if (!filterByDateRange(avatar, libraryDateRange)) return false;
                   if (librarySearch) {
                     const query = librarySearch.toLowerCase();
                     return (
-                      insight.title?.toLowerCase().includes(query) ||
-                      insight.summary?.toLowerCase().includes(query) ||
-                      insight.rawQuote?.toLowerCase().includes(query)
+                      avatar.title?.toLowerCase().includes(query) ||
+                      avatar.summary?.toLowerCase().includes(query) ||
+                      avatar.message?.toLowerCase().includes(query)
                     );
                   }
                   return true;
                 })
-                .map((insight: any) => {
-                  const categoryInfo = categoryConfig[insight.category as keyof typeof categoryConfig];
+                .map((avatar: any) => {
+                  const categoryInfo = categoryConfig[avatar.category as keyof typeof categoryConfig];
                   const CategoryIcon = categoryInfo?.icon || Brain;
                   
                   return (
-                    <Card key={insight.id} className="hover-elevate" data-testid={`card-library-list-${insight.id}`}>
+                    <Card key={avatar.id} className="hover-elevate" data-testid={`card-library-list-${avatar.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
                           <div className="flex-1">
@@ -1659,25 +1053,27 @@ export default function CustomerIntelligenceHub() {
                                 <CategoryIcon className="h-3 w-3" />
                                 {categoryInfo?.label}
                               </Badge>
-                              <Badge className={`${platformConfig[insight.sourcePlatform]?.color || 'bg-gray-500'} text-white`}>
-                                {insight.sourcePlatform}
+                              <Badge className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}>
+                                {avatar.platform}
                               </Badge>
                             </div>
-                            <h4 className="font-semibold mb-1">{insight.title}</h4>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{insight.summary}</p>
+                            <h4 className="font-semibold mb-1">{avatar.title}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{avatar.summary}</p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="gap-2"
-                            data-testid={`button-library-list-source-${insight.id}`}
-                          >
-                            <a href={insight.sourceUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-3 w-3" />
-                              View
-                            </a>
-                          </Button>
+                          {avatar.url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="gap-2"
+                              data-testid={`button-library-list-source-${avatar.id}`}
+                            >
+                              <a href={avatar.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3 w-3" />
+                                View
+                              </a>
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1686,23 +1082,23 @@ export default function CustomerIntelligenceHub() {
             </div>
           )}
 
-          {approvedInsights.length === 0 && (
+          {approvedAvatars.length === 0 && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No Approved Research Yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {pendingInsights.length > 0 
-                    ? `You have ${pendingInsights.length} pending insight${pendingInsights.length !== 1 ? 's' : ''} in Latest Discoveries waiting for approval.`
+                  {pendingAvatars.length > 0 
+                    ? `You have ${pendingAvatars.length} pending insight${pendingAvatars.length !== 1 ? 's' : ''} in Latest Discoveries waiting for approval.`
                     : "Start discovering insights, then approve them to build your research library."}
                 </p>
-                {pendingInsights.length === 0 && (
+                {pendingAvatars.length === 0 && (
                   <Button onClick={() => {setActiveTab('latest'); discoverMutation.mutate();}} disabled={discoverMutation.isPending || !knowledgeBase}>
                     <Play className="h-4 w-4 mr-2" />
                     {discoverMutation.isPending ? "Discovering..." : "Discover Insights"}
                   </Button>
                 )}
-                {pendingInsights.length > 0 && (
+                {pendingAvatars.length > 0 && (
                   <Button onClick={() => setActiveTab('latest')}>
                     Review Pending Insights
                   </Button>
