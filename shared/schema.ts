@@ -148,7 +148,7 @@ export const concepts = pgTable("concepts", {
   userId: varchar("user_id").notNull().references(() => users.id),
   
   // Core Content
-  title: text("title").notNull(),
+  title: text("title"),
   description: text("description").notNull(),
   conceptType: text("concept_type").notNull(), // Facebook, Instagram, TikTok, etc.
   owner: text("owner"), // Brand/business name
