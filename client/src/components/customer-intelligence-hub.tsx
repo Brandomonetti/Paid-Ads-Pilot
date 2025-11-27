@@ -48,8 +48,6 @@ const platformConfig: Record<string, { bg: string }> = {
   'facebook': { bg: 'bg-blue-600' },
   'instagram': { bg: 'bg-fuchsia-500' },
   'tiktok': { bg: 'bg-emerald-500' },
-  'forum': { bg: 'bg-slate-600' },
-  'article': { bg: 'bg-violet-600' },
 };
 
 export default function CustomerIntelligenceHub() {
