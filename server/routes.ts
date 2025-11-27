@@ -432,54 +432,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================================
-  // AVATAR-CONCEPT LINKS
-  // ============================================================================
-
-  app.get("/api/avatar-concepts", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { avatarId } = req.query;
-      const links = await storage.getAvatarConcepts(userId, avatarId as string);
-      res.json(links);
-    } catch (error) {
-      console.error("Error fetching avatar-concept links:", error);
-      res.status(500).json({ error: "Failed to fetch links" });
-    }
-  });
-
-  app.post("/api/avatar-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const link = await storage.createAvatarConcept({
-        ...req.body,
-        userId
-      });
-      res.status(201).json(link);
-    } catch (error) {
-      console.error("Error creating avatar-concept link:", error);
-      res.status(500).json({ error: "Failed to create link" });
-    }
-  });
-
-  app.delete("/api/avatar-concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
-      const deleted = await storage.deleteAvatarConcept(id, userId);
-      
-      if (!deleted) {
-        res.status(404).json({ error: "Link not found or access denied" });
-        return;
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting avatar-concept link:", error);
-      res.status(500).json({ error: "Failed to delete link" });
-    }
-  });
-
-  // ============================================================================
   // LEGACY ENDPOINTS (for backward compatibility)
   // ============================================================================
   

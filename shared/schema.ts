@@ -208,29 +208,3 @@ export const updateConceptSchema = z.object({
 export type InsertConcept = z.infer<typeof insertConceptSchema>;
 export type UpdateConcept = z.infer<typeof updateConceptSchema>;
 export type Concept = typeof concepts.$inferSelect;
-
-// Avatar-Concept Links - intelligent matching between avatars and concepts
-export const avatarConcepts = pgTable("avatar_concepts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  avatarId: varchar("avatar_id").notNull().references(() => avatars.id),
-  conceptId: varchar("concept_id").notNull().references(() => concepts.id),
-  
-  // Matching Intelligence
-  relevanceScore: decimal("relevance_score", { precision: 5, scale: 2 }).notNull(),
-  matchReasoning: text("match_reasoning").notNull(),
-  
-  // User Feedback
-  userApproved: boolean("user_approved"),
-  feedback: text("feedback"),
-  
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const insertAvatarConceptSchema = createInsertSchema(avatarConcepts).omit({
-  id: true,
-  createdAt: true
-});
-
-export type InsertAvatarConcept = z.infer<typeof insertAvatarConceptSchema>;
-export type AvatarConcept = typeof avatarConcepts.$inferSelect;

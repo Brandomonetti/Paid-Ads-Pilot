@@ -4,8 +4,7 @@ import {
   type UpdateKnowledgeBase,
   type Avatar, type InsertAvatar, type UpdateAvatar,
   type Concept, type InsertConcept, type UpdateConcept,
-  type AvatarConcept, type InsertAvatarConcept,
-  users, knowledgeBase, avatars, concepts, avatarConcepts
+  users, knowledgeBase, avatars, concepts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -35,11 +34,6 @@ export interface IStorage {
   createConcept(concept: InsertConcept): Promise<Concept>;
   updateConcept(id: string, userId: string, updates: UpdateConcept): Promise<Concept | undefined>;
   deleteAllConcepts(userId: string): Promise<number>;
-  
-  // Avatar-Concept Link methods
-  getAvatarConcepts(userId: string, avatarId?: string): Promise<AvatarConcept[]>;
-  createAvatarConcept(link: InsertAvatarConcept): Promise<AvatarConcept>;
-  deleteAvatarConcept(id: string, userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,14 +41,12 @@ export class MemStorage implements IStorage {
   private knowledgeBaseMap: Map<string, KnowledgeBase>;
   private avatarsMap: Map<string, Avatar>;
   private conceptsMap: Map<string, Concept>;
-  private avatarConceptsMap: Map<string, AvatarConcept>;
 
   constructor() {
     this.users = new Map();
     this.knowledgeBaseMap = new Map();
     this.avatarsMap = new Map();
     this.conceptsMap = new Map();
-    this.avatarConceptsMap = new Map();
   }
 
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -243,35 +235,6 @@ export class MemStorage implements IStorage {
     toDelete.forEach(c => this.conceptsMap.delete(c.id));
     return toDelete.length;
   }
-
-  // Avatar-Concept Link methods
-  async getAvatarConcepts(userId: string, avatarId?: string): Promise<AvatarConcept[]> {
-    let links = Array.from(this.avatarConceptsMap.values()).filter(l => l.userId === userId);
-    if (avatarId) {
-      links = links.filter(l => l.avatarId === avatarId);
-    }
-    return links;
-  }
-
-  async createAvatarConcept(insertLink: InsertAvatarConcept): Promise<AvatarConcept> {
-    const id = randomUUID();
-    const link: AvatarConcept = {
-      id,
-      ...insertLink,
-      userApproved: insertLink.userApproved ?? null,
-      feedback: insertLink.feedback ?? null,
-      createdAt: new Date()
-    };
-    this.avatarConceptsMap.set(id, link);
-    return link;
-  }
-
-  async deleteAvatarConcept(id: string, userId: string): Promise<boolean> {
-    const link = this.avatarConceptsMap.get(id);
-    if (!link || link.userId !== userId) return false;
-    this.avatarConceptsMap.delete(id);
-    return true;
-  }
 }
 
 // Database Storage Implementation
@@ -439,39 +402,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(concepts.userId, userId))
       .returning();
     return result.length;
-  }
-
-  // Avatar-Concept Link methods
-  async getAvatarConcepts(userId: string, avatarId?: string): Promise<AvatarConcept[]> {
-    if (avatarId) {
-      return await this.db
-        .select()
-        .from(avatarConcepts)
-        .where(and(eq(avatarConcepts.userId, userId), eq(avatarConcepts.avatarId, avatarId)));
-    }
-    return await this.db
-      .select()
-      .from(avatarConcepts)
-      .where(eq(avatarConcepts.userId, userId));
-  }
-
-  async createAvatarConcept(insertLink: InsertAvatarConcept): Promise<AvatarConcept> {
-    const result = await this.db
-      .insert(avatarConcepts)
-      .values({
-        ...insertLink,
-        createdAt: new Date()
-      })
-      .returning();
-    return result[0];
-  }
-
-  async deleteAvatarConcept(id: string, userId: string): Promise<boolean> {
-    const result = await this.db
-      .delete(avatarConcepts)
-      .where(and(eq(avatarConcepts.id, id), eq(avatarConcepts.userId, userId)))
-      .returning();
-    return result.length > 0;
   }
 }
 
