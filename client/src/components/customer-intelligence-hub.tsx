@@ -436,6 +436,11 @@ export default function CustomerIntelligenceHub() {
                             >
                               {avatar.platform}
                             </Badge>
+                            {avatar.createdAt && (Date.now() - new Date(avatar.createdAt).getTime()) < 24 * 60 * 60 * 1000 && (
+                              <Badge className="bg-green-500 text-white border-transparent">
+                                New
+                              </Badge>
+                            )}
                           </div>
                           <CardTitle className="text-base">{avatar.title}</CardTitle>
                         </div>
@@ -959,6 +964,11 @@ export default function CustomerIntelligenceHub() {
                               >
                                 {avatar.platform}
                               </Badge>
+                              {avatar.createdAt && (Date.now() - new Date(avatar.createdAt).getTime()) < 24 * 60 * 60 * 1000 && (
+                                <Badge className="bg-green-500 text-white border-transparent">
+                                  New
+                                </Badge>
+                              )}
                             </div>
                             <CardTitle className="text-base">{avatar.title}</CardTitle>
                           </div>
@@ -1056,6 +1066,11 @@ export default function CustomerIntelligenceHub() {
                               >
                                 {avatar.platform}
                               </Badge>
+                              {avatar.createdAt && (Date.now() - new Date(avatar.createdAt).getTime()) < 24 * 60 * 60 * 1000 && (
+                                <Badge className="bg-green-500 text-white border-transparent">
+                                  New
+                                </Badge>
+                              )}
                             </div>
                             <h4 className="font-semibold mb-1">{avatar.title}</h4>
                             <p className="text-sm text-muted-foreground line-clamp-2">{avatar.summary}</p>
