@@ -115,16 +115,11 @@ export const avatars = pgTable("avatars", {
   
   // Confidence & Status
   confidence: integer("confidence").notNull().default(0), // 0-100
-  status: text("status").notNull().default("pending"), // pending, approved, rejected
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  status: text("status").notNull().default("pending") // pending, approved, rejected
 });
 
 export const insertAvatarSchema = createInsertSchema(avatars).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
+  id: true
 });
 
 export const updateAvatarSchema = z.object({
