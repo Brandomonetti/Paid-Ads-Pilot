@@ -452,18 +452,20 @@ export default function CustomerIntelligenceHub() {
                     <CardContent className="space-y-3">
                       {!isExpanded && (
                         <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {avatar.summary}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpandedInsight(avatar.id)}
-                            className="p-0 h-auto mt-2"
-                            data-testid={`button-expand-${avatar.id}`}
-                          >
-                            Read More
-                          </Button>
+                          <div className="flex gap-4">
+                            <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
+                              {avatar.summary}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExpandedInsight(avatar.id)}
+                              className="shrink-0"
+                              data-testid={`button-expand-${avatar.id}`}
+                            >
+                              Read More
+                            </Button>
+                          </div>
                           
                           {/* Approval Buttons */}
                           <div className="flex gap-2 pt-2 border-t">
@@ -495,9 +497,35 @@ export default function CustomerIntelligenceHub() {
                       
                       {isExpanded && (
                         <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold text-sm mb-2">Summary</h4>
-                            <p className="text-sm text-muted-foreground">{avatar.summary}</p>
+                          <div className="flex gap-4">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm mb-2">Summary</h4>
+                              <p className="text-sm text-muted-foreground">{avatar.summary}</p>
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0">
+                              {avatar.url && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  asChild
+                                  className="gap-2"
+                                  data-testid={`button-view-source-${avatar.id}`}
+                                >
+                                  <a href={avatar.url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3 w-3" />
+                                    View Original
+                                  </a>
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedInsight(null)}
+                                data-testid={`button-collapse-${avatar.id}`}
+                              >
+                                Collapse
+                              </Button>
+                            </div>
                           </div>
                           
                           {avatar.observations && avatar.observations.length > 0 && (
@@ -526,31 +554,6 @@ export default function CustomerIntelligenceHub() {
                               </div>
                             </div>
                           )}
-                          
-                          <div className="flex gap-2 pt-2">
-                            {avatar.url && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                                className="gap-2"
-                                data-testid={`button-view-source-${avatar.id}`}
-                              >
-                                <a href={avatar.url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3 w-3" />
-                                  View Original
-                                </a>
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedInsight(null)}
-                              data-testid={`button-collapse-${avatar.id}`}
-                            >
-                              Collapse
-                            </Button>
-                          </div>
                           
                           {/* Approval Buttons */}
                           <div className="flex gap-2 pt-3 border-t">
