@@ -33,11 +33,11 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 // Psychological category icons and colors
-const categoryConfig = {
-  'pain-point': { icon: X, label: 'Pain Points', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' },
-  'desire': { icon: Heart, label: 'Desires', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' },
-  'objection': { icon: TrendingUp, label: 'Objections', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800' },
-  'trigger': { icon: Zap, label: 'Triggers', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800' },
+const categoryConfig: Record<string, { icon: any; label: string; color: string; bg: string; border: string }> = {
+  'Pain Points': { icon: X, label: 'Pain Points', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' },
+  'Desires': { icon: Heart, label: 'Desires', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' },
+  'Objections': { icon: TrendingUp, label: 'Objections', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800' },
+  'Triggers': { icon: Zap, label: 'Triggers', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800' },
 };
 
 // Platform configuration with distinct background colors
@@ -303,10 +303,10 @@ export default function CustomerIntelligenceHub() {
 
   // Calculate category counts for approved avatars (used in Research Library)
   const categoryCounts = {
-    'pain-point': approvedAvatars.filter((a: any) => a.category === 'pain-point').length,
-    'desire': approvedAvatars.filter((a: any) => a.category === 'desire').length,
-    'objection': approvedAvatars.filter((a: any) => a.category === 'objection').length,
-    'trigger': approvedAvatars.filter((a: any) => a.category === 'trigger').length,
+    'Pain Points': approvedAvatars.filter((a: any) => a.category === 'Pain Points').length,
+    'Desires': approvedAvatars.filter((a: any) => a.category === 'Desires').length,
+    'Objections': approvedAvatars.filter((a: any) => a.category === 'Objections').length,
+    'Triggers': approvedAvatars.filter((a: any) => a.category === 'Triggers').length,
   };
 
   return (
@@ -773,7 +773,7 @@ export default function CustomerIntelligenceHub() {
                     <X className="h-5 w-5 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{categoryCounts['pain-point']}</p>
+                    <p className="text-2xl font-bold">{categoryCounts['Pain Points']}</p>
                     <p className="text-xs text-muted-foreground">Pain Points</p>
                   </div>
                 </div>
@@ -786,7 +786,7 @@ export default function CustomerIntelligenceHub() {
                     <Heart className="h-5 w-5 text-purple-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{categoryCounts.desire}</p>
+                    <p className="text-2xl font-bold">{categoryCounts['Desires']}</p>
                     <p className="text-xs text-muted-foreground">Desires</p>
                   </div>
                 </div>
@@ -799,7 +799,7 @@ export default function CustomerIntelligenceHub() {
                     <Zap className="h-5 w-5 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{categoryCounts.trigger}</p>
+                    <p className="text-2xl font-bold">{categoryCounts['Triggers']}</p>
                     <p className="text-xs text-muted-foreground">Triggers</p>
                   </div>
                 </div>
@@ -855,10 +855,10 @@ export default function CustomerIntelligenceHub() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="pain-point">Pain Points</SelectItem>
-                    <SelectItem value="desire">Desires</SelectItem>
-                    <SelectItem value="objection">Objections</SelectItem>
-                    <SelectItem value="trigger">Triggers</SelectItem>
+                    <SelectItem value="Pain Points">Pain Points</SelectItem>
+                    <SelectItem value="Desires">Desires</SelectItem>
+                    <SelectItem value="Objections">Objections</SelectItem>
+                    <SelectItem value="Triggers">Triggers</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -868,14 +868,12 @@ export default function CustomerIntelligenceHub() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Platforms</SelectItem>
-                    <SelectItem value="reddit">Reddit</SelectItem>
-                    <SelectItem value="amazon">Amazon</SelectItem>
-                    <SelectItem value="youtube">YouTube</SelectItem>
-                    <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="instagram">Instagram</SelectItem>
-                    <SelectItem value="tiktok">TikTok</SelectItem>
-                    <SelectItem value="forum">Forums</SelectItem>
-                    <SelectItem value="article">Articles</SelectItem>
+                    <SelectItem value="Reddit">Reddit</SelectItem>
+                    <SelectItem value="Amazon">Amazon</SelectItem>
+                    <SelectItem value="YouTube">YouTube</SelectItem>
+                    <SelectItem value="Facebook">Facebook</SelectItem>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="TikTok">TikTok</SelectItem>
                   </SelectContent>
                 </Select>
 
