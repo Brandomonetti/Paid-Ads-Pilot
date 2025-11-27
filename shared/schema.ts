@@ -117,7 +117,7 @@ export const avatars = pgTable("avatars", {
   confidence: integer("confidence").notNull().default(0), // 0-100
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   
-  createdAt: timestamp("created_at")
+  createdAt: timestamp("created_at").notNull()
 });
 
 export const insertAvatarSchema = createInsertSchema(avatars).omit({
