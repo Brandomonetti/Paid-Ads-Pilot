@@ -26,7 +26,9 @@ import {
   Filter,
   Users,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -458,12 +460,13 @@ export default function CustomerIntelligenceHub() {
                             </p>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => setExpandedInsight(avatar.id)}
                               className="shrink-0"
                               data-testid={`button-expand-${avatar.id}`}
+                              title="Read More"
                             >
-                              Read More
+                              <ChevronDown className="h-4 w-4" />
                             </Button>
                           </div>
                           
@@ -502,28 +505,28 @@ export default function CustomerIntelligenceHub() {
                               <h4 className="font-semibold text-sm mb-2">Summary</h4>
                               <p className="text-sm text-muted-foreground">{avatar.summary}</p>
                             </div>
-                            <div className="flex flex-col gap-2 shrink-0">
+                            <div className="flex gap-1 shrink-0">
                               {avatar.url && (
                                 <Button
-                                  variant="outline"
-                                  size="sm"
+                                  variant="ghost"
+                                  size="icon"
                                   asChild
-                                  className="gap-2"
                                   data-testid={`button-view-source-${avatar.id}`}
+                                  title="View Original"
                                 >
                                   <a href={avatar.url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-3 w-3" />
-                                    View Original
+                                    <ExternalLink className="h-4 w-4" />
                                   </a>
                                 </Button>
                               )}
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => setExpandedInsight(null)}
                                 data-testid={`button-collapse-${avatar.id}`}
+                                title="Collapse"
                               >
-                                Collapse
+                                <ChevronUp className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
