@@ -92,32 +92,29 @@ export type UpdateKnowledgeBase = z.infer<typeof updateKnowledgeBaseSchema>;
 export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
 
 // ============================================================================
-// CUSTOMER INTELLIGENCE HUB (Avatars / Customer Profiles)
+// CUSTOMER INTELLIGENCE HUB (Avatars - Scraped Research Insights)
 // ============================================================================
 
 export const avatars = pgTable("avatars", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   
-  // Avatar Core Details
-  name: text("name").notNull(), // e.g., "Busy Professional Mom"
-  demographics: text("demographics").notNull(), // Brief demographic description
-  psychographics: text("psychographics"), // Values, interests, lifestyle
+  // Core Content (scraped from social media)
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  category: text("category").notNull(), // e.g., "Pain Points", "Desires", etc.
+  summary: text("summary").notNull(),
   
-  // Pain Points & Desires
-  painPoints: text("pain_points").array().notNull().default(sql`ARRAY[]::text[]`),
-  desires: text("desires").array().notNull().default(sql`ARRAY[]::text[]`),
+  // AI-Generated Insights
+  observations: text("observations").array().notNull().default(sql`ARRAY[]::text[]`),
+  marketingAngles: text("marketing_angles").array().notNull().default(sql`ARRAY[]::text[]`),
   
-  // Marketing Hooks
-  hooks: text("hooks").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Source Information
+  platform: text("platform").notNull(), // Reddit, Facebook, Instagram, TikTok, etc.
+  url: text("url"),
   
-  // Evidence & Sources
-  sources: text("sources").array().notNull().default(sql`ARRAY[]::text[]`),
-  
-  // Metadata
-  priority: text("priority").notNull().default("medium"), // high, medium, low
-  dataConfidence: text("data_confidence").notNull().default("0.75"), // 0.0 to 1.0 as string
-  recommendationSource: text("recommendation_source").notNull().default("generated"), // generated, manual
+  // Confidence & Status
+  confidence: integer("confidence").notNull().default(0), // 0-100
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   
   createdAt: timestamp("created_at").defaultNow(),
@@ -131,16 +128,15 @@ export const insertAvatarSchema = createInsertSchema(avatars).omit({
 });
 
 export const updateAvatarSchema = z.object({
-  name: z.string().optional(),
-  demographics: z.string().optional(),
-  psychographics: z.string().optional(),
-  painPoints: z.array(z.string()).optional(),
-  desires: z.array(z.string()).optional(),
-  hooks: z.array(z.string()).optional(),
-  sources: z.array(z.string()).optional(),
-  priority: z.enum(["high", "medium", "low"]).optional(),
-  dataConfidence: z.string().optional(),
-  recommendationSource: z.string().optional(),
+  title: z.string().optional(),
+  message: z.string().optional(),
+  category: z.string().optional(),
+  summary: z.string().optional(),
+  observations: z.array(z.string()).optional(),
+  marketingAngles: z.array(z.string()).optional(),
+  platform: z.string().optional(),
+  url: z.string().optional(),
+  confidence: z.number().min(0).max(100).optional(),
   status: z.enum(["pending", "approved", "rejected"]).optional()
 });
 
