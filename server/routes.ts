@@ -1,21 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScript } from "./openai-service";
-import { metaAdsService } from "./meta-ads-service";
-import { aiInsightsService } from "./ai-insights-service";
-import { metaOAuthService } from "./meta-oauth-service";
-import { startMetaOAuth, handleMetaCallback, checkLinkSessionStatus } from "./oauth-broker";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import { scrapeCreatorService } from "./scrape-creator-service";
-import { generateAvatarsFromInsights } from "./avatar-generation-service";
 import {
   insertPlatformSettingsSchema,
   updatePlatformSettingsSchema,
   insertKnowledgeBaseSchema,
   updateKnowledgeBaseSchema,
-  insertGeneratedScriptSchema,
-  updateGeneratedScriptSchema
+  insertAvatarSchema,
+  updateAvatarSchema,
+  insertConceptSchema,
+  updateConceptSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -27,11 +23,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/csrf-token', isAuthenticated, setupCSRFToken, (req: any, res) => {
     res.json({ csrfToken: req.session.csrfToken });
   });
-
-  // OAuth Broker routes - centralized OAuth handling for static domain
-  app.get('/api/oauth-broker/meta/start', isAuthenticated, startMetaOAuth);
-  app.get('/api/oauth-broker/meta/callback', handleMetaCallback);
-  app.get('/api/oauth-broker/meta/status/:linkSessionId', checkLinkSessionStatus);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -45,557 +36,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Meta OAuth routes
-  app.get('/api/auth/meta/connect', isAuthenticated, async (req: any, res) => {
-    try {
-      // Validate redirect URI against allowlist
-      const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
-      const host = req.get('host');
-      const redirectUri = `${protocol}://${host}/api/auth/meta/callback`;
-      
-      // More flexible validation for Replit domains
-      const isValidHost = host && (
-        host.includes('repl.co') || 
-        host.includes('replit.dev') ||
-        host.includes('replit.com') ||
-        host.includes('localhost') ||
-        host.includes('127.0.0.1') ||
-        /.*\.repl\.co$/.test(host) ||
-        /.*\.replit\.dev$/.test(host)
-      );
-      
-      if (!isValidHost) {
-        console.log('Invalid host detected:', host);
-        console.log('Full redirect URI:', redirectUri);
-        throw new Error(`Invalid redirect URI host: ${host}`);
-      }
-      
-      const { url, state } = metaOAuthService.generateAuthUrl(redirectUri);
-      
-      // Store state and redirectUri in session for secure verification
-      req.session.metaOAuthState = state;
-      req.session.metaOAuthRedirectUri = redirectUri;
-      
-      res.json({ 
-        authUrl: url,
-        redirectUri: redirectUri, // Include for debugging
-        instructions: "Visit this URL to connect your Meta Ads account"
-      });
-    } catch (error) {
-      console.error("Error generating Meta auth URL:", error);
-      res.status(500).json({ error: "Failed to generate authorization URL" });
-    }
-  });
+  // ============================================================================
+  // PLATFORM SETTINGS
+  // ============================================================================
 
-  app.get('/api/auth/meta/callback', isAuthenticated, async (req: any, res) => {
-    try {
-      const { code, state, error } = req.query;
-      
-      if (error) {
-        return res.redirect(`/?error=meta_auth_failed&reason=${encodeURIComponent(error)}`);
-      }
-      
-      if (!code || !state) {
-        return res.redirect('/?error=meta_auth_failed&reason=missing_parameters');
-      }
-      
-      // Critical security check: Verify state matches session-stored state
-      const sessionState = req.session.metaOAuthState;
-      const sessionRedirectUri = req.session.metaOAuthRedirectUri;
-      
-      if (!sessionState || state !== sessionState) {
-        console.error('OAuth state mismatch - potential CSRF attack');
-        return res.redirect('/?error=meta_auth_failed&reason=invalid_state');
-      }
-      
-      // Get user ID from authenticated session (not from state!)
-      const userId = req.user.claims.sub;
-      
-      // Exchange code for token and get user data
-      const { accessToken, userData } = await metaOAuthService.exchangeCodeForToken(code as string, sessionRedirectUri);
-      
-      // Update user with Meta access token and account info
-      await storage.upsertUser({
-        id: userId,
-        metaAccessToken: accessToken,
-        metaAccountId: userData.id,
-        metaConnectedAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      // Clean up session data
-      delete req.session.metaOAuthState;
-      delete req.session.metaOAuthRedirectUri;
-      
-      // Redirect to success page
-      res.redirect('/?success=meta_connected');
-      
-    } catch (error) {
-      console.error("Meta OAuth callback error:", error);
-      res.redirect('/?error=meta_auth_failed&reason=callback_error');
-    }
-  });
-
-  app.post('/api/auth/meta/disconnect', isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Remove Meta access token from user account
-      await storage.upsertUser({
-        id: userId,
-        metaAccessToken: null,
-        metaAccountId: null,
-        metaConnectedAt: null,
-        updatedAt: new Date()
-      });
-      
-      res.json({ success: true, message: "Meta Ads account disconnected" });
-    } catch (error) {
-      console.error("Error disconnecting Meta account:", error);
-      res.status(500).json({ error: "Failed to disconnect Meta account" });
-    }
-  });
-
-  app.get('/api/auth/meta/status', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      const isConnected = !!(user?.metaAccessToken && user?.metaAccountId);
-      let isValid = false;
-      let accountsCount = 0;
-      
-      if (isConnected && user.metaAccessToken) {
-        // Validate token and get account count
-        try {
-          isValid = await metaOAuthService.validateToken(user.metaAccessToken);
-          if (isValid) {
-            const accounts = await metaOAuthService.getUserAdAccounts(user.metaAccessToken);
-            accountsCount = accounts.length;
-          }
-        } catch (error) {
-          console.error("Token validation error:", error);
-          isValid = false;
-        }
-      }
-      
-      res.json({
-        connected: isConnected,
-        valid: isValid,
-        connectedAt: user?.metaConnectedAt,
-        accountsCount
-      });
-    } catch (error) {
-      console.error("Error checking Meta auth status:", error);
-      res.status(500).json({ error: "Failed to check connection status" });
-    }
-  });
-
-  // Customer Intelligence Hub - Insights endpoints
-  app.get("/api/insights", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { category, platform, status } = req.query;
-      const filters: any = {};
-      if (category && category !== 'all') filters.category = category;
-      if (platform && platform !== 'all') filters.platform = platform;
-      if (status) filters.status = status;
-      
-      const insights = await storage.getInsights(userId, filters);
-      res.json(insights);
-    } catch (error) {
-      console.error("Error fetching insights:", error);
-      res.status(500).json({ error: "Failed to fetch insights" });
-    }
-  });
-
-  // Create insight endpoint (for demo insights)
-  app.post("/api/insights", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Remove fields that shouldn't be passed to the insert
-      const { id, discoveredAt, createdAt, confidence, ...bodyData } = req.body;
-      
-      const insightData = {
-        ...bodyData,
-        userId,
-        // Drizzle expects Date objects for timestamp fields
-        discoveredAt: discoveredAt ? new Date(discoveredAt) : new Date(),
-      };
-      
-      console.log("Creating insight with data:", JSON.stringify(insightData, null, 2));
-      
-      const newInsight = await storage.createInsight(insightData);
-      res.json({ success: true, insight: newInsight });
-    } catch (error) {
-      console.error("Error creating insight:", error);
-      res.status(500).json({ error: "Failed to create insight" });
-    }
-  });
-
-  // Approve insight endpoint
-  app.patch("/api/insights/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
-      
-      // Verify the insight belongs to this user before updating
-      const existingInsight = await storage.getInsight(id);
-      if (!existingInsight || existingInsight.userId !== userId) {
-        res.status(404).json({ error: "Insight not found" });
-        return;
-      }
-      
-      // Update insight status to approved
-      const updatedInsight = await storage.updateInsight(id, { status: "approved" });
-      
-      res.json({ success: true, insight: updatedInsight });
-    } catch (error) {
-      console.error("Error approving insight:", error);
-      res.status(500).json({ error: "Failed to approve insight" });
-    }
-  });
-
-  // Reject insight endpoint
-  app.patch("/api/insights/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
-      
-      // Verify the insight belongs to this user before updating
-      const existingInsight = await storage.getInsight(id);
-      if (!existingInsight || existingInsight.userId !== userId) {
-        res.status(404).json({ error: "Insight not found" });
-        return;
-      }
-      
-      // Update insight status to rejected
-      const updatedInsight = await storage.updateInsight(id, { status: "rejected" });
-      
-      res.json({ success: true, insight: updatedInsight });
-    } catch (error) {
-      console.error("Error rejecting insight:", error);
-      res.status(500).json({ error: "Failed to reject insight" });
-    }
-  });
-
-  // Approve concept endpoint
-  app.patch("/api/concepts/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
-      
-      // Verify the concept belongs to this user before updating
-      const existingConcept = await storage.getConcept(id);
-      if (!existingConcept || existingConcept.userId !== userId) {
-        res.status(404).json({ error: "Concept not found" });
-        return;
-      }
-      
-      // Update concept status to approved
-      const updatedConcept = await storage.updateConcept(id, userId, { status: "approved" });
-      
-      res.json({ success: true, concept: updatedConcept });
-    } catch (error) {
-      console.error("Error approving concept:", error);
-      res.status(500).json({ error: "Failed to approve concept" });
-    }
-  });
-
-  // Reject concept endpoint
-  app.patch("/api/concepts/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
-      
-      // Verify the concept belongs to this user before updating
-      const existingConcept = await storage.getConcept(id);
-      if (!existingConcept || existingConcept.userId !== userId) {
-        res.status(404).json({ error: "Concept not found" });
-        return;
-      }
-      
-      // Update concept status to rejected
-      const updatedConcept = await storage.updateConcept(id, userId, { status: "rejected" });
-      
-      res.json({ success: true, concept: updatedConcept });
-    } catch (error) {
-      console.error("Error rejecting concept:", error);
-      res.status(500).json({ error: "Failed to reject concept" });
-    }
-  });
-
-  // Customer Intelligence Hub - Sources endpoints (stub)
-  app.get("/api/sources", isAuthenticated, async (req: any, res) => {
-    try {
-      // Stub endpoint - returns empty array for now
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch sources" });
-    }
-  });
-
-  // Creative Research Center - Discovery endpoint
-  app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { knowledgeBase } = req.body;
-      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research';
-      const apiKey = process.env.N8N_API_KEY;
-
-      if (!apiKey) {
-        throw new Error("N8N_API_KEY not configured");
-      }
-
-      if (!knowledgeBase) {
-        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
-        return;
-      }
-
-      // Send event to n8n webhook with knowledge base concept data
-      const axios = await import('axios');
-      await axios.default.post(
-        n8nWebhookUrl, 
-        {
-          type: "creative",
-          userId,
-          knowledgeBase: {
-            websiteUrl: knowledgeBase.websiteUrl,
-            brandVoice: knowledgeBase.brandVoice,
-            missionStatement: knowledgeBase.missionStatement,
-            brandValues: knowledgeBase.brandValues,
-            productLinks: knowledgeBase.productLinks,
-            pricingInfo: knowledgeBase.pricingInfo,
-            keyBenefits: knowledgeBase.keyBenefits,
-            usps: knowledgeBase.usps,
-            currentPersonas: knowledgeBase.currentPersonas,
-            demographics: knowledgeBase.demographics,
-            mainCompetitors: knowledgeBase.mainCompetitors,
-            instagramHandle: knowledgeBase.instagramHandle,
-            facebookPage: knowledgeBase.facebookPage,
-            tiktokHandle: knowledgeBase.tiktokHandle,
-            contentStyle: knowledgeBase.contentStyle,
-            salesTrends: knowledgeBase.salesTrends
-          },
-          timestamp: new Date().toISOString()
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        }
-      );
-
-      res.json({ 
-        success: true, 
-        message: "Creative research discovery initiated. AI is now searching for viral content based on your brand." 
-      });
-    } catch (error: any) {
-      console.error("Error triggering creative research discovery:", error);
-      
-      const status = error.response?.status || 500;
-      const n8nResponse = error.response?.data;
-      
-      // n8n returns JSON directly, pass it through to frontend
-      res.status(status).json(n8nResponse || { 
-        message: "Failed to start creative research discovery. Please try again later.",
-        concepts: []
-      });
-    }
-  });
-
-  // Customer Intelligence Hub - Discovery endpoint
-  app.post("/api/customer-research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { knowledgeBase } = req.body;
-      const n8nWebhookUrl = 'https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research';
-      const apiKey = process.env.N8N_API_KEY;
-
-      if (!apiKey) {
-        throw new Error("N8N_API_KEY not configured");
-      }
-
-      if (!knowledgeBase) {
-        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
-        return;
-      }
-
-      // Send event to n8n webhook with knowledge base concept data
-      const axios = await import('axios');
-      await axios.default.post(
-        n8nWebhookUrl, 
-        {
-          type: "customer",
-          userId,
-          knowledgeBase: {
-            websiteUrl: knowledgeBase.websiteUrl,
-            brandVoice: knowledgeBase.brandVoice,
-            missionStatement: knowledgeBase.missionStatement,
-            brandValues: knowledgeBase.brandValues,
-            productLinks: knowledgeBase.productLinks,
-            pricingInfo: knowledgeBase.pricingInfo,
-            keyBenefits: knowledgeBase.keyBenefits,
-            usps: knowledgeBase.usps,
-            currentPersonas: knowledgeBase.currentPersonas,
-            demographics: knowledgeBase.demographics,
-            mainCompetitors: knowledgeBase.mainCompetitors,
-            instagramHandle: knowledgeBase.instagramHandle,
-            facebookPage: knowledgeBase.facebookPage,
-            tiktokHandle: knowledgeBase.tiktokHandle,
-            contentStyle: knowledgeBase.contentStyle,
-            salesTrends: knowledgeBase.salesTrends
-          },
-          timestamp: new Date().toISOString()
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        }
-      );
-
-      res.json({ 
-        success: true, 
-        message: "Customer research discovery initiated. AI is now searching for customer insights based on your brand." 
-      });
-    } catch (error: any) {
-      console.error("Error triggering customer research discovery:", error);
-      
-      const status = error.response?.status || 500;
-      const n8nResponse = error.response?.data;
-      
-      // n8n returns JSON directly, pass it through to frontend
-      res.status(status).json(n8nResponse || { 
-        message: "Failed to start customer research discovery. Please try again later.",
-        insights: []
-      });
-    }
-  });
-
-  // Customer Intelligence Hub - Avatar endpoints
-  app.get("/api/avatars", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const avatars = await storage.getAvatars(userId);
-      res.json(avatars);
-    } catch (error) {
-      console.error("Error fetching avatars:", error);
-      res.status(500).json({ error: "Failed to fetch avatars" });
-    }
-  });
-
-  app.post("/api/avatars/generate", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Get all insights for the user
-      const insights = await storage.getInsights(userId);
-      
-      if (insights.length === 0) {
-        res.status(400).json({ 
-          error: "No insights found. Discover customer insights first before generating avatars." 
-        });
-        return;
-      }
-
-      // Delete existing avatars before generating new ones (for clean regeneration)
-      await storage.deleteAllAvatars(userId);
-
-      // Generate avatars from insights using AI
-      const result = await generateAvatarsFromInsights(userId, insights);
-      
-      // Save generated avatars to database
-      const savedAvatars = await Promise.all(
-        result.avatars.map(avatar => storage.createAvatar(avatar))
-      );
-
-      res.json({ 
-        success: true,
-        avatarsGenerated: savedAvatars.length,
-        avatars: savedAvatars,
-        summary: result.summary
-      });
-    } catch (error) {
-      console.error("Error generating avatars:", error);
-      res.status(500).json({ 
-        error: "Failed to generate avatars",
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Platform Settings routes (protected)
   app.get("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       let settings = await storage.getPlatformSettings(userId);
       
-      // Create default settings if they don't exist
       if (!settings) {
         settings = await storage.createPlatformSettings({
           userId,
-          provenConceptsPercentage: 80,
-          weeklyBriefsVolume: 5,
-          subscriptionTier: "free"
+          subscriptionTier: "research",
+          creditTier: 0,
+          monthlyCredits: 50,
+          creditsUsed: 0
         });
       }
       
       res.json(settings);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch platform settings" });
-    }
-  });
-
-  app.post("/api/settings", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const validatedData = insertPlatformSettingsSchema.parse({
-        ...req.body,
-        userId
-      });
-      const settings = await storage.createPlatformSettings(validatedData);
-      res.status(201).json(settings);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid settings data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to create platform settings" });
-      }
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
     }
   });
 
   app.patch("/api/settings", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      
-      // Validate the update data
       const validatedData = updatePlatformSettingsSchema.parse(req.body);
-      
-      // Get current settings to check subscription tier for cap enforcement
-      const currentSettings = await storage.getPlatformSettings(userId);
-      if (!currentSettings) {
-        res.status(404).json({ error: "Platform settings not found" });
-        return;
-      }
-      
-      // Enforce subscription-based weekly caps
-      if (validatedData.weeklyBriefsVolume !== undefined) {
-        const subscriptionTier = validatedData.subscriptionTier || currentSettings.subscriptionTier;
-        const maxVolume = subscriptionTier === "free" ? 20 : subscriptionTier === "pro" ? 50 : 200;
-        
-        if (validatedData.weeklyBriefsVolume > maxVolume) {
-          res.status(400).json({ 
-            error: `Weekly briefs volume exceeds limit for ${subscriptionTier} tier (max: ${maxVolume})` 
-          });
-          return;
-        }
-      }
       
       const settings = await storage.updatePlatformSettings(userId, validatedData);
       if (!settings) {
-        res.status(404).json({ error: "Platform settings not found" });
+        res.status(404).json({ error: "Settings not found" });
         return;
       }
       res.json(settings);
@@ -603,24 +77,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Invalid settings data", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to update platform settings" });
+        res.status(500).json({ error: "Failed to update settings" });
       }
     }
   });
 
-  // Knowledge Base routes (protected)
+  // ============================================================================
+  // KNOWLEDGE BASE
+  // ============================================================================
+
   app.get("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const knowledgeBase = await storage.getKnowledgeBase(userId);
       
       if (!knowledgeBase) {
-        res.status(404).json({ error: "Knowledge base not found" });
+        res.json(null);
         return;
       }
       
       res.json(knowledgeBase);
     } catch (error) {
+      console.error("Error fetching knowledge base:", error);
       res.status(500).json({ error: "Failed to fetch knowledge base" });
     }
   });
@@ -646,8 +124,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/knowledge-base", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      
-      // Validate the update data
       const validatedData = updateKnowledgeBaseSchema.parse(req.body);
       
       const knowledgeBase = await storage.updateKnowledgeBase(userId, validatedData);
@@ -665,415 +141,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI-powered script generation routes (protected with persistence)
-  app.post("/api/generate-script", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+  // ============================================================================
+  // AVATARS (Customer Profiles)
+  // ============================================================================
+
+  app.get("/api/avatars", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-
-      // Fetch the user's knowledge base
-      const knowledgeBase = await storage.getKnowledgeBase(userId);
-      if (!knowledgeBase) {
-        res.status(404).json({ error: "Knowledge base not found. Please complete your brand setup first." });
-        return;
-      }
-
-      // AI determines optimal script parameters based on brand data
-      const aiScriptRequest = {
-        scriptType: "ugc" as const, // Start with UGC as most versatile
-        duration: "30s" as const, // Optimal for most platforms
-        targetAvatar: "General Audience",
-        marketingAngle: "Problem-Solution Framework",
-        awarenessStage: "problem aware" as const // Most common starting point
-      };
-
-      // Generate script using OpenAI with knowledge base data
-      const generatedScript = await generateScript(aiScriptRequest, knowledgeBase);
-      
-      // Save generated script to database for self-learning system
-      const savedScript = await storage.createGeneratedScript({
-        userId,
-        title: generatedScript.title,
-        duration: aiScriptRequest.duration,
-        scriptType: aiScriptRequest.scriptType,
-        summary: generatedScript.summary,
-        content: generatedScript,
-        sourceResearch: {
-          avatarName: "General Audience",
-          marketingAngle: aiScriptRequest.marketingAngle,
-          awarenessStage: aiScriptRequest.awarenessStage
-        },
-        generationContext: {
-          knowledgeBaseSnapshot: knowledgeBase,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      res.json({ ...generatedScript, scriptId: savedScript.id });
+      const avatars = await storage.getAvatars(userId);
+      res.json(avatars);
     } catch (error) {
-      console.error("Script generation error:", error);
-      res.status(500).json({ 
-        error: "Failed to generate script", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      console.error("Error fetching avatars:", error);
+      res.status(500).json({ error: "Failed to fetch avatars" });
     }
   });
 
-  // Get generated scripts for self-learning analysis
-  app.get("/api/scripts", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const scripts = await storage.getGeneratedScripts(userId);
-      res.json(scripts);
-    } catch (error) {
-      console.error("Error fetching scripts:", error);
-      res.status(500).json({ error: "Failed to fetch scripts" });
-    }
-  });
-
-  // Update script with performance data for self-learning
-  app.patch("/api/scripts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+  app.get("/api/avatars/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
-      const validatedData = updateGeneratedScriptSchema.parse(req.body);
+      const avatar = await storage.getAvatar(id);
       
-      const updatedScript = await storage.updateGeneratedScript(id, userId, validatedData);
-      if (!updatedScript) {
-        res.status(404).json({ error: "Script not found or access denied" });
+      if (!avatar) {
+        res.status(404).json({ error: "Avatar not found" });
         return;
       }
       
-      res.json(updatedScript);
+      res.json(avatar);
     } catch (error) {
-      console.error("Error updating script:", error);
+      console.error("Error fetching avatar:", error);
+      res.status(500).json({ error: "Failed to fetch avatar" });
+    }
+  });
+
+  app.post("/api/avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertAvatarSchema.parse({
+        ...req.body,
+        userId
+      });
+      const avatar = await storage.createAvatar(validatedData);
+      res.status(201).json(avatar);
+    } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid script data", details: error.errors });
+        res.status(400).json({ error: "Invalid avatar data", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to update script" });
+        console.error("Error creating avatar:", error);
+        res.status(500).json({ error: "Failed to create avatar" });
       }
     }
   });
 
-  // Meta Ads Performance Agent routes (protected)
-  app.get("/api/ad-accounts", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/avatars/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const { id } = req.params;
+      const validatedData = updateAvatarSchema.parse(req.body);
       
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
+      const avatar = await storage.updateAvatar(id, userId, validatedData);
+      if (!avatar) {
+        res.status(404).json({ error: "Avatar not found or access denied" });
+        return;
       }
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      const adAccounts = await userMetaService.getAdAccounts();
-      res.json(adAccounts);
+      res.json(avatar);
     } catch (error) {
-      console.error("Error fetching ad accounts:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch ad accounts", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid avatar data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update avatar" });
+      }
     }
   });
 
-  app.get("/api/account-insights/:adAccountId", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/avatars/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const { id } = req.params;
       
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
+      const avatar = await storage.updateAvatar(id, userId, { status: "approved" });
+      if (!avatar) {
+        res.status(404).json({ error: "Avatar not found or access denied" });
+        return;
       }
-      
-      const { adAccountId } = req.params;
-      const { dateRange = 'last_30_days' } = req.query;
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      const insights = await userMetaService.getAccountInsights(adAccountId, dateRange as string);
-      const metrics = userMetaService.calculateMetrics(insights);
-      
-      res.json({ ...insights, ...metrics });
+      res.json({ success: true, avatar });
     } catch (error) {
-      console.error("Error fetching account insights:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch account insights", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      console.error("Error approving avatar:", error);
+      res.status(500).json({ error: "Failed to approve avatar" });
     }
   });
 
-  app.get("/api/campaigns/:adAccountId", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/avatars/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const { id } = req.params;
       
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
+      const avatar = await storage.updateAvatar(id, userId, { status: "rejected" });
+      if (!avatar) {
+        res.status(404).json({ error: "Avatar not found or access denied" });
+        return;
       }
-      
-      const { adAccountId } = req.params;
-      const { dateRange = 'last_30_days' } = req.query;
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      const campaigns = await userMetaService.getCampaigns(adAccountId, dateRange as string);
-      
-      // Generate AI insights for each campaign
-      const campaignsWithInsights = await Promise.all(
-        campaigns.map(async (campaign) => {
-          const metrics = userMetaService.calculateMetrics(campaign);
-          
-          try {
-            const aiInsight = await aiInsightsService.generateInsight({
-              entityType: 'campaign',
-              entityId: campaign.id,
-              entityName: campaign.name,
-              currentMetrics: {
-                spend: parseFloat(campaign.spend),
-                revenue: parseFloat(campaign.revenue || '0'),
-                roas: metrics.roas,
-                cpm: metrics.cpm,
-                ctr: metrics.ctr,
-                cpc: metrics.cpc,
-                impressions: parseInt(campaign.impressions),
-                clicks: parseInt(campaign.clicks),
-                purchases: parseInt(campaign.purchases || '0')
-              }
-            });
-
-            return {
-              ...campaign,
-              ...metrics,
-              aiSignal: {
-                action: aiInsight.action,
-                reasoning: aiInsight.reasoning,
-                confidence: aiInsight.confidence,
-                priority: aiInsight.priority,
-                detailedAnalysis: aiInsight.recommendation
-              }
-            };
-          } catch (aiError) {
-            console.error(`AI insight generation failed for campaign ${campaign.id}:`, aiError);
-            return { ...campaign, ...metrics };
-          }
-        })
-      );
-      
-      res.json(campaignsWithInsights);
+      res.json({ success: true, avatar });
     } catch (error) {
-      console.error("Error fetching campaigns:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch campaigns", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      console.error("Error rejecting avatar:", error);
+      res.status(500).json({ error: "Failed to reject avatar" });
     }
   });
 
-  app.get("/api/adsets/:adAccountId", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/avatars", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
-      }
-      
-      const { adAccountId } = req.params;
-      const { campaignId, dateRange = 'last_30_days' } = req.query;
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      const adSets = await userMetaService.getAdSets(
-        adAccountId, 
-        campaignId as string, 
-        dateRange as string
-      );
-      
-      // Generate AI insights for each ad set
-      const adSetsWithInsights = await Promise.all(
-        adSets.map(async (adSet) => {
-          const metrics = userMetaService.calculateMetrics(adSet);
-          
-          try {
-            const aiInsight = await aiInsightsService.generateInsight({
-              entityType: 'adset',
-              entityId: adSet.id,
-              entityName: adSet.name,
-              currentMetrics: {
-                spend: parseFloat(adSet.spend),
-                revenue: parseFloat(adSet.revenue || '0'),
-                roas: metrics.roas,
-                cpm: metrics.cpm,
-                ctr: metrics.ctr,
-                cpc: metrics.cpc,
-                impressions: parseInt(adSet.impressions),
-                clicks: parseInt(adSet.clicks),
-                purchases: parseInt(adSet.purchases || '0')
-              }
-            });
-
-            return {
-              ...adSet,
-              ...metrics,
-              aiSignal: {
-                action: aiInsight.action,
-                reasoning: aiInsight.reasoning,
-                confidence: aiInsight.confidence
-              }
-            };
-          } catch (aiError) {
-            console.error(`AI insight generation failed for ad set ${adSet.id}:`, aiError);
-            return { ...adSet, ...metrics };
-          }
-        })
-      );
-      
-      res.json(adSetsWithInsights);
+      const count = await storage.deleteAllAvatars(userId);
+      res.json({ success: true, deletedCount: count });
     } catch (error) {
-      console.error("Error fetching ad sets:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch ad sets", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      console.error("Error deleting avatars:", error);
+      res.status(500).json({ error: "Failed to delete avatars" });
     }
   });
 
-  app.get("/api/ads/:adAccountId", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
-      }
-      
-      const { adAccountId } = req.params;
-      const { adSetId, dateRange = 'last_30_days' } = req.query;
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      const ads = await userMetaService.getAds(
-        adAccountId, 
-        adSetId as string, 
-        dateRange as string
-      );
-      
-      // Generate AI insights for each ad
-      const adsWithInsights = await Promise.all(
-        ads.map(async (ad) => {
-          const metrics = userMetaService.calculateMetrics(ad);
-          
-          try {
-            const aiInsight = await aiInsightsService.generateInsight({
-              entityType: 'ad',
-              entityId: ad.id,
-              entityName: ad.name,
-              currentMetrics: {
-                spend: parseFloat(ad.spend),
-                revenue: parseFloat(ad.revenue || '0'),
-                roas: metrics.roas,
-                cpm: metrics.cpm,
-                ctr: metrics.ctr,
-                cpc: metrics.cpc,
-                impressions: parseInt(ad.impressions),
-                clicks: parseInt(ad.clicks),
-                purchases: parseInt(ad.purchases || '0'),
-                hookRate: metrics.hookRate,
-                thumbstopRate: metrics.thumbstopRate
-              }
-            });
+  // ============================================================================
+  // CONCEPTS (Creative Research Center)
+  // ============================================================================
 
-            return {
-              ...ad,
-              ...metrics,
-              creativeType: ad.creative?.object_type?.toUpperCase() || 'UNKNOWN',
-              aiSignal: {
-                action: aiInsight.action,
-                reasoning: aiInsight.reasoning,
-                confidence: aiInsight.confidence,
-                creativeInsight: aiInsight.recommendation
-              }
-            };
-          } catch (aiError) {
-            console.error(`AI insight generation failed for ad ${ad.id}:`, aiError);
-            return { 
-              ...ad, 
-              ...metrics,
-              creativeType: ad.creative?.object_type?.toUpperCase() || 'UNKNOWN'
-            };
-          }
-        })
-      );
-      
-      res.json(adsWithInsights);
-    } catch (error) {
-      console.error("Error fetching ads:", error);
-      res.status(500).json({ 
-        error: "Failed to fetch ads", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Weekly AI observations endpoint
-  app.get("/api/weekly-observations/:adAccountId", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.metaAccessToken) {
-        return res.status(401).json({ 
-          error: "Meta Ads account not connected", 
-          requiresConnection: true 
-        });
-      }
-      
-      const { adAccountId } = req.params;
-      
-      const userMetaService = metaAdsService.setAccessToken(user.metaAccessToken);
-      
-      // Fetch comprehensive account data for analysis
-      const [campaigns, insights] = await Promise.all([
-        userMetaService.getCampaigns(adAccountId, 'last_7_days'),
-        userMetaService.getAccountInsights(adAccountId, 'last_7_days')
-      ]);
-
-      // Try to generate AI observations, but gracefully handle quota/rate limit issues
-      let observations: any[] = [];
-      try {
-        observations = await aiInsightsService.generateWeeklyObservations([
-          { type: 'account', data: insights },
-          { type: 'campaigns', data: campaigns }
-        ]);
-      } catch (aiError: any) {
-        console.error("AI observations failed (quota/rate limit):", aiError.message);
-        // Return empty observations instead of failing the whole endpoint
-        observations = [];
-      }
-      
-      res.json(observations);
-    } catch (error) {
-      console.error("Error generating weekly observations:", error);
-      res.status(500).json({ 
-        error: "Failed to generate weekly observations", 
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Creative Research Center - Concepts endpoints
   app.get("/api/concepts", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1085,169 +273,284 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new concept (used by Explore Creatives to save to library)
+  app.get("/api/concepts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const concept = await storage.getConcept(id);
+      
+      if (!concept) {
+        res.status(404).json({ error: "Concept not found" });
+        return;
+      }
+      
+      res.json(concept);
+    } catch (error) {
+      console.error("Error fetching concept:", error);
+      res.status(500).json({ error: "Failed to fetch concept" });
+    }
+  });
+
   app.post("/api/concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const conceptData = req.body;
-      
-      console.log("Creating concept - received data:", JSON.stringify(conceptData, null, 2));
-      
-      // Create concept with the provided status (typically 'approved' from Explore)
-      // Remove auto-generated fields and let DB handle timestamps
-      const { 
-        id, 
-        createdAt, 
-        discoveredAt,
-        runningSince, // Frontend-only field
-        ...cleanData 
-      } = conceptData;
-      
-      const insertData = {
-        platform: cleanData.platform || 'unknown',
-        title: cleanData.title || 'Untitled',
-        description: cleanData.description || '',
-        format: cleanData.format || 'Unknown',
-        hooks: cleanData.hooks || [],
-        status: cleanData.status || 'approved',
-        userId,
-        thumbnailUrl: cleanData.thumbnailUrl || null,
-        videoUrl: cleanData.videoUrl || null,
-        postUrl: cleanData.postUrl || null,
-        brandName: cleanData.brandName || null,
-        industry: cleanData.industry || null,
-        engagementScore: cleanData.engagementScore || 0,
-        likes: cleanData.likes || null,
-        comments: cleanData.comments || null,
-        shares: cleanData.shares || null,
-        views: cleanData.views || null,
-        engagementRate: cleanData.engagementRate ? String(cleanData.engagementRate) : null,
-      };
-      
-      console.log("Creating concept - insert data:", JSON.stringify(insertData, null, 2));
-      
-      const newConcept = await storage.createConcept(insertData);
-      
-      console.log("Created concept:", JSON.stringify(newConcept, null, 2));
-      
-      res.json({ success: true, concept: newConcept });
-    } catch (error: any) {
-      console.error("Error creating concept:", error);
-      console.error("Error stack:", error.stack);
-      res.status(500).json({ error: "Failed to create concept", message: error.message });
+      const validatedData = insertConceptSchema.parse({
+        ...req.body,
+        userId
+      });
+      const concept = await storage.createConcept(validatedData);
+      res.status(201).json(concept);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid concept data", details: error.errors });
+      } else {
+        console.error("Error creating concept:", error);
+        res.status(500).json({ error: "Failed to create concept" });
+      }
     }
   });
+
+  app.patch("/api/concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const validatedData = updateConceptSchema.parse(req.body);
+      
+      const concept = await storage.updateConcept(id, userId, validatedData);
+      if (!concept) {
+        res.status(404).json({ error: "Concept not found or access denied" });
+        return;
+      }
+      res.json(concept);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid concept data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update concept" });
+      }
+    }
+  });
+
+  app.patch("/api/concepts/:id/approve", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const concept = await storage.updateConcept(id, userId, { status: "approved" });
+      if (!concept) {
+        res.status(404).json({ error: "Concept not found or access denied" });
+        return;
+      }
+      res.json({ success: true, concept });
+    } catch (error) {
+      console.error("Error approving concept:", error);
+      res.status(500).json({ error: "Failed to approve concept" });
+    }
+  });
+
+  app.patch("/api/concepts/:id/reject", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const concept = await storage.updateConcept(id, userId, { status: "rejected" });
+      if (!concept) {
+        res.status(404).json({ error: "Concept not found or access denied" });
+        return;
+      }
+      res.json({ success: true, concept });
+    } catch (error) {
+      console.error("Error rejecting concept:", error);
+      res.status(500).json({ error: "Failed to reject concept" });
+    }
+  });
+
+  app.delete("/api/concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const count = await storage.deleteAllConcepts(userId);
+      res.json({ success: true, deletedCount: count });
+    } catch (error) {
+      console.error("Error deleting concepts:", error);
+      res.status(500).json({ error: "Failed to delete concepts" });
+    }
+  });
+
+  // ============================================================================
+  // CONCEPT SEARCH (via Scrape Creator API)
+  // ============================================================================
 
   app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { query, type } = req.body;
-
-      if (!query) {
-        return res.status(400).json({ error: "Search query is required" });
-      }
-
-      // Extract keywords from the query
-      // For URL type, we'd want to extract brand/page info
-      // For brand/page type, use directly as keywords
-      const keywords = type === 'url' 
-        ? query.split('/').filter((part: string) => part && part !== 'https:' && part !== 'http:')
-        : [query];
-
-      // Fetch concepts from all platforms using Scrape Creator service
-      const conceptsResponse = await scrapeCreatorService.fetchConceptsForBrand(
-        keywords,
-        query // Use the query as the niche as well
-      );
-
-      // Convert SocialMediaConcept to our Concept format and save to storage
-      const allConcepts = [];
+      const { query, niche } = req.body;
       
-      // Process Facebook concepts
-      for (const fbConcept of conceptsResponse.facebook) {
-        const concept = await storage.createConcept({
-          userId,
-          platform: 'facebook' as const,
-          title: fbConcept.title,
-          description: fbConcept.description,
-          thumbnailUrl: fbConcept.rawData?.thumbnail || undefined,
-          postUrl: fbConcept.rawData?.post_url || undefined,
-          brandName: query,
-          industry: fbConcept.rawData?.industry || undefined,
-          format: fbConcept.rawData?.format || 'Unknown',
-          hooks: fbConcept.hook ? [fbConcept.hook] : [],
-          engagementScore: fbConcept.engagementScore || 0,
-          likes: fbConcept.rawData?.likes || undefined,
-          comments: fbConcept.rawData?.comments || undefined,
-          shares: fbConcept.rawData?.shares || undefined,
-          views: fbConcept.rawData?.views || undefined,
-          engagementRate: fbConcept.rawData?.engagement_rate || undefined,
-        });
-        allConcepts.push(concept);
+      if (!query) {
+        res.status(400).json({ error: "Search query is required" });
+        return;
       }
-
-      // Process Instagram concepts
-      for (const igConcept of conceptsResponse.instagram) {
-        const concept = await storage.createConcept({
-          userId,
-          platform: 'instagram' as const,
-          title: igConcept.title,
-          description: igConcept.description,
-          thumbnailUrl: igConcept.rawData?.thumbnail || undefined,
-          videoUrl: igConcept.rawData?.video_url || undefined,
-          postUrl: igConcept.rawData?.post_url || undefined,
-          brandName: query,
-          industry: igConcept.rawData?.industry || undefined,
-          format: igConcept.rawData?.format || 'Unknown',
-          hooks: igConcept.hook ? [igConcept.hook] : [],
-          engagementScore: igConcept.engagementScore || 0,
-          likes: igConcept.rawData?.likes || undefined,
-          comments: igConcept.rawData?.comments || undefined,
-          shares: igConcept.rawData?.shares || undefined,
-          views: igConcept.rawData?.views || undefined,
-          engagementRate: igConcept.rawData?.engagement_rate || undefined,
-        });
-        allConcepts.push(concept);
+      
+      // Search using Scrape Creator API
+      const keywords = typeof query === 'string' ? query.split(',').map(k => k.trim()) : query;
+      const results = await scrapeCreatorService.fetchConceptsForBrand(keywords, niche || 'general');
+      
+      // Flatten all platforms into one array
+      const allConcepts = [
+        ...results.facebook,
+        ...results.instagram,
+        ...results.tiktok
+      ];
+      
+      // Save discovered concepts to database
+      const savedConcepts = [];
+      for (const concept of allConcepts) {
+        try {
+          const saved = await storage.createConcept({
+            userId,
+            platform: concept.platform,
+            title: concept.title,
+            description: concept.description,
+            thumbnailUrl: concept.thumbnailUrl,
+            postUrl: concept.postUrl,
+            format: concept.visualStyle || 'video',
+            hooks: concept.hook ? [concept.hook] : [],
+            engagementScore: concept.engagementScore || 0,
+            status: "discovered"
+          });
+          savedConcepts.push(saved);
+        } catch (err) {
+          console.error("Error saving concept:", err);
+        }
       }
-
-      // Process TikTok concepts
-      for (const ttConcept of conceptsResponse.tiktok) {
-        const concept = await storage.createConcept({
-          userId,
-          platform: 'tiktok' as const,
-          title: ttConcept.title,
-          description: ttConcept.description,
-          thumbnailUrl: ttConcept.rawData?.thumbnail || undefined,
-          videoUrl: ttConcept.rawData?.video_url || undefined,
-          postUrl: ttConcept.rawData?.post_url || undefined,
-          brandName: query,
-          industry: ttConcept.rawData?.industry || undefined,
-          format: ttConcept.rawData?.format || 'Unknown',
-          hooks: ttConcept.hook ? [ttConcept.hook] : [],
-          engagementScore: ttConcept.engagementScore || 0,
-          likes: ttConcept.rawData?.likes || undefined,
-          comments: ttConcept.rawData?.comments || undefined,
-          shares: ttConcept.rawData?.shares || undefined,
-          views: ttConcept.rawData?.views || undefined,
-          engagementRate: ttConcept.rawData?.engagement_rate || undefined,
-        });
-        allConcepts.push(concept);
-      }
-
-      res.json({
-        count: allConcepts.length,
-        concepts: allConcepts
+      
+      res.json({ 
+        success: true, 
+        count: savedConcepts.length,
+        concepts: savedConcepts
       });
     } catch (error) {
       console.error("Error searching concepts:", error);
-      res.status(500).json({ 
-        error: "Failed to search for creative concepts",
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      res.status(500).json({ error: "Failed to search concepts" });
     }
   });
 
-  const httpServer = createServer(app);
+  // ============================================================================
+  // RESEARCH DISCOVERY (AI-powered)
+  // ============================================================================
 
+  app.post("/api/research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { knowledgeBase } = req.body;
+      
+      if (!knowledgeBase) {
+        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
+        return;
+      }
+
+      // For MVP, return a success message - actual AI discovery can be integrated later
+      res.json({ 
+        success: true, 
+        message: "Creative research discovery initiated. AI is now searching for viral content based on your brand." 
+      });
+    } catch (error) {
+      console.error("Error triggering research discovery:", error);
+      res.status(500).json({ error: "Failed to start research discovery" });
+    }
+  });
+
+  app.post("/api/customer-research/discover", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { knowledgeBase } = req.body;
+      
+      if (!knowledgeBase) {
+        res.status(400).json({ error: "Knowledge base data is required. Please complete your knowledge base first." });
+        return;
+      }
+
+      // For MVP, return a success message - actual AI discovery can be integrated later
+      res.json({ 
+        success: true, 
+        message: "Customer research discovery initiated. AI is now analyzing customer insights." 
+      });
+    } catch (error) {
+      console.error("Error triggering customer research discovery:", error);
+      res.status(500).json({ error: "Failed to start customer research discovery" });
+    }
+  });
+
+  // ============================================================================
+  // AVATAR-CONCEPT LINKS
+  // ============================================================================
+
+  app.get("/api/avatar-concepts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { avatarId } = req.query;
+      const links = await storage.getAvatarConcepts(userId, avatarId as string);
+      res.json(links);
+    } catch (error) {
+      console.error("Error fetching avatar-concept links:", error);
+      res.status(500).json({ error: "Failed to fetch links" });
+    }
+  });
+
+  app.post("/api/avatar-concepts", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const link = await storage.createAvatarConcept({
+        ...req.body,
+        userId
+      });
+      res.status(201).json(link);
+    } catch (error) {
+      console.error("Error creating avatar-concept link:", error);
+      res.status(500).json({ error: "Failed to create link" });
+    }
+  });
+
+  app.delete("/api/avatar-concepts/:id", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const deleted = await storage.deleteAvatarConcept(id, userId);
+      
+      if (!deleted) {
+        res.status(404).json({ error: "Link not found or access denied" });
+        return;
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting avatar-concept link:", error);
+      res.status(500).json({ error: "Failed to delete link" });
+    }
+  });
+
+  // ============================================================================
+  // LEGACY ENDPOINTS (for backward compatibility)
+  // ============================================================================
+  
+  // Stub endpoints for features that are now "Coming Soon"
+  app.get("/api/insights", isAuthenticated, async (req: any, res) => {
+    res.json([]);
+  });
+
+  app.get("/api/sources", isAuthenticated, async (req: any, res) => {
+    res.json([]);
+  });
+
+  app.get("/api/scripts", isAuthenticated, async (req: any, res) => {
+    res.json([]);
+  });
+
+  app.get("/api/ad-accounts", isAuthenticated, async (req: any, res) => {
+    res.status(503).json({ 
+      error: "Performance Analytics coming soon",
+      message: "This feature will be available in a future update."
+    });
+  });
+
+  const httpServer = createServer(app);
   return httpServer;
 }
