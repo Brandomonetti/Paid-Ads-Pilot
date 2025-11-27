@@ -412,7 +412,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.N8N_API_KEY}`
+          },
           body: JSON.stringify(webhookData)
         });
         console.log("Webhook response status:", webhookResponse.status);
@@ -455,7 +458,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.N8N_API_KEY}`
+          },
           body: JSON.stringify(webhookData)
         });
         console.log("Webhook response status:", webhookResponse.status);
