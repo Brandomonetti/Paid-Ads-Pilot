@@ -1,13 +1,11 @@
 import { 
   type User, type UpsertUser,
-  type PlatformSettings, type InsertPlatformSettings,
-  type UpdatePlatformSettings,
   type KnowledgeBase, type InsertKnowledgeBase,
   type UpdateKnowledgeBase,
   type Avatar, type InsertAvatar, type UpdateAvatar,
   type Concept, type InsertConcept, type UpdateConcept,
   type AvatarConcept, type InsertAvatarConcept,
-  users, platformSettings, knowledgeBase, avatars, concepts, avatarConcepts
+  users, knowledgeBase, avatars, concepts, avatarConcepts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -18,11 +16,6 @@ export interface IStorage {
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
-  // Platform Settings methods
-  getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
-  createPlatformSettings(settings: InsertPlatformSettings): Promise<PlatformSettings>;
-  updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined>;
   
   // Knowledge Base methods
   getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined>;
@@ -51,7 +44,6 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
-  private platformSettingsMap: Map<string, PlatformSettings>;
   private knowledgeBaseMap: Map<string, KnowledgeBase>;
   private avatarsMap: Map<string, Avatar>;
   private conceptsMap: Map<string, Concept>;
@@ -59,7 +51,6 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
-    this.platformSettingsMap = new Map();
     this.knowledgeBaseMap = new Map();
     this.avatarsMap = new Map();
     this.conceptsMap = new Map();
@@ -100,43 +91,6 @@ export class MemStorage implements IStorage {
       this.users.set(userData.id, newUser);
       return newUser;
     }
-  }
-
-  // Platform Settings methods
-  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
-    return this.platformSettingsMap.get(userId);
-  }
-
-  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
-    const id = randomUUID();
-    const settings: PlatformSettings = { 
-      ...insertSettings,
-      id,
-      subscriptionTier: insertSettings.subscriptionTier ?? "research",
-      creditTier: insertSettings.creditTier ?? 0,
-      monthlyCredits: insertSettings.monthlyCredits ?? 50,
-      creditsUsed: insertSettings.creditsUsed ?? 0,
-      billingCycleStart: insertSettings.billingCycleStart ?? new Date(),
-      provenConceptsPercentage: insertSettings.provenConceptsPercentage ?? 80,
-      weeklyBriefsVolume: insertSettings.weeklyBriefsVolume ?? 5,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.platformSettingsMap.set(insertSettings.userId, settings);
-    return settings;
-  }
-
-  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
-    const settings = this.platformSettingsMap.get(userId);
-    if (!settings) return undefined;
-    
-    const updatedSettings: PlatformSettings = { 
-      ...settings,
-      ...updates,
-      updatedAt: new Date()
-    };
-    this.platformSettingsMap.set(userId, updatedSettings);
-    return updatedSettings;
   }
   
   // Knowledge Base methods
@@ -363,39 +317,6 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result[0];
     }
-  }
-
-  // Platform Settings methods
-  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
-    const result = await this.db
-      .select()
-      .from(platformSettings)
-      .where(eq(platformSettings.userId, userId));
-    return result[0];
-  }
-
-  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
-    const result = await this.db
-      .insert(platformSettings)
-      .values({
-        ...insertSettings,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    return result[0];
-  }
-
-  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
-    const result = await this.db
-      .update(platformSettings)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .where(eq(platformSettings.userId, userId))
-      .returning();
-    return result[0];
   }
 
   // Knowledge Base methods

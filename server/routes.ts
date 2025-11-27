@@ -4,8 +4,6 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, csrfProtection, setupCSRFToken } from "./replitAuth";
 import { scrapeCreatorService } from "./scrape-creator-service";
 import {
-  insertPlatformSettingsSchema,
-  updatePlatformSettingsSchema,
   insertKnowledgeBaseSchema,
   updateKnowledgeBaseSchema,
   insertAvatarSchema,
@@ -33,52 +31,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  // ============================================================================
-  // PLATFORM SETTINGS
-  // ============================================================================
-
-  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      let settings = await storage.getPlatformSettings(userId);
-      
-      if (!settings) {
-        settings = await storage.createPlatformSettings({
-          userId,
-          subscriptionTier: "research",
-          creditTier: 0,
-          monthlyCredits: 50,
-          creditsUsed: 0
-        });
-      }
-      
-      res.json(settings);
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-      res.status(500).json({ error: "Failed to fetch settings" });
-    }
-  });
-
-  app.patch("/api/settings", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const validatedData = updatePlatformSettingsSchema.parse(req.body);
-      
-      const settings = await storage.updatePlatformSettings(userId, validatedData);
-      if (!settings) {
-        res.status(404).json({ error: "Settings not found" });
-        return;
-      }
-      res.json(settings);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid settings data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to update settings" });
-      }
     }
   });
 

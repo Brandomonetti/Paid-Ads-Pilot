@@ -35,48 +35,6 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 // ============================================================================
-// PLATFORM SETTINGS (Subscription & Credits)
-// ============================================================================
-
-export const platformSettings = pgTable("platform_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  
-  // Subscription & Credits
-  subscriptionTier: text("subscription_tier").notNull().default("research"), // research, research_briefing, all_agents
-  creditTier: integer("credit_tier").notNull().default(0), // 0=50 credits, 1=100, 2=200, 3=500
-  monthlyCredits: integer("monthly_credits").notNull().default(50),
-  creditsUsed: integer("credits_used").notNull().default(0),
-  billingCycleStart: timestamp("billing_cycle_start").defaultNow(),
-  
-  // Legacy fields for compatibility
-  provenConceptsPercentage: integer("proven_concepts_percentage").notNull().default(80),
-  weeklyBriefsVolume: integer("weekly_briefs_volume").notNull().default(5),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
-});
-
-export const insertPlatformSettingsSchema = createInsertSchema(platformSettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const updatePlatformSettingsSchema = z.object({
-  subscriptionTier: z.enum(["research", "research_briefing", "all_agents"]).optional(),
-  creditTier: z.number().min(0).max(3).optional(),
-  monthlyCredits: z.number().min(50).max(500).optional(),
-  creditsUsed: z.number().min(0).optional(),
-  provenConceptsPercentage: z.number().min(0).max(100).optional(),
-  weeklyBriefsVolume: z.number().min(1).max(200).optional()
-});
-
-export type InsertPlatformSettings = z.infer<typeof insertPlatformSettingsSchema>;
-export type UpdatePlatformSettings = z.infer<typeof updatePlatformSettingsSchema>;
-export type PlatformSettings = typeof platformSettings.$inferSelect;
-
-// ============================================================================
 // KNOWLEDGE BASE (Brand Information)
 // ============================================================================
 
