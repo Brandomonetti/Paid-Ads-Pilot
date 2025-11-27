@@ -140,56 +140,53 @@ export type UpdateAvatar = z.infer<typeof updateAvatarSchema>;
 export type Avatar = typeof avatars.$inferSelect;
 
 // ============================================================================
-// CREATIVE RESEARCH CENTER (Concepts & Links)
+// CREATIVE RESEARCH CENTER (Concepts - Ad/Content Examples)
 // ============================================================================
 
-// Concepts - viral social media posts for creative inspiration
 export const concepts = pgTable("concepts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   
-  // Concept Core Details
-  platform: text("platform").notNull(), // facebook, instagram, tiktok
+  // Core Content
   title: text("title").notNull(),
   description: text("description").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
-  videoUrl: text("video_url"),
-  postUrl: text("post_url"),
-  brandName: text("brand_name"),
-  industry: text("industry"),
+  conceptType: text("concept_type").notNull(), // Facebook, Instagram, TikTok, etc.
+  owner: text("owner"), // Brand/business name
+  category: text("category"), // Business category (e.g., "Local business")
   
-  // Creative Elements
-  format: text("format").notNull(), // Raw UGC Video, POV Storytelling, etc.
-  hooks: text("hooks").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Media & Links
+  url: text("url"), // Link to original ad/post
+  thumbnail: text("thumbnail"), // Thumbnail image URL
   
-  // Engagement Metrics
-  engagementScore: integer("engagement_score").notNull().default(0),
-  likes: integer("likes"),
-  comments: integer("comments"),
-  shares: integer("shares"),
-  views: integer("views"),
-  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }),
+  // Statistics (JSONB: { views, likes, replies, shares })
+  statistics: jsonb("statistics").notNull().default(sql`'{}'::jsonb`),
   
-  // Metadata
-  status: text("status").notNull().default("discovered"), // discovered, approved, rejected, tested, proven
+  // Status
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
   
-  createdAt: timestamp("created_at").defaultNow(),
-  discoveredAt: timestamp("discovered_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow()
 });
 
 export const insertConceptSchema = createInsertSchema(concepts).omit({
   id: true,
-  createdAt: true,
-  discoveredAt: true
+  createdAt: true
 });
 
 export const updateConceptSchema = z.object({
-  status: z.enum(["discovered", "approved", "rejected", "tested", "proven"]).optional(),
-  engagementScore: z.number().optional(),
-  likes: z.number().optional(),
-  comments: z.number().optional(),
-  shares: z.number().optional(),
-  views: z.number().optional()
+  title: z.string().optional(),
+  description: z.string().optional(),
+  conceptType: z.string().optional(),
+  owner: z.string().optional(),
+  category: z.string().optional(),
+  url: z.string().optional(),
+  thumbnail: z.string().optional(),
+  statistics: z.object({
+    views: z.number().nullable().optional(),
+    likes: z.number().nullable().optional(),
+    replies: z.number().nullable().optional(),
+    shares: z.number().nullable().optional()
+  }).optional(),
+  status: z.enum(["pending", "approved", "rejected"]).optional()
 });
 
 export type InsertConcept = z.infer<typeof insertConceptSchema>;
