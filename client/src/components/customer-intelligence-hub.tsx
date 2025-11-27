@@ -564,18 +564,10 @@ export default function CustomerIntelligenceHub() {
       return await response.json() as { success: boolean; message: string };
     },
     onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Discovery started!",
-          description: data.message,
-        });
-      } else {
-        toast({
-          title: "Discovery issue",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
       // Invalidate all insight and source queries
       queryClient.invalidateQueries({ predicate: (query) => 
         String(query.queryKey[0]).startsWith('/api/insights') || 

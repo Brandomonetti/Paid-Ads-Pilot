@@ -110,18 +110,10 @@ export function CreativeResearchCenter() {
       return await response.json() as { success: boolean; message: string };
     },
     onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Discovery started!",
-          description: data.message,
-        });
-      } else {
-        toast({
-          title: "Discovery issue",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
       setActiveTab('latest'); // Switch to Latest Discoveries tab
     },
