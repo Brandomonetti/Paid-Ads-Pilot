@@ -434,7 +434,7 @@ export default function CustomerIntelligenceHub() {
                               {categoryInfo?.label}
                             </Badge>
                             <Badge
-                              className={`${platformConfig[avatar.platform]?.bg || 'bg-slate-500'} text-white border-transparent`}
+                              className={`${platformConfig[avatar.platform?.toLowerCase()]?.bg || 'bg-slate-500'} text-white border-transparent`}
                             >
                               {avatar.platform}
                             </Badge>
@@ -957,7 +957,7 @@ export default function CustomerIntelligenceHub() {
                                 {categoryInfo?.label}
                               </Badge>
                               <Badge
-                                className={`${platformConfig[avatar.platform]?.bg || 'bg-slate-500'} text-white border-transparent`}
+                                className={`${platformConfig[avatar.platform?.toLowerCase()]?.bg || 'bg-slate-500'} text-white border-transparent`}
                               >
                                 {avatar.platform}
                               </Badge>
@@ -1054,7 +1054,7 @@ export default function CustomerIntelligenceHub() {
                                 {categoryInfo?.label}
                               </Badge>
                               <Badge
-                                className={`${platformConfig[avatar.platform]?.bg || 'bg-slate-500'} text-white border-transparent`}
+                                className={`${platformConfig[avatar.platform?.toLowerCase()]?.bg || 'bg-slate-500'} text-white border-transparent`}
                               >
                                 {avatar.platform}
                               </Badge>
