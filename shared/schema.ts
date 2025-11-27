@@ -101,26 +101,23 @@ export const avatars = pgTable("avatars", {
   
   // Avatar Core Details
   name: text("name").notNull(), // e.g., "Busy Professional Mom"
-  role: text("role"), // e.g., "Primary decision maker for household purchases"
-  ageRange: text("age_range").notNull(), // e.g., "30-45"
-  
-  // Demographics & Psychographics
-  demographicsSummary: text("demographics_summary").notNull(), // Brief description
-  motivations: text("motivations").array().notNull().default(sql`ARRAY[]::text[]`),
+  demographics: text("demographics").notNull(), // Brief demographic description
+  psychographics: text("psychographics"), // Values, interests, lifestyle
   
   // Pain Points & Desires
   painPoints: text("pain_points").array().notNull().default(sql`ARRAY[]::text[]`),
-  desiredOutcomes: text("desired_outcomes").array().notNull().default(sql`ARRAY[]::text[]`),
-  objections: text("objections").array().notNull().default(sql`ARRAY[]::text[]`),
+  desires: text("desires").array().notNull().default(sql`ARRAY[]::text[]`),
   
   // Marketing Hooks
-  preferredHooks: text("preferred_hooks").array().notNull().default(sql`ARRAY[]::text[]`),
-  triggers: text("triggers").array().notNull().default(sql`ARRAY[]::text[]`),
+  hooks: text("hooks").array().notNull().default(sql`ARRAY[]::text[]`),
+  
+  // Evidence & Sources
+  sources: text("sources").array().notNull().default(sql`ARRAY[]::text[]`),
   
   // Metadata
   priority: text("priority").notNull().default("medium"), // high, medium, low
-  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull().default("75.00"),
-  source: text("source").notNull().default("generated"), // generated, manual
+  dataConfidence: text("data_confidence").notNull().default("0.75"), // 0.0 to 1.0 as string
+  recommendationSource: text("recommendation_source").notNull().default("generated"), // generated, manual
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   
   createdAt: timestamp("created_at").defaultNow(),
@@ -135,16 +132,15 @@ export const insertAvatarSchema = createInsertSchema(avatars).omit({
 
 export const updateAvatarSchema = z.object({
   name: z.string().optional(),
-  role: z.string().optional(),
-  ageRange: z.string().optional(),
-  demographicsSummary: z.string().optional(),
-  motivations: z.array(z.string()).optional(),
+  demographics: z.string().optional(),
+  psychographics: z.string().optional(),
   painPoints: z.array(z.string()).optional(),
-  desiredOutcomes: z.array(z.string()).optional(),
-  objections: z.array(z.string()).optional(),
-  preferredHooks: z.array(z.string()).optional(),
-  triggers: z.array(z.string()).optional(),
+  desires: z.array(z.string()).optional(),
+  hooks: z.array(z.string()).optional(),
+  sources: z.array(z.string()).optional(),
   priority: z.enum(["high", "medium", "low"]).optional(),
+  dataConfidence: z.string().optional(),
+  recommendationSource: z.string().optional(),
   status: z.enum(["pending", "approved", "rejected"]).optional()
 });
 
