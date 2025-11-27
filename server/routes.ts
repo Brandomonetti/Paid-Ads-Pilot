@@ -421,14 +421,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Webhook response status:", webhookResponse.status);
         const responseText = await webhookResponse.text();
         console.log("Webhook response body:", responseText);
+        
+        // Parse and return the n8n response
+        try {
+          const n8nResponse = JSON.parse(responseText);
+          res.json({ 
+            success: n8nResponse.status === "success",
+            message: n8nResponse.message || "Discovery request processed."
+          });
+          return;
+        } catch (parseError) {
+          console.error("Failed to parse n8n response:", parseError);
+          res.json({ 
+            success: webhookResponse.ok,
+            message: webhookResponse.ok 
+              ? "Creative research discovery initiated." 
+              : "Discovery request sent but response was unexpected."
+          });
+          return;
+        }
       } catch (webhookError) {
         console.error("Webhook call failed:", webhookError);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to connect to discovery service. Please try again." 
+        });
+        return;
       }
-
-      res.json({ 
-        success: true, 
-        message: "Creative research discovery initiated. AI is now searching for viral content based on your brand." 
-      });
     } catch (error) {
       console.error("Error triggering research discovery:", error);
       res.status(500).json({ error: "Failed to start research discovery" });
@@ -467,14 +486,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Webhook response status:", webhookResponse.status);
         const responseText = await webhookResponse.text();
         console.log("Webhook response body:", responseText);
+        
+        // Parse and return the n8n response
+        try {
+          const n8nResponse = JSON.parse(responseText);
+          res.json({ 
+            success: n8nResponse.status === "success",
+            message: n8nResponse.message || "Discovery request processed."
+          });
+          return;
+        } catch (parseError) {
+          console.error("Failed to parse n8n response:", parseError);
+          res.json({ 
+            success: webhookResponse.ok,
+            message: webhookResponse.ok 
+              ? "Customer research discovery initiated." 
+              : "Discovery request sent but response was unexpected."
+          });
+          return;
+        }
       } catch (webhookError) {
         console.error("Webhook call failed:", webhookError);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to connect to discovery service. Please try again." 
+        });
+        return;
       }
-
-      res.json({ 
-        success: true, 
-        message: "Customer research discovery initiated. AI is now analyzing customer insights." 
-      });
     } catch (error) {
       console.error("Error triggering customer research discovery:", error);
       res.status(500).json({ error: "Failed to start customer research discovery" });

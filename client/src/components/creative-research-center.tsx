@@ -106,13 +106,22 @@ export function CreativeResearchCenter() {
   // Discover new insights mutation
   const discoverMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/research/discover', { knowledgeBase });
+      const response = await apiRequest('POST', '/api/research/discover', { knowledgeBase });
+      return await response.json() as { success: boolean; message: string };
     },
-    onSuccess: () => {
-      toast({
-        title: "Discovery started!",
-        description: "AI is now searching for viral creative concepts based on your brand.",
-      });
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Discovery started!",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Discovery issue",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
       setActiveTab('latest'); // Switch to Latest Discoveries tab
     },

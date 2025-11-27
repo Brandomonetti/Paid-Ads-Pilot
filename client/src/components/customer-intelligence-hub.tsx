@@ -560,13 +560,22 @@ export default function CustomerIntelligenceHub() {
   // Discover new customer insights mutation
   const discoverMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/customer-research/discover', { knowledgeBase });
+      const response = await apiRequest('POST', '/api/customer-research/discover', { knowledgeBase });
+      return await response.json() as { success: boolean; message: string };
     },
-    onSuccess: () => {
-      toast({
-        title: "Discovery started!",
-        description: "AI is now searching for customer insights based on your knowledge base.",
-      });
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Discovery started!",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Discovery issue",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
       // Invalidate all insight and source queries
       queryClient.invalidateQueries({ predicate: (query) => 
         String(query.queryKey[0]).startsWith('/api/insights') || 
