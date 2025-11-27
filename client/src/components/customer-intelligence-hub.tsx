@@ -40,16 +40,16 @@ const categoryConfig = {
   'trigger': { icon: Zap, label: 'Triggers', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800' },
 };
 
-// Platform configuration
-const platformConfig: Record<string, { color: string }> = {
-  'reddit': { color: 'bg-orange-500' },
-  'amazon': { color: 'bg-yellow-500' },
-  'youtube': { color: 'bg-red-500' },
-  'facebook': { color: 'bg-blue-500' },
-  'instagram': { color: 'bg-pink-500' },
-  'tiktok': { color: 'bg-black dark:bg-white' },
-  'forum': { color: 'bg-gray-500' },
-  'article': { color: 'bg-indigo-500' },
+// Platform configuration with distinct colors
+const platformConfig: Record<string, { color: string; bg: string; border: string }> = {
+  'reddit': { color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800' },
+  'amazon': { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800' },
+  'youtube': { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' },
+  'facebook': { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800' },
+  'instagram': { color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-200 dark:border-pink-800' },
+  'tiktok': { color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-800' },
+  'forum': { color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-900/20', border: 'border-slate-200 dark:border-slate-800' },
+  'article': { color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-200 dark:border-indigo-800' },
 };
 
 export default function CustomerIntelligenceHub() {
@@ -434,7 +434,8 @@ export default function CustomerIntelligenceHub() {
                               {categoryInfo?.label}
                             </Badge>
                             <Badge
-                              className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}
+                              variant="outline"
+                              className={`${platformConfig[avatar.platform]?.color || 'text-slate-600'} ${platformConfig[avatar.platform]?.bg || 'bg-slate-50 dark:bg-slate-900/20'} ${platformConfig[avatar.platform]?.border || 'border-slate-200 dark:border-slate-800'}`}
                             >
                               {avatar.platform}
                             </Badge>
@@ -957,7 +958,8 @@ export default function CustomerIntelligenceHub() {
                                 {categoryInfo?.label}
                               </Badge>
                               <Badge
-                                className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}
+                                variant="outline"
+                                className={`${platformConfig[avatar.platform]?.color || 'text-slate-600'} ${platformConfig[avatar.platform]?.bg || 'bg-slate-50 dark:bg-slate-900/20'} ${platformConfig[avatar.platform]?.border || 'border-slate-200 dark:border-slate-800'}`}
                               >
                                 {avatar.platform}
                               </Badge>
@@ -1053,7 +1055,10 @@ export default function CustomerIntelligenceHub() {
                                 <CategoryIcon className="h-3 w-3" />
                                 {categoryInfo?.label}
                               </Badge>
-                              <Badge className={`${platformConfig[avatar.platform]?.color || 'bg-gray-500'} text-white`}>
+                              <Badge
+                                variant="outline"
+                                className={`${platformConfig[avatar.platform]?.color || 'text-slate-600'} ${platformConfig[avatar.platform]?.bg || 'bg-slate-50 dark:bg-slate-900/20'} ${platformConfig[avatar.platform]?.border || 'border-slate-200 dark:border-slate-800'}`}
+                              >
                                 {avatar.platform}
                               </Badge>
                             </div>
