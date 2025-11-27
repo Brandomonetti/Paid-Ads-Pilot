@@ -149,7 +149,7 @@ export const concepts = pgTable("concepts", {
   
   // Core Content
   title: text("title"),
-  description: text("description").notNull(),
+  description: text("description"),
   conceptType: text("concept_type").notNull(), // Facebook, Instagram, TikTok, etc.
   owner: text("owner"), // Brand/business name
   category: text("category"), // Business category (e.g., "Local business")
