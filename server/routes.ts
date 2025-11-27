@@ -399,7 +399,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // For MVP, return a success message - actual AI discovery can be integrated later
+      // Send webhook to n8n for creative research discovery
+      const webhookData = {
+        type: "creative",
+        userId,
+        knowledgeBase,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(webhookData)
+        });
+      } catch (webhookError) {
+        console.error("Webhook call failed:", webhookError);
+      }
+
       res.json({ 
         success: true, 
         message: "Creative research discovery initiated. AI is now searching for viral content based on your brand." 
@@ -420,7 +437,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // For MVP, return a success message - actual AI discovery can be integrated later
+      // Send webhook to n8n for customer research discovery
+      const webhookData = {
+        type: "customer",
+        userId,
+        knowledgeBase,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(webhookData)
+        });
+      } catch (webhookError) {
+        console.error("Webhook call failed:", webhookError);
+      }
+
       res.json({ 
         success: true, 
         message: "Customer research discovery initiated. AI is now analyzing customer insights." 
