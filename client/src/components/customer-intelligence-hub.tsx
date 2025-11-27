@@ -43,13 +43,13 @@ const categoryConfig = {
 // Platform configuration with distinct background colors
 const platformConfig: Record<string, { bg: string }> = {
   'reddit': { bg: 'bg-orange-500' },
-  'amazon': { bg: 'bg-amber-500' },
-  'youtube': { bg: 'bg-red-500' },
+  'amazon': { bg: 'bg-yellow-500' },
+  'youtube': { bg: 'bg-red-600' },
   'facebook': { bg: 'bg-blue-600' },
-  'instagram': { bg: 'bg-pink-500' },
-  'tiktok': { bg: 'bg-cyan-500' },
-  'forum': { bg: 'bg-slate-500' },
-  'article': { bg: 'bg-indigo-500' },
+  'instagram': { bg: 'bg-fuchsia-500' },
+  'tiktok': { bg: 'bg-emerald-500' },
+  'forum': { bg: 'bg-slate-600' },
+  'article': { bg: 'bg-violet-600' },
 };
 
 export default function CustomerIntelligenceHub() {
