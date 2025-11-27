@@ -407,12 +407,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       };
 
+      console.log("Sending webhook to n8n:", JSON.stringify(webhookData, null, 2));
+      
       try {
-        await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
+        const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(webhookData)
         });
+        console.log("Webhook response status:", webhookResponse.status);
+        const responseText = await webhookResponse.text();
+        console.log("Webhook response body:", responseText);
       } catch (webhookError) {
         console.error("Webhook call failed:", webhookError);
       }
@@ -445,12 +450,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       };
 
+      console.log("Sending webhook to n8n:", JSON.stringify(webhookData, null, 2));
+      
       try {
-        await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
+        const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/recent-research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(webhookData)
         });
+        console.log("Webhook response status:", webhookResponse.status);
+        const responseText = await webhookResponse.text();
+        console.log("Webhook response body:", responseText);
       } catch (webhookError) {
         console.error("Webhook call failed:", webhookError);
       }
