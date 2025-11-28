@@ -538,7 +538,7 @@ export default function CustomerIntelligenceHub() {
                               <ul className="space-y-1">
                                 {avatar.observations.map((obs: string, idx: number) => (
                                   <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                                    <span className="text-primary">-</span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
                                     {obs}
                                   </li>
                                 ))}
