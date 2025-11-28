@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -492,37 +492,9 @@ export default function CustomerIntelligenceHub() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {!isExpanded && (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {avatar.summary}
-                          </p>
-                          
-                          {/* Approval Buttons */}
-                          <div className="flex gap-2 pt-2 border-t">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => approveAvatarMutation.mutate(avatar.id)}
-                              disabled={approveAvatarMutation.isPending}
-                              data-testid={`button-approve-${avatar.id}`}
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => rejectAvatarMutation.mutate(avatar.id)}
-                              disabled={rejectAvatarMutation.isPending}
-                              data-testid={`button-reject-${avatar.id}`}
-                            >
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {avatar.summary}
+                        </p>
                       )}
                       
                       {isExpanded && (
@@ -558,35 +530,33 @@ export default function CustomerIntelligenceHub() {
                               </div>
                             </div>
                           )}
-                          
-                          {/* Approval Buttons */}
-                          <div className="flex gap-2 pt-3 border-t">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => approveAvatarMutation.mutate(avatar.id)}
-                              disabled={approveAvatarMutation.isPending}
-                              data-testid={`button-approve-expanded-${avatar.id}`}
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Approve & Add to Library
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={() => rejectAvatarMutation.mutate(avatar.id)}
-                              disabled={rejectAvatarMutation.isPending}
-                              data-testid={`button-reject-expanded-${avatar.id}`}
-                            >
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
                         </div>
                       )}
                     </CardContent>
+                    <CardFooter className="flex gap-2 border-t pt-4">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1 gap-2"
+                        onClick={() => approveAvatarMutation.mutate(avatar.id)}
+                        disabled={approveAvatarMutation.isPending}
+                        data-testid={`button-approve-${avatar.id}`}
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-2"
+                        onClick={() => rejectAvatarMutation.mutate(avatar.id)}
+                        disabled={rejectAvatarMutation.isPending}
+                        data-testid={`button-reject-${avatar.id}`}
+                      >
+                        <X className="h-3 w-3" />
+                        Reject
+                      </Button>
+                    </CardFooter>
                   </Card>
                 );
               })}
