@@ -336,7 +336,7 @@ export default function CustomerIntelligenceHub() {
             Research Library ({approvedAvatars.length})
           </TabsTrigger>
           <TabsTrigger value="avatars" data-testid="tab-target-avatars">
-            Target Avatars ({avatarsData.length})
+            Target Avatars ({approvedAvatars.length})
           </TabsTrigger>
         </TabsList>
 
@@ -610,7 +610,7 @@ export default function CustomerIntelligenceHub() {
           )}
 
           {/* Empty State */}
-          {!isLoadingAvatars && avatarsData.length === 0 && (
+          {!isLoadingAvatars && approvedAvatars.length === 0 && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -631,9 +631,9 @@ export default function CustomerIntelligenceHub() {
           )}
 
           {/* Avatars Grid */}
-          {!isLoadingAvatars && avatarsData.length > 0 && (
+          {!isLoadingAvatars && approvedAvatars.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {avatarsData.map((avatar: any) => (
+              {approvedAvatars.map((avatar: any) => (
                 <Card key={avatar.id} className="hover-elevate" data-testid={`card-avatar-${avatar.id}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
