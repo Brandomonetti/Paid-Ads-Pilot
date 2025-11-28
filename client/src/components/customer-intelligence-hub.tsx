@@ -68,6 +68,8 @@ export default function CustomerIntelligenceHub() {
   const [libraryDateRange, setLibraryDateRange] = useState('all');
   const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
   
+  // Track which avatar is currently being processed
+  const [processingAvatarId, setProcessingAvatarId] = useState<string | null>(null);
 
   const mockSources = [
     {
@@ -183,6 +185,7 @@ export default function CustomerIntelligenceHub() {
   // Approve avatar mutation
   const approveAvatarMutation = useMutation({
     mutationFn: async (avatarId: string) => {
+      setProcessingAvatarId(avatarId);
       return await apiRequest('PATCH', `/api/avatars/${avatarId}/approve`, {});
     },
     onSuccess: () => {
@@ -191,6 +194,7 @@ export default function CustomerIntelligenceHub() {
         description: "This insight has been added to your Research Library.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
+      setProcessingAvatarId(null);
     },
     onError: (error: any) => {
       toast({
@@ -198,12 +202,14 @@ export default function CustomerIntelligenceHub() {
         description: error.message || "Could not approve this insight",
         variant: "destructive",
       });
+      setProcessingAvatarId(null);
     },
   });
 
   // Reject avatar mutation
   const rejectAvatarMutation = useMutation({
     mutationFn: async (avatarId: string) => {
+      setProcessingAvatarId(avatarId);
       return await apiRequest('PATCH', `/api/avatars/${avatarId}/reject`, {});
     },
     onSuccess: () => {
@@ -212,6 +218,7 @@ export default function CustomerIntelligenceHub() {
         description: "This insight has been removed from Latest Discoveries.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
+      setProcessingAvatarId(null);
     },
     onError: (error: any) => {
       toast({
@@ -219,6 +226,7 @@ export default function CustomerIntelligenceHub() {
         description: error.message || "Could not reject this insight",
         variant: "destructive",
       });
+      setProcessingAvatarId(null);
     },
   });
 
@@ -539,7 +547,7 @@ export default function CustomerIntelligenceHub() {
                         size="sm"
                         className="flex-1 gap-2"
                         onClick={() => approveAvatarMutation.mutate(avatar.id)}
-                        disabled={approveAvatarMutation.isPending}
+                        disabled={processingAvatarId === avatar.id}
                         data-testid={`button-approve-${avatar.id}`}
                       >
                         <CheckCircle2 className="h-3 w-3" />
@@ -550,7 +558,7 @@ export default function CustomerIntelligenceHub() {
                         size="sm"
                         className="flex-1 gap-2"
                         onClick={() => rejectAvatarMutation.mutate(avatar.id)}
-                        disabled={rejectAvatarMutation.isPending}
+                        disabled={processingAvatarId === avatar.id}
                         data-testid={`button-reject-${avatar.id}`}
                       >
                         <X className="h-3 w-3" />
