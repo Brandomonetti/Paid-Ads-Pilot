@@ -424,7 +424,7 @@ export default function CustomerIntelligenceHub() {
                 const isExpanded = expandedInsight === avatar.id;
                 
                 return (
-                  <Card key={avatar.id} className="hover-elevate" data-testid={`card-avatar-${avatar.id}`}>
+                  <Card key={avatar.id} className="hover-elevate flex flex-col" data-testid={`card-avatar-${avatar.id}`}>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
@@ -490,7 +490,7 @@ export default function CustomerIntelligenceHub() {
                         "{avatar.message}"
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-3 flex-1">
                       {!isExpanded && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {avatar.summary}
