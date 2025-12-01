@@ -352,13 +352,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Sending search webhook to n8n:", JSON.stringify(webhookData, null, 2));
       
       try {
-        const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/search", {
-          method: "POST",
+        // Build query string for GET request
+        const params = new URLSearchParams({
+          userId,
+          query,
+          type: type || 'general',
+          timestamp: new Date().toISOString()
+        });
+        
+        const webhookResponse = await fetch(`https://brandluxmedia.app.n8n.cloud/webhook-test/search?${params.toString()}`, {
+          method: "GET",
           headers: { 
-            "Content-Type": "application/json",
             "Authorization": `Bearer ${process.env.N8N_API_KEY}`
-          },
-          body: JSON.stringify(webhookData)
+          }
         });
         
         console.log("Search webhook response status:", webhookResponse.status);
