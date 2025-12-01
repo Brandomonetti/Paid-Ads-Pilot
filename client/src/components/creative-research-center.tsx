@@ -70,7 +70,7 @@ export function CreativeResearchCenter() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<'url' | 'brand' | 'page'>('brand');
+  const [searchType, setSearchType] = useState<'url' | 'brand' | 'keyword'>('brand');
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
   const [timeFilter, setTimeFilter] = useState('all');
   const [librarySearch, setLibrarySearch] = useState("");
@@ -1704,14 +1704,14 @@ export function CreativeResearchCenter() {
               <SelectContent>
                 <SelectItem value="brand">Brand Name</SelectItem>
                 <SelectItem value="url">Page URL</SelectItem>
-                <SelectItem value="page">Page Name</SelectItem>
+                <SelectItem value="keyword">By Keyword</SelectItem>
               </SelectContent>
             </Select>
 
             <Input
               placeholder={
                 searchType === 'url' ? "Enter Facebook/Instagram/TikTok URL..." :
-                searchType === 'page' ? "Enter page name..." :
+                searchType === 'keyword' ? "Enter keywords..." :
                 "Enter brand name..."
               }
               value={searchQuery}
