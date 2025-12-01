@@ -328,57 +328,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================================
-  // CONCEPT SEARCH (via Scrape Creator API)
+  // CONCEPT SEARCH (via n8n webhook)
   // ============================================================================
 
   app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { query, niche } = req.body;
+      const { query, type } = req.body;
       
       if (!query) {
         res.status(400).json({ error: "Search query is required" });
         return;
       }
       
-      // Search using Scrape Creator API
-      const keywords = typeof query === 'string' ? query.split(',').map(k => k.trim()) : query;
-      const results = await scrapeCreatorService.fetchConceptsForBrand(keywords, niche || 'general');
+      // Send search request to n8n webhook
+      const webhookData = {
+        userId,
+        query,
+        type: type || 'general',
+        timestamp: new Date().toISOString()
+      };
+
+      console.log("Sending search webhook to n8n:", JSON.stringify(webhookData, null, 2));
       
-      // Flatten all platforms into one array
-      const allConcepts = [
-        ...results.facebook,
-        ...results.instagram,
-        ...results.tiktok
-      ];
-      
-      // Save discovered concepts to database
-      const savedConcepts = [];
-      for (const concept of allConcepts) {
+      try {
+        const webhookResponse = await fetch("https://brandluxmedia.app.n8n.cloud/webhook-test/search", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.N8N_API_KEY}`
+          },
+          body: JSON.stringify(webhookData)
+        });
+        
+        console.log("Search webhook response status:", webhookResponse.status);
+        const responseText = await webhookResponse.text();
+        console.log("Search webhook response body:", responseText);
+        
+        // Parse and handle n8n response
         try {
-          const saved = await storage.createConcept({
-            userId,
-            platform: concept.platform,
-            title: concept.title,
-            description: concept.description,
-            thumbnailUrl: concept.thumbnailUrl,
-            postUrl: concept.postUrl,
-            format: concept.visualStyle || 'video',
-            hooks: concept.hook ? [concept.hook] : [],
-            engagementScore: concept.engagementScore || 0,
-            status: "discovered"
+          const n8nResponse = JSON.parse(responseText);
+          
+          // If n8n returns concepts, save them to database
+          if (n8nResponse.concepts && Array.isArray(n8nResponse.concepts)) {
+            const savedConcepts = [];
+            for (const concept of n8nResponse.concepts) {
+              try {
+                const saved = await storage.createConcept({
+                  userId,
+                  conceptType: concept.platform || concept.conceptType || 'unknown',
+                  title: concept.title || '',
+                  description: concept.description || '',
+                  thumbnail: concept.thumbnailUrl || concept.thumbnail_url || concept.thumbnail || '',
+                  url: concept.postUrl || concept.post_url || concept.url || '',
+                  owner: concept.owner || concept.brandName || '',
+                  category: concept.category || '',
+                  statistics: {
+                    views: concept.views || 0,
+                    likes: concept.likes || 0,
+                    comments: concept.comments || 0,
+                    shares: concept.shares || 0,
+                    engagementScore: concept.engagementScore || concept.engagement_score || 0
+                  },
+                  status: "pending"
+                });
+                savedConcepts.push(saved);
+              } catch (err) {
+                console.error("Error saving concept:", err);
+              }
+            }
+            
+            res.json({ 
+              success: true, 
+              count: savedConcepts.length,
+              concepts: savedConcepts
+            });
+            return;
+          }
+          
+          // Return n8n response directly if no concepts array
+          res.json({ 
+            success: n8nResponse.success !== false,
+            message: n8nResponse.message || "Search request processed.",
+            count: n8nResponse.count || 0,
+            concepts: n8nResponse.concepts || []
           });
-          savedConcepts.push(saved);
-        } catch (err) {
-          console.error("Error saving concept:", err);
+          return;
+        } catch (parseError) {
+          console.error("Error parsing n8n response:", parseError);
+          res.json({ 
+            success: true,
+            message: "Search request sent successfully.",
+            count: 0,
+            concepts: []
+          });
+          return;
         }
+      } catch (webhookError) {
+        console.error("Search webhook call failed:", webhookError);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to connect to search service. Please try again." 
+        });
+        return;
       }
-      
-      res.json({ 
-        success: true, 
-        count: savedConcepts.length,
-        concepts: savedConcepts
-      });
     } catch (error) {
       console.error("Error searching concepts:", error);
       res.status(500).json({ error: "Failed to search concepts" });
