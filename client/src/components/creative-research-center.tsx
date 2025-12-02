@@ -1766,7 +1766,7 @@ export function CreativeResearchCenter() {
                   </Button>
                 </div>
                 
-                {/* First row of filters */}
+                {/* Row 1: Site Type, Gender, Ages, Daily Likes, Media Type */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
                   <Select value={filters.siteType} onValueChange={(value) => setFilters({...filters, siteType: value})}>
                     <SelectTrigger data-testid="select-site-type">
@@ -1819,10 +1819,6 @@ export function CreativeResearchCenter() {
                     </SelectContent>
                   </Select>
 
-                </div>
-
-                {/* Second row of filters */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
                   <Select value={filters.mediaType} onValueChange={(value) => setFilters({...filters, mediaType: value})}>
                     <SelectTrigger data-testid="select-media-type">
                       <SelectValue placeholder="Media type" />
@@ -1834,7 +1830,10 @@ export function CreativeResearchCenter() {
                       <SelectItem value="carousel">Carousel</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
 
+                {/* Row 2: Created Between, Countries, Language, Results */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                   <Select value={filters.createdBetween} onValueChange={(value) => setFilters({...filters, createdBetween: value})}>
                     <SelectTrigger data-testid="select-created-between">
                       <SelectValue placeholder="Created Between" />
