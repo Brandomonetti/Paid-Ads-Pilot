@@ -1985,7 +1985,7 @@ export function CreativeResearchCenter() {
                             <ExternalLink className="h-8 w-8 text-white transition-colors duration-200 group-hover:text-black" />
                           </div>
                         </div>
-                        <Badge className={`absolute top-2 right-2 ${
+                        <Badge className={`no-default-hover-elevate absolute -bottom-3 left-3 z-20 ${
                           platform === 'facebook' ? 'bg-blue-600 border-blue-700' :
                           platform === 'instagram' ? 'bg-pink-600 border-pink-700' :
                           platform === 'tiktok' ? 'bg-black border-gray-700' :
@@ -1994,7 +1994,7 @@ export function CreativeResearchCenter() {
                           {platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </Badge>
                       </div>
-                      <CardHeader className="pb-3">
+                      <CardHeader className="pb-3 pt-5">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
