@@ -1799,7 +1799,7 @@ export function CreativeResearchCenter() {
                       <SelectValue placeholder="Daily likes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Any</SelectItem>
+                      <SelectItem value="all">Any Likes</SelectItem>
                       <SelectItem value="<100">&lt;100</SelectItem>
                       <SelectItem value="100-1k">100-1K</SelectItem>
                       <SelectItem value="1k-10k">1K-10K</SelectItem>
