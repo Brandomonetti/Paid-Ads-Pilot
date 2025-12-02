@@ -387,13 +387,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || data.description?.substring(0, 100) || 'Untitled',
+                  title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
                   owner: data.owner || '',
                   category: data.filters?.language || '',
-                  statistics: data.statistics || {},
+                  statistics: {
+                    ...data.statistics,
+                    originalCreatedAt: data.created_at || null
+                  },
                   status: "pending"
                 });
                 savedConcepts.push(saved);
@@ -424,13 +427,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || data.description?.substring(0, 100) || 'Untitled',
+                  title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
                   owner: data.owner || '',
                   category: data.filters?.language || '',
-                  statistics: data.statistics || {},
+                  statistics: {
+                    ...data.statistics,
+                    originalCreatedAt: data.created_at || null
+                  },
                   status: "pending"
                 });
                 savedConcepts.push(saved);

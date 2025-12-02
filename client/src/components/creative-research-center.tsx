@@ -1946,7 +1946,11 @@ export function CreativeResearchCenter() {
                       className="hover-elevate overflow-hidden" 
                       data-testid={`card-${result.id}`}
                     >
-                      <div className="relative aspect-video bg-muted">
+                      <div 
+                        className="relative aspect-video bg-muted cursor-pointer group"
+                        onClick={() => result.url && window.open(result.url, '_blank')}
+                        data-testid={`thumbnail-${result.id}`}
+                      >
                         {result.thumbnail ? (
                           <img 
                             src={result.thumbnail} 
@@ -1958,6 +1962,9 @@ export function CreativeResearchCenter() {
                             <Search className="h-12 w-12 text-muted-foreground opacity-30" />
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <ExternalLink className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                         <Badge className={`absolute top-2 right-2 ${
                           platform === 'facebook' ? 'bg-blue-500' :
                           platform === 'instagram' ? 'bg-pink-500' :
@@ -2023,14 +2030,20 @@ export function CreativeResearchCenter() {
                             )}
                           </div>
                         )}
-                        {result.createdAt && (
-                          <div className="pt-2 border-t">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Discovered</span>
-                              <span className="font-medium">{new Date(result.createdAt).toLocaleDateString()}</span>
-                            </div>
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Created</span>
+                            <span className="font-medium">
+                              {(() => {
+                                const originalDate = (stats as { originalCreatedAt?: string | null }).originalCreatedAt;
+                                if (originalDate) {
+                                  return new Date(originalDate).toLocaleDateString();
+                                }
+                                return "--/--";
+                              })()}
+                            </span>
                           </div>
-                        )}
+                        </div>
                         
                         {/* Approve/Reject Actions */}
                         <div className="flex gap-2 pt-2">
