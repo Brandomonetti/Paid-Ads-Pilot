@@ -341,37 +341,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Mock data matching the actual webhook response structure
+      // Mock data - exact copy of the previous webhook response
       const mockWebhookData = [
         {
           title: null,
-          description: "Training intensity / how hard you're pushing yourself is likely the biggest workout variable (aside from progressive overload which is inherently tied to intensity) that will determine how much muscle you grow.",
+          description: "Training intensity / how hard you're pushing yourself is likely the biggest workout variable (aside from progressive overload which is inherently tied to intensity) that will determine how much muscle you grow. Ideally, you should be training very close to failure if not to failure in some cases. And then if recovery is an issue, modify your workout schedule / # of sets and exercises based on how recovery goes #fyp #Fitness #gym #bodybuilding ",
           owner: "tylerpath",
           url: "https://www.tiktok.com/@tylerpath/video/7311742128567389486",
-          thumbnail: "https://p16-common-ipv6-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/23086879dac545b7b58afd01f158da01_1702397641~tplv-tiktokx-dmt-logom:tos-useast5-i-0068-tx/o0yBE4zCABicnwAA1hrBfis3NBJnjIa2IEvGyA.image",
+          thumbnail: "https://p16-common-ipv6-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/23086879dac545b7b58afd01f158da01_1702397641~tplv-tiktokx-dmt-logom:tos-useast5-i-0068-tx/o0yBE4zCABicnwAA1hrBfis3NBJnjIa2IEvGyA.image?dr=8605&refresh_token=f417679c&x-expires=1764781200&x-signature=NwiljuLVPCpi6rzx8EnrTeb8Juo%3D&t=bacd0480&ps=4f5296ae&shp=d05b14bd&shcp=1d1a97fc&idc=useast8&biz_tag=tt_video&s=AWEME_DETAIL&sc=dynamic_cover",
           statistics: { views: 7948408, likes: 20638, replies: 1654, shares: 1630 },
-          filters: { age: null, gender: null, language: "English", region: "US", platform: "TikTok", is_video: true, is_ad: false, is_active: null },
+          filters: { age: null, gender: null, language: "English", region: "US", platform: "TikTok", is_video: false, is_ad: false, is_active: null },
           created_at: "2023-12-12T16:14:00.000Z"
-        },
-        {
-          title: "Best workout tips for beginners",
-          description: "Here are my top 5 tips for getting started with fitness. Remember consistency is key!",
-          owner: "fitnessguru",
-          url: "https://www.instagram.com/p/ABC123",
-          thumbnail: null,
-          statistics: { views: 150000, likes: 8500, replies: 320, shares: null },
-          filters: { age: null, gender: null, language: "English", region: "US", platform: "Instagram", is_video: false, is_ad: true, is_active: true },
-          created_at: "2024-01-15T10:30:00.000Z"
-        },
-        {
-          title: null,
-          description: null,
-          owner: "brandpage",
-          url: "https://www.facebook.com/brandpage/posts/123",
-          thumbnail: null,
-          statistics: { views: null, likes: null, replies: null, shares: null },
-          filters: { age: null, gender: null, language: null, region: null, platform: "Facebook", is_video: false, is_ad: false, is_active: false },
-          created_at: null
         }
       ];
       
