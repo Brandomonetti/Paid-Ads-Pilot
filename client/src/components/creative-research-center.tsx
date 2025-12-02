@@ -1980,9 +1980,9 @@ export function CreativeResearchCenter() {
                             <Search className="h-12 w-12 text-muted-foreground opacity-30" />
                           </div>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-black/60 rounded-full p-3">
-                            <ExternalLink className="h-8 w-8 text-white" />
+                        <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 group-hover:backdrop-blur-sm group-hover:bg-black/30">
+                          <div className="bg-black/60 rounded-full p-3 transition-all duration-200 group-hover:bg-primary group-hover:scale-110">
+                            <ExternalLink className="h-8 w-8 text-white transition-colors duration-200 group-hover:text-primary-foreground" />
                           </div>
                         </div>
                         <Badge className={`absolute top-2 right-2 ${
