@@ -384,10 +384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
+                // Derive status from is_active: true="approved", false="rejected", null=undefined
+                const derivedStatus = data.filters?.is_active === true ? "approved" 
+                  : data.filters?.is_active === false ? "rejected" 
+                  : undefined;
+                
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || null,
+                  title: data.title || data.description?.slice(0, 100) || '',
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
@@ -397,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null
                   },
-                  status: "pending"
+                  status: derivedStatus
                 });
                 savedConcepts.push(saved);
               } catch (err) {
@@ -424,10 +429,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
+                // Derive status from is_active: true="approved", false="rejected", null=undefined
+                const derivedStatus = data.filters?.is_active === true ? "approved" 
+                  : data.filters?.is_active === false ? "rejected" 
+                  : undefined;
+                
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || null,
+                  title: data.title || data.description?.slice(0, 100) || '',
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
@@ -437,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null
                   },
-                  status: "pending"
+                  status: derivedStatus
                 });
                 savedConcepts.push(saved);
               } catch (err) {

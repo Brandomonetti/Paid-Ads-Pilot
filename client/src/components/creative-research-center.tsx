@@ -1962,8 +1962,8 @@ export function CreativeResearchCenter() {
                             <Search className="h-12 w-12 text-muted-foreground opacity-30" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <ExternalLink className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-2 left-2 bg-black/60 rounded-full p-1.5">
+                          <ExternalLink className="h-4 w-4 text-white" />
                         </div>
                         <Badge className={`absolute top-2 right-2 ${
                           platform === 'facebook' ? 'bg-blue-500' :
@@ -1981,15 +1981,19 @@ export function CreativeResearchCenter() {
                               <Badge variant="outline" className="text-xs">
                                 {result.category || platform}
                               </Badge>
-                              <Badge className={`text-xs ${
-                                result.status === 'approved' ? 'bg-green-500/10 text-green-700 border-green-300' :
-                                result.status === 'rejected' ? 'bg-red-500/10 text-red-700 border-red-300' :
-                                'bg-yellow-500/10 text-yellow-700 border-yellow-300'
-                              }`}>
-                                {result.status === 'approved' ? 'Approved' : result.status === 'rejected' ? 'Rejected' : 'Pending'}
-                              </Badge>
+                              {result.status && (
+                                <Badge className={`text-xs ${
+                                  result.status === 'approved' ? 'bg-green-500/10 text-green-700 border-green-300' :
+                                  result.status === 'rejected' ? 'bg-red-500/10 text-red-700 border-red-300' :
+                                  'bg-yellow-500/10 text-yellow-700 border-yellow-300'
+                                }`}>
+                                  {result.status === 'approved' ? 'Active' : result.status === 'rejected' ? 'Inactive' : 'Pending'}
+                                </Badge>
+                              )}
                             </div>
-                            <CardTitle className="text-base line-clamp-2">{result.title || 'Untitled'}</CardTitle>
+                            {result.title && (
+                              <CardTitle className="text-base line-clamp-2">{result.title}</CardTitle>
+                            )}
                             {result.owner && (
                               <p className="text-xs text-muted-foreground mt-1">by {result.owner}</p>
                             )}
