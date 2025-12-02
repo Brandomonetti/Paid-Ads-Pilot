@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { KnowledgeBase } from "@shared/schema";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+// Using GPT-4o as the latest stable OpenAI model
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface ScriptGenerationRequest {
@@ -41,7 +41,7 @@ export async function generateScript(
     const prompt = buildScriptPrompt(request, knowledgeBase);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -230,7 +230,7 @@ Create a detailed customer avatar JSON with:
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -294,7 +294,7 @@ Make each avatar DISTINCT and specific - avoid generic descriptions.
 `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -313,5 +313,179 @@ Make each avatar DISTINCT and specific - avoid generic descriptions.
   } catch (error) {
     console.error("Error generating multiple avatars:", error);
     throw new Error("Failed to generate avatars");
+  }
+}
+
+/**
+ * Analyze and select the best concepts for a specific avatar
+ * Uses OpenAI to rank concepts based on relevance to avatar's pain points, demographics, and hooks
+ */
+export async function selectBestConcepts(
+  concepts: any[],
+  avatar: any,
+  topN: number = 2
+): Promise<any[]> {
+  // If we have fewer concepts than requested, return all
+  if (concepts.length <= topN) {
+    return concepts;
+  }
+
+  try {
+    // Extract avatar data with proper field names
+    const painPoint = avatar.painPoint || 'Not specified';
+    const demographics = avatar.demographics || 'Not specified';
+    const hooks = Array.isArray(avatar.hooks) ? avatar.hooks.join(', ') : 'Not specified';
+    const ageRange = avatar.ageRange || 'Not specified';
+
+    const prompt = `You are an expert marketing strategist analyzing social media content for relevance to a specific customer avatar.
+
+CUSTOMER AVATAR:
+Name: ${avatar.name}
+Age Range: ${ageRange}
+Demographics: ${demographics}
+Primary Pain Point: ${painPoint}
+Hooks/Messaging Angles: ${hooks}
+
+SOCIAL MEDIA CONCEPTS TO ANALYZE:
+${concepts.map((concept, idx) => `
+Concept ${idx + 1}:
+- Platform: ${concept.platform}
+- Title: ${concept.title}
+- Description: ${concept.description}
+- Hook: ${concept.hook}
+- Visual Style: ${concept.visualStyle}
+- CTA: ${concept.cta}
+- Engagement Score: ${concept.engagementScore || 'N/A'}
+`).join('\n')}
+
+TASK:
+Analyze each concept and score its relevance to this avatar based on:
+1. **Pain Point Match (40%)**: How well does the content address the avatar's pain point?
+2. **Demographic Fit (30%)**: Does the content style/messaging align with the avatar's age and demographics?
+3. **Hook Alignment (20%)**: Does the hook resonate with the avatar's messaging angles?
+4. **Engagement Quality (10%)**: Does it have strong engagement metrics?
+
+Return a JSON object with concept indices ranked by relevance score (MUST return exactly ${topN} rankings):
+{
+  "rankings": [
+    {
+      "index": 0,
+      "relevanceScore": 95,
+      "reasoning": "Brief explanation of why this concept is highly relevant"
+    },
+    {
+      "index": 3,
+      "relevanceScore": 88,
+      "reasoning": "Brief explanation"
+    }
+  ]
+}
+
+IMPORTANT: You MUST return exactly ${topN} rankings, choosing the ${topN} most relevant concepts from the list.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert marketing analyst who evaluates social media content relevance to target customer avatars. Provide objective, data-driven rankings based on strategic fit. Always return the exact number of rankings requested."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const rankings = result.rankings || [];
+
+    // Map rankings back to actual concepts
+    let selectedConcepts = rankings
+      .slice(0, topN)
+      .map((ranking: any) => concepts[ranking.index])
+      .filter(Boolean);
+
+    // Fallback: If OpenAI returned fewer than topN, supplement with remaining concepts
+    if (selectedConcepts.length < topN) {
+      console.log(`[OpenAI] Warning: Got ${selectedConcepts.length} rankings, expected ${topN}. Supplementing with remaining concepts.`);
+      const selectedIndices = new Set(rankings.map((r: any) => r.index));
+      const remainingConcepts = concepts.filter((_, idx) => !selectedIndices.has(idx));
+      const needed = topN - selectedConcepts.length;
+      selectedConcepts = [...selectedConcepts, ...remainingConcepts.slice(0, needed)];
+    }
+
+    console.log(`[OpenAI] Selected ${selectedConcepts.length} best concepts for ${avatar.name} (${concepts[0]?.platform || 'unknown platform'})`);
+
+    return selectedConcepts;
+  } catch (error) {
+    console.error("Error selecting best concepts:", error);
+    // Fallback: return first N concepts if OpenAI fails
+    console.log(`[OpenAI] Falling back to first ${topN} concepts due to error`);
+    return concepts.slice(0, topN);
+  }
+}
+
+/**
+ * Calculate AI-powered relevance score between an avatar and concept
+ */
+export async function calculateRelevanceScore(avatar: any, concept: any): Promise<number> {
+  try {
+    const prompt = `Analyze the relevance between this customer avatar and social media concept, then provide a precise relevance score.
+
+CUSTOMER AVATAR:
+- Name: ${avatar.name}
+- Demographics: ${avatar.demographics}
+- Age Range: ${avatar.ageRange}
+- Primary Pain Point: ${avatar.painPoint}
+- Hooks: ${avatar.hooks.join(', ')}
+
+SOCIAL MEDIA CONCEPT:
+- Platform: ${concept.platform}
+- Title: ${concept.title}
+- Format: ${concept.format}
+- Key Elements: ${concept.keyElements?.join(', ') || 'N/A'}
+- Insights: ${concept.insights?.join(', ') || 'N/A'}
+- Performance: Views=${concept.performance?.views}, Engagement=${concept.performance?.engagement}
+
+SCORING CRITERIA:
+1. Pain Point Match (40%): How well do the concept's messaging/elements address this avatar's primary pain point?
+2. Demographic Fit (30%): Does the concept's style, tone, and platform align with this avatar's demographics and age range?
+3. Hook Alignment (20%): Do the concept's creative elements resonate with the avatar's psychological hooks?
+4. Engagement Quality (10%): Does the concept's performance metrics indicate proven effectiveness?
+
+Return ONLY a JSON object with:
+{
+  "relevanceScore": <number between 0.00 and 1.00 with 2 decimal places>,
+  "reasoning": "<brief 1-sentence explanation>"
+}
+
+Be precise and nuanced - avoid round numbers. Consider subtle differences that make scores like 0.73, 0.84, or 0.91 more accurate than 0.70, 0.80, or 0.90.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert marketing analyst who calculates precise relevance scores between customer avatars and social media concepts. Provide nuanced, data-driven scores based on strategic fit. Avoid round numbers - be specific."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const score = parseFloat(result.relevanceScore) || 0.50;
+    
+    // Ensure score is between 0 and 1
+    return Math.max(0, Math.min(1, score));
+  } catch (error) {
+    console.error("Error calculating relevance score:", error);
+    // Fallback to a neutral score
+    return 0.50;
   }
 }

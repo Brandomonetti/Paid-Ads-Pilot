@@ -5,8 +5,16 @@ let csrfToken: string | null = null;
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text || res.statusText };
+    }
+    const error: any = new Error(data.message || `${res.status}: ${text}`);
+    error.response = { status: res.status, data };
+    throw error;
   }
 }
 

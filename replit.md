@@ -52,11 +52,17 @@ The backend follows a **Node.js + Express** architecture with TypeScript. The se
 ### Database Design
 The application uses **Drizzle ORM** with PostgreSQL as the primary database. The schema is defined with type-safe table definitions and validation.
 
-**Schema Structure:**
-- User authentication table with UUID primary keys
-- Prepared for additional tables for projects, agents, and content generation
+**MVP Schema (5 tables):**
+- `sessions` - Required for Replit Auth session management
+- `users` - User accounts with Replit Auth integration
+- `knowledge_base` - Brand information, products, competitors, social media handles
+- `avatars` - Customer profiles with demographics, pain points, hooks
+- `concepts` - Viral social media content for creative inspiration
+
+**Schema Principles:**
+- UUID primary keys for all tables
 - Zod integration for runtime type validation
-- Database migration support through Drizzle Kit
+- No subscription/payment tables (deferred for future)
 
 ### Authentication & Security
 **User Management:**

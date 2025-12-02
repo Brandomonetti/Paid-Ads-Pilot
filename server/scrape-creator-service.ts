@@ -37,6 +37,24 @@ export class ScrapeCreatorService {
   }
 
   /**
+   * Extract key search terms from keywords (2-4 most important words)
+   */
+  private extractKeyTerms(keywords: string[]): string[] {
+    // Extract key nouns/adjectives from each keyword phrase
+    const allWords = keywords.join(' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => 
+        word.length > 3 && // Filter out short words like "and", "the", "for"
+        !['from', 'with', 'that', 'this', 'their', 'about', 'into', 'when', 'where'].includes(word)
+      );
+    
+    // Take unique words and limit to 4 most relevant
+    const uniqueWords = Array.from(new Set(allWords));
+    return uniqueWords.slice(0, 4);
+  }
+
+  /**
    * Fetch concepts from all platforms based on brand/niche keywords
    */
   async fetchConceptsForBrand(keywords: string[], niche: string): Promise<ScrapedConceptsResponse> {
@@ -63,14 +81,18 @@ export class ScrapeCreatorService {
    */
   private async fetchFacebookConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const query = keywords.join(' ');
+      // Use simplified search terms for better results
+      const searchTerms = this.extractKeyTerms(keywords);
+      const query = searchTerms.join(' ');
+      
+      console.log(`[Facebook API] Original keywords:`, keywords);
+      console.log(`[Facebook API] Simplified query: "${query}"`);
+      
       const response = await axios.get(
         `${SCRAPE_CREATOR_BASE_URL}/facebook/adLibrary/search/ads`,
         {
           params: {
-            query,
-            status: 'ACTIVE',
-            media_type: 'VIDEO'
+            query
           },
           headers: {
             'x-api-key': this.apiKey
@@ -98,7 +120,13 @@ export class ScrapeCreatorService {
    */
   private async fetchInstagramConcepts(keywords: string[], niche: string): Promise<SocialMediaConcept[]> {
     try {
-      const query = keywords.join(' ');
+      // Use simplified search terms for better results
+      const searchTerms = this.extractKeyTerms(keywords);
+      const query = searchTerms.join(' ');
+      
+      console.log(`[Instagram API] Original keywords:`, keywords);
+      console.log(`[Instagram API] Simplified query: "${query}"`);
+      
       const response = await axios.get(
         `${SCRAPE_CREATOR_BASE_URL}/instagram/reels/search`,
         {
@@ -182,7 +210,7 @@ export class ScrapeCreatorService {
     
     console.log('[Facebook Parser] Found', ads.length, 'ads');
     
-    return ads.slice(0, 20).map((ad: any) => ({
+    return ads.map((ad: any) => ({
       platform: 'facebook' as const,
       title: ad.page_name || ad.headline || ad.title || 'Facebook Ad Concept',
       description: ad.ad_creative_bodies?.[0] || ad.body || ad.description || '',
@@ -216,9 +244,9 @@ export class ScrapeCreatorService {
     
     console.log('[Instagram Parser] Found', reels.length, 'reels');
     
-    return reels.slice(0, 20).map((reel: any) => ({
+    return reels.map((reel: any) => ({
       platform: 'instagram' as const,
-      title: reel.caption?.split('\n')[0]?.substring(0, 60) || 'Instagram Reel Concept',
+      title: reel.caption?.split('\n')[0] || 'Instagram Reel Concept',
       description: reel.caption || '',
       hook: this.extractHook(reel.caption || ''),
       visualStyle: 'reel',
@@ -252,9 +280,9 @@ export class ScrapeCreatorService {
     
     console.log('[TikTok Parser] Found', videos.length, 'videos');
     
-    return videos.slice(0, 20).map((video: any) => {
+    return videos.map((video: any) => {
       const desc = video.desc || video.description || video.video_description || '';
-      const title = desc.substring(0, 60) || 'TikTok Video Concept';
+      const title = desc || 'TikTok Video Concept';
       
       return {
         platform: 'tiktok' as const,

@@ -1,86 +1,52 @@
 import { 
   type User, type UpsertUser,
-  type Avatar, type InsertAvatar,
-  type Concept, type InsertConcept,
-  type AvatarConcept, type InsertAvatarConcept,
-  type PlatformSettings, type InsertPlatformSettings,
-  type UpdatePlatformSettings,
   type KnowledgeBase, type InsertKnowledgeBase,
   type UpdateKnowledgeBase,
-  type GeneratedScript, type InsertGeneratedScript,
-  type UpdateGeneratedScript,
-  users, avatars, concepts, avatarConcepts, platformSettings, 
-  knowledgeBase, generatedScripts
+  type Avatar, type InsertAvatar, type UpdateAvatar,
+  type Concept, type InsertConcept, type UpdateConcept,
+  users, knowledgeBase, avatars, concepts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { eq, and, inArray } from "drizzle-orm";
-
-// modify the interface with any CRUD methods
-// you might need
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
-  // Avatar methods
-  getAvatars(userId?: string): Promise<Avatar[]>;
-  getAvatar(id: string): Promise<Avatar | undefined>;
-  createAvatar(avatar: InsertAvatar): Promise<Avatar>;
-  updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined>;
-  deleteAllAvatars(userId: string): Promise<number>;
-  
-  // Concept methods
-  getConcepts(avatarId?: string, userId?: string): Promise<Concept[]>;
-  getConcept(id: string): Promise<Concept | undefined>;
-  createConcept(concept: InsertConcept): Promise<Concept>;
-  updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined>;
-  deleteAllConcepts(userId: string): Promise<number>;
-  
-  // Avatar-Concept linking methods
-  getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]>;
-  getAvatarConcept(id: string): Promise<AvatarConcept | undefined>;
-  createAvatarConcept(avatarConcept: InsertAvatarConcept): Promise<AvatarConcept>;
-  updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined>;
-  deleteAllAvatarConceptLinks(userId: string): Promise<number>;
-  linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept>;
-  
-  // Platform Settings methods
-  getPlatformSettings(userId: string): Promise<PlatformSettings | undefined>;
-  createPlatformSettings(settings: InsertPlatformSettings): Promise<PlatformSettings>;
-  updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined>;
-  
   // Knowledge Base methods
   getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined>;
   createKnowledgeBase(knowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase>;
   updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined>;
   
-  // Generated Scripts methods (for self-learning system)
-  getGeneratedScripts(userId: string): Promise<GeneratedScript[]>;
-  getGeneratedScript(id: string): Promise<GeneratedScript | undefined>;
-  createGeneratedScript(script: InsertGeneratedScript): Promise<GeneratedScript>;
-  updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined>;
+  // Avatar methods (Customer Intelligence Hub)
+  getAvatars(userId: string): Promise<Avatar[]>;
+  getAvatar(id: string): Promise<Avatar | undefined>;
+  createAvatar(avatar: InsertAvatar): Promise<Avatar>;
+  updateAvatar(id: string, userId: string, updates: UpdateAvatar): Promise<Avatar | undefined>;
+  deleteAllAvatars(userId: string): Promise<number>;
+  
+  // Concept methods (Creative Research Center)
+  getConcepts(userId: string): Promise<Concept[]>;
+  getConcept(id: string): Promise<Concept | undefined>;
+  createConcept(concept: InsertConcept): Promise<Concept>;
+  updateConcept(id: string, userId: string, updates: UpdateConcept): Promise<Concept | undefined>;
+  deleteAllConcepts(userId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
-  private avatars: Map<string, Avatar>;
-  private concepts: Map<string, Concept>;
-  private avatarConcepts: Map<string, AvatarConcept>;
-  private platformSettings: Map<string, PlatformSettings>;
-  private knowledgeBase: Map<string, KnowledgeBase>;
-  private generatedScripts: Map<string, GeneratedScript>;
+  private knowledgeBaseMap: Map<string, KnowledgeBase>;
+  private avatarsMap: Map<string, Avatar>;
+  private conceptsMap: Map<string, Concept>;
 
   constructor() {
     this.users = new Map();
-    this.avatars = new Map();
-    this.concepts = new Map();
-    this.avatarConcepts = new Map();
-    this.platformSettings = new Map();
-    this.knowledgeBase = new Map();
-    this.generatedScripts = new Map();
+    this.knowledgeBaseMap = new Map();
+    this.avatarsMap = new Map();
+    this.conceptsMap = new Map();
   }
 
   // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -89,7 +55,6 @@ export class MemStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    // Ensure id is provided for upsert operations
     if (!userData.id) {
       throw new Error("User ID is required for upsert operation");
     }
@@ -97,26 +62,21 @@ export class MemStorage implements IStorage {
     const existingUser = this.users.get(userData.id);
     
     if (existingUser) {
-      // Update existing user
       const updatedUser: User = {
         ...existingUser,
         ...userData,
-        id: userData.id, // Ensure id is always string
+        id: userData.id,
         updatedAt: new Date(),
       };
       this.users.set(userData.id, updatedUser);
       return updatedUser;
     } else {
-      // Create new user
       const newUser: User = {
         id: userData.id,
         email: userData.email || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
-        metaAccessToken: userData.metaAccessToken || null,
-        metaAccountId: userData.metaAccountId || null,
-        metaConnectedAt: userData.metaConnectedAt || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -124,274 +84,44 @@ export class MemStorage implements IStorage {
       return newUser;
     }
   }
-
-  // Avatar methods
-  async getAvatars(userId?: string): Promise<Avatar[]> {
-    const allAvatars = Array.from(this.avatars.values());
-    if (!userId) return allAvatars;
-    return allAvatars.filter(avatar => avatar.userId === userId);
-  }
-
-  async getAvatar(id: string): Promise<Avatar | undefined> {
-    return this.avatars.get(id);
-  }
-
-  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
-    const id = randomUUID();
-    const avatar: Avatar = { 
-      ...insertAvatar,
-      id,
-      sources: insertAvatar.sources || [],
-      angleIdeas: insertAvatar.angleIdeas || [],
-      reasoning: insertAvatar.reasoning || "",
-      priority: insertAvatar.priority || "medium",
-      dataConfidence: insertAvatar.dataConfidence || "0.75",
-      recommendationSource: insertAvatar.recommendationSource || "research",
-      status: insertAvatar.status || "pending",
-      feedback: insertAvatar.feedback || null,
-      createdAt: new Date()
-    };
-    this.avatars.set(id, avatar);
-    return avatar;
-  }
-
-  async updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
-    const avatar = this.avatars.get(id);
-    if (!avatar) return undefined;
-    
-    const updatedAvatar = { ...avatar, ...updates };
-    this.avatars.set(id, updatedAvatar);
-    return updatedAvatar;
-  }
-
-  async deleteAllAvatars(userId: string): Promise<number> {
-    const avatarsToDelete = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
-    avatarsToDelete.forEach(avatar => this.avatars.delete(avatar.id));
-    return avatarsToDelete.length;
-  }
-
-  // Concept methods
-  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
-    let allConcepts = Array.from(this.concepts.values());
-    
-    // Filter by userId if provided
-    if (userId) {
-      allConcepts = allConcepts.filter(concept => concept.userId === userId);
-    }
-    
-    if (!avatarId) return allConcepts;
-    
-    // Security: Verify the avatar belongs to the requesting user before returning concepts
-    if (userId) {
-      const avatar = this.avatars.get(avatarId);
-      if (!avatar || avatar.userId !== userId) {
-        // Avatar doesn't exist or doesn't belong to this user - return empty
-        return [];
-      }
-    }
-    
-    // If avatarId provided, return ALL concepts but sorted by relevance for that avatar
-    // Concepts with existing links should be sorted by their stored relevance score
-    // Concepts without links should appear after linked ones
-    const avatarConceptLinks = Array.from(this.avatarConcepts.values())
-      .filter(link => link.avatarId === avatarId && link.status === "linked");
-    
-    const linkedConceptIds = new Set(avatarConceptLinks.map(link => link.conceptId));
-    const linkedConcepts = avatarConceptLinks
-      .sort((a, b) => parseFloat(b.relevanceScore) - parseFloat(a.relevanceScore))
-      .map(link => this.concepts.get(link.conceptId))
-      .filter((concept): concept is Concept => concept !== undefined);
-    
-    const unlinkedConcepts = allConcepts.filter(concept => !linkedConceptIds.has(concept.id));
-    
-    // Return linked concepts first (sorted by relevance), then unlinked concepts
-    return [...linkedConcepts, ...unlinkedConcepts];
-  }
-
-  async getConcept(id: string): Promise<Concept | undefined> {
-    return this.concepts.get(id);
-  }
-
-  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
-    const id = randomUUID();
-    const concept: Concept = { 
-      ...insertConcept,
-      id,
-      status: insertConcept.status || "pending",
-      feedback: insertConcept.feedback || null,
-      referenceUrl: insertConcept.referenceUrl || null,
-      thumbnailUrl: insertConcept.thumbnailUrl || null,
-      createdAt: new Date()
-    };
-    this.concepts.set(id, concept);
-    return concept;
-  }
-
-  async updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined> {
-    const concept = this.concepts.get(id);
-    if (!concept) return undefined;
-    
-    const updatedConcept = { ...concept, ...updates };
-    this.concepts.set(id, updatedConcept);
-    return updatedConcept;
-  }
-
-  async deleteAllConcepts(userId: string): Promise<number> {
-    const conceptsToDelete = Array.from(this.concepts.values()).filter(concept => concept.userId === userId);
-    conceptsToDelete.forEach(concept => this.concepts.delete(concept.id));
-    return conceptsToDelete.length;
-  }
-
-  // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
-    let allLinks = Array.from(this.avatarConcepts.values());
-    
-    // Filter by userId by checking if the avatar belongs to the user
-    if (userId) {
-      const userAvatarIds = Array.from(this.avatars.values())
-        .filter(avatar => avatar.userId === userId)
-        .map(avatar => avatar.id);
-      allLinks = allLinks.filter(link => userAvatarIds.includes(link.avatarId));
-    }
-    
-    return allLinks.filter(link => 
-      (!avatarId || link.avatarId === avatarId) &&
-      (!conceptId || link.conceptId === conceptId)
-    );
-  }
-
-  async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
-    return this.avatarConcepts.get(id);
-  }
-
-  async createAvatarConcept(insertAvatarConcept: InsertAvatarConcept): Promise<AvatarConcept> {
-    const id = randomUUID();
-    const avatarConcept: AvatarConcept = { 
-      ...insertAvatarConcept,
-      id,
-      status: insertAvatarConcept.status || "linked",
-      feedback: insertAvatarConcept.feedback || null,
-      matchedHooks: insertAvatarConcept.matchedHooks || [],
-      matchedElements: insertAvatarConcept.matchedElements || [],
-      createdAt: new Date()
-    };
-    this.avatarConcepts.set(id, avatarConcept);
-    return avatarConcept;
-  }
-
-  async updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined> {
-    const avatarConcept = this.avatarConcepts.get(id);
-    if (!avatarConcept) return undefined;
-    
-    const updatedAvatarConcept = { ...avatarConcept, ...updates };
-    this.avatarConcepts.set(id, updatedAvatarConcept);
-    return updatedAvatarConcept;
-  }
-
-  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
-    // Get all avatars for this user to find their links
-    const userAvatars = Array.from(this.avatars.values()).filter(avatar => avatar.userId === userId);
-    const userAvatarIds = new Set(userAvatars.map(avatar => avatar.id));
-    
-    const linksToDelete = Array.from(this.avatarConcepts.values()).filter(link => userAvatarIds.has(link.avatarId));
-    linksToDelete.forEach(link => this.avatarConcepts.delete(link.id));
-    return linksToDelete.length;
-  }
-
-  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
-    // Check if link already exists
-    const existingLink = Array.from(this.avatarConcepts.values()).find(
-      link => link.avatarId === avatarId && link.conceptId === conceptId
-    );
-    
-    if (existingLink) {
-      throw new Error('Link already exists');
-    }
-
-    return await this.createAvatarConcept({
-      avatarId,
-      conceptId,
-      relevanceScore: relevanceScore.toString(),
-      matchedHooks: [],
-      matchedElements: [],
-      rationale: "Auto-linked based on avatar-specific concept fetch",
-      status: "linked"
-    });
-  }
-
-  // Platform Settings methods
-  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
-    return this.platformSettings.get(userId);
-  }
-
-  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
-    const id = randomUUID();
-    const settings: PlatformSettings = { 
-      ...insertSettings,
-      id,
-      provenConceptsPercentage: insertSettings.provenConceptsPercentage ?? 80,
-      weeklyBriefsVolume: insertSettings.weeklyBriefsVolume ?? 5,
-      subscriptionTier: insertSettings.subscriptionTier ?? "free",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.platformSettings.set(insertSettings.userId, settings);
-    return settings;
-  }
-
-  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
-    const settings = this.platformSettings.get(userId);
-    if (!settings) return undefined;
-    
-    // Only allow specific fields to be updated, prevent id/userId tampering
-    const updatedSettings: PlatformSettings = { 
-      ...settings,
-      ...(updates.provenConceptsPercentage !== undefined && { provenConceptsPercentage: updates.provenConceptsPercentage }),
-      ...(updates.weeklyBriefsVolume !== undefined && { weeklyBriefsVolume: updates.weeklyBriefsVolume }),
-      ...(updates.subscriptionTier !== undefined && { subscriptionTier: updates.subscriptionTier }),
-      updatedAt: new Date()
-    };
-    this.platformSettings.set(userId, updatedSettings);
-    return updatedSettings;
-  }
   
   // Knowledge Base methods
   async getKnowledgeBase(userId: string): Promise<KnowledgeBase | undefined> {
-    return this.knowledgeBase.get(userId);
+    return this.knowledgeBaseMap.get(userId);
   }
 
-  async createKnowledgeBase(insertKnowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase> {
+  async createKnowledgeBase(insertKB: InsertKnowledgeBase): Promise<KnowledgeBase> {
     const id = randomUUID();
-    const knowledgeBase: KnowledgeBase = {
-      ...insertKnowledgeBase,
+    const kb: KnowledgeBase = {
+      ...insertKB,
       id,
-      websiteUrl: insertKnowledgeBase.websiteUrl || null,
-      brandVoice: insertKnowledgeBase.brandVoice || null,
-      missionStatement: insertKnowledgeBase.missionStatement || null,
-      brandValues: insertKnowledgeBase.brandValues || [],
-      productLinks: insertKnowledgeBase.productLinks || [],
-      pricingInfo: insertKnowledgeBase.pricingInfo || null,
-      keyBenefits: insertKnowledgeBase.keyBenefits || [],
-      usps: insertKnowledgeBase.usps || [],
-      currentPersonas: insertKnowledgeBase.currentPersonas || null,
-      demographics: insertKnowledgeBase.demographics || null,
-      mainCompetitors: insertKnowledgeBase.mainCompetitors || [],
-      instagramHandle: insertKnowledgeBase.instagramHandle || null,
-      facebookPage: insertKnowledgeBase.facebookPage || null,
-      tiktokHandle: insertKnowledgeBase.tiktokHandle || null,
-      contentStyle: insertKnowledgeBase.contentStyle || null,
-      salesTrends: insertKnowledgeBase.salesTrends || null,
-      uploadedFiles: insertKnowledgeBase.uploadedFiles || [],
-      completionPercentage: insertKnowledgeBase.completionPercentage || 0,
+      websiteUrl: insertKB.websiteUrl || null,
+      brandVoice: insertKB.brandVoice || null,
+      missionStatement: insertKB.missionStatement || null,
+      brandValues: insertKB.brandValues || [],
+      productLinks: insertKB.productLinks || [],
+      pricingInfo: insertKB.pricingInfo || null,
+      keyBenefits: insertKB.keyBenefits || [],
+      usps: insertKB.usps || [],
+      currentPersonas: insertKB.currentPersonas || null,
+      demographics: insertKB.demographics || null,
+      mainCompetitors: insertKB.mainCompetitors || [],
+      instagramHandle: insertKB.instagramHandle || null,
+      facebookPage: insertKB.facebookPage || null,
+      tiktokHandle: insertKB.tiktokHandle || null,
+      contentStyle: insertKB.contentStyle || null,
+      salesTrends: insertKB.salesTrends || null,
+      uploadedFiles: insertKB.uploadedFiles || {},
+      completionPercentage: insertKB.completionPercentage || 0,
       lastUpdated: new Date(),
       createdAt: new Date()
     };
-    this.knowledgeBase.set(insertKnowledgeBase.userId, knowledgeBase);
-    return knowledgeBase;
+    this.knowledgeBaseMap.set(insertKB.userId, kb);
+    return kb;
   }
 
   async updateKnowledgeBase(userId: string, updates: UpdateKnowledgeBase): Promise<KnowledgeBase | undefined> {
-    const existing = this.knowledgeBase.get(userId);
+    const existing = this.knowledgeBaseMap.get(userId);
     if (!existing) return undefined;
     
     const updated: KnowledgeBase = {
@@ -399,67 +129,126 @@ export class MemStorage implements IStorage {
       ...updates,
       lastUpdated: new Date()
     };
-    this.knowledgeBase.set(userId, updated);
+    this.knowledgeBaseMap.set(userId, updated);
     return updated;
   }
 
-  // Generated Scripts methods (for self-learning system)
-  async getGeneratedScripts(userId: string): Promise<GeneratedScript[]> {
-    return Array.from(this.generatedScripts.values()).filter(
-      script => script.userId === userId
-    );
+  // Avatar methods
+  async getAvatars(userId: string): Promise<Avatar[]> {
+    return Array.from(this.avatarsMap.values()).filter(a => a.userId === userId);
   }
 
-  async getGeneratedScript(id: string): Promise<GeneratedScript | undefined> {
-    return this.generatedScripts.get(id);
+  async getAvatar(id: string): Promise<Avatar | undefined> {
+    return this.avatarsMap.get(id);
   }
 
-  async createGeneratedScript(insertScript: InsertGeneratedScript): Promise<GeneratedScript> {
+  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
     const id = randomUUID();
-    const script: GeneratedScript = {
-      ...insertScript,
+    const avatar: Avatar = {
+      ...insertAvatar,
       id,
-      status: insertScript.status || "pending",
-      feedback: insertScript.feedback || null,
-      performance: insertScript.performance || null,
-      usedInCampaign: insertScript.usedInCampaign || false,
-      campaignResults: insertScript.campaignResults || null,
+      role: insertAvatar.role || null,
+      motivations: insertAvatar.motivations || [],
+      painPoints: insertAvatar.painPoints || [],
+      desiredOutcomes: insertAvatar.desiredOutcomes || [],
+      objections: insertAvatar.objections || [],
+      preferredHooks: insertAvatar.preferredHooks || [],
+      triggers: insertAvatar.triggers || [],
+      priority: insertAvatar.priority || "medium",
+      confidence: insertAvatar.confidence || "75.00",
+      source: insertAvatar.source || "generated",
+      status: insertAvatar.status || "pending",
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    this.generatedScripts.set(id, script);
-    return script;
+    this.avatarsMap.set(id, avatar);
+    return avatar;
   }
 
-  async updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
-    const script = this.generatedScripts.get(id);
-    if (!script) return undefined;
+  async updateAvatar(id: string, userId: string, updates: UpdateAvatar): Promise<Avatar | undefined> {
+    const avatar = this.avatarsMap.get(id);
+    if (!avatar || avatar.userId !== userId) return undefined;
     
-    // Security: Verify ownership before allowing updates
-    if (script.userId !== userId) return undefined;
-    
-    const updatedScript: GeneratedScript = {
-      ...script,
+    const updatedAvatar: Avatar = {
+      ...avatar,
       ...updates,
       updatedAt: new Date()
     };
-    this.generatedScripts.set(id, updatedScript);
-    return updatedScript;
+    this.avatarsMap.set(id, updatedAvatar);
+    return updatedAvatar;
+  }
+
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const toDelete = Array.from(this.avatarsMap.values()).filter(a => a.userId === userId);
+    toDelete.forEach(a => this.avatarsMap.delete(a.id));
+    return toDelete.length;
+  }
+
+  // Concept methods
+  async getConcepts(userId: string): Promise<Concept[]> {
+    return Array.from(this.conceptsMap.values()).filter(c => c.userId === userId);
+  }
+
+  async getConcept(id: string): Promise<Concept | undefined> {
+    return this.conceptsMap.get(id);
+  }
+
+  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
+    const id = randomUUID();
+    const concept: Concept = {
+      id,
+      ...insertConcept,
+      thumbnailUrl: insertConcept.thumbnailUrl ?? null,
+      videoUrl: insertConcept.videoUrl ?? null,
+      postUrl: insertConcept.postUrl ?? null,
+      brandName: insertConcept.brandName ?? null,
+      industry: insertConcept.industry ?? null,
+      hooks: insertConcept.hooks ?? [],
+      engagementScore: insertConcept.engagementScore ?? 0,
+      likes: insertConcept.likes ?? null,
+      comments: insertConcept.comments ?? null,
+      shares: insertConcept.shares ?? null,
+      views: insertConcept.views ?? null,
+      engagementRate: insertConcept.engagementRate ?? null,
+      status: insertConcept.status ?? "discovered",
+      createdAt: new Date(),
+      discoveredAt: new Date()
+    };
+    this.conceptsMap.set(id, concept);
+    return concept;
+  }
+
+  async updateConcept(id: string, userId: string, updates: UpdateConcept): Promise<Concept | undefined> {
+    const concept = this.conceptsMap.get(id);
+    if (!concept || concept.userId !== userId) return undefined;
+    
+    const updatedConcept: Concept = {
+      ...concept,
+      ...updates
+    };
+    this.conceptsMap.set(id, updatedConcept);
+    return updatedConcept;
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const toDelete = Array.from(this.conceptsMap.values()).filter(c => c.userId === userId);
+    toDelete.forEach(c => this.conceptsMap.delete(c.id));
+    return toDelete.length;
   }
 }
 
-// Database-backed storage using Drizzle ORM
-export class PgStorage implements IStorage {
-  private db;
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  private db: ReturnType<typeof drizzle>;
 
   constructor() {
     const sql = neon(process.env.DATABASE_URL!);
     this.db = drizzle(sql);
   }
 
-  // User methods (IMPORTANT) these user operations are mandatory for Replit Auth.
+  // User methods
   async getUser(id: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    const result = await this.db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
 
@@ -468,265 +257,29 @@ export class PgStorage implements IStorage {
       throw new Error("User ID is required for upsert operation");
     }
 
-    const existing = await this.getUser(userData.id);
+    const existingUser = await this.getUser(userData.id);
     
-    if (existing) {
-      // Update existing user
+    if (existingUser) {
       const result = await this.db
         .update(users)
         .set({
           ...userData,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         })
         .where(eq(users.id, userData.id))
         .returning();
       return result[0];
     } else {
-      // Create new user
       const result = await this.db
         .insert(users)
         .values({
-          id: userData.id,
-          email: userData.email || null,
-          firstName: userData.firstName || null,
-          lastName: userData.lastName || null,
-          profileImageUrl: userData.profileImageUrl || null,
+          ...userData,
           createdAt: new Date(),
-          updatedAt: new Date(),
+          updatedAt: new Date()
         })
         .returning();
       return result[0];
     }
-  }
-
-  // Avatar methods
-  async getAvatars(userId?: string): Promise<Avatar[]> {
-    if (!userId) {
-      return await this.db.select().from(avatars);
-    }
-    return await this.db.select().from(avatars).where(eq(avatars.userId, userId));
-  }
-
-  async getAvatar(id: string): Promise<Avatar | undefined> {
-    const result = await this.db.select().from(avatars).where(eq(avatars.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
-    const result = await this.db.insert(avatars).values(insertAvatar).returning();
-    return result[0];
-  }
-
-  async updateAvatar(id: string, updates: Partial<Avatar>): Promise<Avatar | undefined> {
-    const result = await this.db
-      .update(avatars)
-      .set(updates)
-      .where(eq(avatars.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllAvatars(userId: string): Promise<number> {
-    const result = await this.db.delete(avatars).where(eq(avatars.userId, userId)).returning();
-    return result.length;
-  }
-
-  // Concept methods
-  async getConcepts(avatarId?: string, userId?: string): Promise<Concept[]> {
-    if (!avatarId && !userId) {
-      return await this.db.select().from(concepts);
-    }
-    
-    if (!avatarId && userId) {
-      return await this.db.select().from(concepts).where(eq(concepts.userId, userId));
-    }
-    
-    // Security: If avatarId AND userId are provided, verify avatar belongs to user
-    if (avatarId && userId) {
-      const avatar = await this.db.select().from(avatars).where(eq(avatars.id, avatarId)).limit(1);
-      if (!avatar[0] || avatar[0].userId !== userId) {
-        // Avatar doesn't exist or doesn't belong to this user - return empty
-        return [];
-      }
-    }
-    
-    // Get ONLY concepts linked to this specific avatar (INNER JOIN)
-    let query = this.db
-      .select({
-        id: concepts.id,
-        userId: concepts.userId,
-        title: concepts.title,
-        format: concepts.format,
-        platform: concepts.platform,
-        industry: concepts.industry,
-        performance: concepts.performance,
-        insights: concepts.insights,
-        keyElements: concepts.keyElements,
-        status: concepts.status,
-        referenceUrl: concepts.referenceUrl,
-        thumbnailUrl: concepts.thumbnailUrl,
-        feedback: concepts.feedback,
-        createdAt: concepts.createdAt,
-        relevanceScore: avatarConcepts.relevanceScore
-      })
-      .from(concepts)
-      .innerJoin(avatarConcepts, and(
-        eq(avatarConcepts.conceptId, concepts.id),
-        eq(avatarConcepts.avatarId, avatarId!),
-        eq(avatarConcepts.status, "linked")
-      ))
-      .orderBy(avatarConcepts.relevanceScore);
-    
-    // Add userId filter if provided
-    const conceptsWithRelevance = userId 
-      ? await query.where(eq(concepts.userId, userId))
-      : await query;
-    
-    return conceptsWithRelevance.map(({ relevanceScore, ...concept }) => concept);
-  }
-
-  async getConcept(id: string): Promise<Concept | undefined> {
-    const result = await this.db.select().from(concepts).where(eq(concepts.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
-    const result = await this.db.insert(concepts).values(insertConcept).returning();
-    return result[0];
-  }
-
-  async updateConcept(id: string, updates: Partial<Concept>): Promise<Concept | undefined> {
-    const result = await this.db
-      .update(concepts)
-      .set(updates)
-      .where(eq(concepts.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllConcepts(userId: string): Promise<number> {
-    const result = await this.db.delete(concepts).where(eq(concepts.userId, userId)).returning();
-    return result.length;
-  }
-
-  // Avatar-Concept linking methods
-  async getAvatarConcepts(avatarId?: string, conceptId?: string, userId?: string): Promise<AvatarConcept[]> {
-    // Build where conditions
-    const conditions = [];
-    if (avatarId) conditions.push(eq(avatarConcepts.avatarId, avatarId));
-    if (conceptId) conditions.push(eq(avatarConcepts.conceptId, conceptId));
-    
-    // If userId provided, join with avatars to filter by user
-    if (userId) {
-      const result = await this.db
-        .select({
-          id: avatarConcepts.id,
-          avatarId: avatarConcepts.avatarId,
-          conceptId: avatarConcepts.conceptId,
-          relevanceScore: avatarConcepts.relevanceScore,
-          status: avatarConcepts.status,
-          feedback: avatarConcepts.feedback,
-          createdAt: avatarConcepts.createdAt
-        })
-        .from(avatarConcepts)
-        .innerJoin(avatars, eq(avatarConcepts.avatarId, avatars.id))
-        .where(conditions.length > 0 ? and(eq(avatars.userId, userId), ...conditions) : eq(avatars.userId, userId));
-      return result;
-    }
-    
-    // No userId filter - return based on other conditions
-    if (conditions.length > 0) {
-      return await this.db.select().from(avatarConcepts).where(and(...conditions));
-    }
-    
-    return await this.db.select().from(avatarConcepts);
-  }
-
-  async getAvatarConcept(id: string): Promise<AvatarConcept | undefined> {
-    const result = await this.db.select().from(avatarConcepts).where(eq(avatarConcepts.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createAvatarConcept(insertAvatarConcept: InsertAvatarConcept): Promise<AvatarConcept> {
-    const result = await this.db.insert(avatarConcepts).values(insertAvatarConcept).returning();
-    return result[0];
-  }
-
-  async updateAvatarConcept(id: string, updates: Partial<AvatarConcept>): Promise<AvatarConcept | undefined> {
-    const result = await this.db
-      .update(avatarConcepts)
-      .set(updates)
-      .where(eq(avatarConcepts.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteAllAvatarConceptLinks(userId: string): Promise<number> {
-    // Get all avatar IDs for this user
-    const userAvatars = await this.db.select({ id: avatars.id }).from(avatars).where(eq(avatars.userId, userId));
-    const userAvatarIds = userAvatars.map(a => a.id);
-    
-    if (userAvatarIds.length === 0) return 0;
-    
-    // Delete all links for these avatars
-    const result = await this.db
-      .delete(avatarConcepts)
-      .where(inArray(avatarConcepts.avatarId, userAvatarIds))
-      .returning();
-    return result.length;
-  }
-
-  async linkConceptToAvatar(avatarId: string, conceptId: string, relevanceScore: number): Promise<AvatarConcept> {
-    // Check if link already exists
-    const existing = await this.db
-      .select()
-      .from(avatarConcepts)
-      .where(and(
-        eq(avatarConcepts.avatarId, avatarId),
-        eq(avatarConcepts.conceptId, conceptId)
-      ))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      throw new Error('Link already exists');
-    }
-
-    return await this.createAvatarConcept({
-      avatarId,
-      conceptId,
-      relevanceScore: relevanceScore.toString(),
-      matchedHooks: [],
-      matchedElements: [],
-      rationale: "Auto-linked based on avatar-specific concept fetch",
-      status: "linked"
-    });
-  }
-
-  // Platform Settings methods
-  async getPlatformSettings(userId: string): Promise<PlatformSettings | undefined> {
-    const result = await this.db
-      .select()
-      .from(platformSettings)
-      .where(eq(platformSettings.userId, userId))
-      .limit(1);
-    return result[0];
-  }
-
-  async createPlatformSettings(insertSettings: InsertPlatformSettings): Promise<PlatformSettings> {
-    const result = await this.db.insert(platformSettings).values(insertSettings).returning();
-    return result[0];
-  }
-
-  async updatePlatformSettings(userId: string, updates: UpdatePlatformSettings): Promise<PlatformSettings | undefined> {
-    const result = await this.db
-      .update(platformSettings)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .where(eq(platformSettings.userId, userId))
-      .returning();
-    return result[0];
   }
 
   // Knowledge Base methods
@@ -734,16 +287,15 @@ export class PgStorage implements IStorage {
     const result = await this.db
       .select()
       .from(knowledgeBase)
-      .where(eq(knowledgeBase.userId, userId))
-      .limit(1);
+      .where(eq(knowledgeBase.userId, userId));
     return result[0];
   }
 
-  async createKnowledgeBase(insertKnowledgeBase: InsertKnowledgeBase): Promise<KnowledgeBase> {
+  async createKnowledgeBase(insertKB: InsertKnowledgeBase): Promise<KnowledgeBase> {
     const result = await this.db
       .insert(knowledgeBase)
       .values({
-        ...insertKnowledgeBase,
+        ...insertKB,
         lastUpdated: new Date(),
         createdAt: new Date()
       })
@@ -763,29 +315,25 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  // Generated Scripts methods (for self-learning system)
-  async getGeneratedScripts(userId: string): Promise<GeneratedScript[]> {
+  // Avatar methods
+  async getAvatars(userId: string): Promise<Avatar[]> {
     return await this.db
       .select()
-      .from(generatedScripts)
-      .where(eq(generatedScripts.userId, userId))
-      .orderBy(generatedScripts.createdAt);
+      .from(avatars)
+      .where(eq(avatars.userId, userId))
+      .orderBy(desc(avatars.createdAt));
   }
 
-  async getGeneratedScript(id: string): Promise<GeneratedScript | undefined> {
-    const result = await this.db
-      .select()
-      .from(generatedScripts)
-      .where(eq(generatedScripts.id, id))
-      .limit(1);
+  async getAvatar(id: string): Promise<Avatar | undefined> {
+    const result = await this.db.select().from(avatars).where(eq(avatars.id, id));
     return result[0];
   }
 
-  async createGeneratedScript(insertScript: InsertGeneratedScript): Promise<GeneratedScript> {
+  async createAvatar(insertAvatar: InsertAvatar): Promise<Avatar> {
     const result = await this.db
-      .insert(generatedScripts)
+      .insert(avatars)
       .values({
-        ...insertScript,
+        ...insertAvatar,
         createdAt: new Date(),
         updatedAt: new Date()
       })
@@ -793,17 +341,71 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  async updateGeneratedScript(id: string, userId: string, updates: UpdateGeneratedScript): Promise<GeneratedScript | undefined> {
+  async updateAvatar(id: string, userId: string, updates: UpdateAvatar): Promise<Avatar | undefined> {
     const result = await this.db
-      .update(generatedScripts)
+      .update(avatars)
       .set({
         ...updates,
         updatedAt: new Date()
       })
-      .where(and(eq(generatedScripts.id, id), eq(generatedScripts.userId, userId)))
+      .where(and(eq(avatars.id, id), eq(avatars.userId, userId)))
       .returning();
     return result[0];
   }
+
+  async deleteAllAvatars(userId: string): Promise<number> {
+    const result = await this.db
+      .delete(avatars)
+      .where(eq(avatars.userId, userId))
+      .returning();
+    return result.length;
+  }
+
+  // Concept methods
+  async getConcepts(userId: string): Promise<Concept[]> {
+    return await this.db
+      .select()
+      .from(concepts)
+      .where(eq(concepts.userId, userId))
+      .orderBy(desc(concepts.createdAt));
+  }
+
+  async getConcept(id: string): Promise<Concept | undefined> {
+    const result = await this.db.select().from(concepts).where(eq(concepts.id, id));
+    return result[0];
+  }
+
+  async createConcept(insertConcept: InsertConcept): Promise<Concept> {
+    const result = await this.db
+      .insert(concepts)
+      .values({
+        ...insertConcept,
+        createdAt: new Date(),
+        discoveredAt: new Date()
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateConcept(id: string, userId: string, updates: UpdateConcept): Promise<Concept | undefined> {
+    const result = await this.db
+      .update(concepts)
+      .set(updates)
+      .where(and(eq(concepts.id, id), eq(concepts.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAllConcepts(userId: string): Promise<number> {
+    const result = await this.db
+      .delete(concepts)
+      .where(eq(concepts.userId, userId))
+      .returning();
+    return result.length;
+  }
 }
 
-export const storage = new PgStorage();
+// Export appropriate storage based on environment
+export const storage: IStorage = process.env.DATABASE_URL 
+  ? new DatabaseStorage() 
+  : new MemStorage();

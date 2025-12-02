@@ -1,0 +1,59 @@
+{
+  "websiteUrl": "https://synthealth.com",
+  "brandVoice": "Authentic, wellness-focused, scientific yet approachable. Emphasizes natural healing, empowerment, and transformation. Uses phrases like \"Feel the Earth, You are Part of it\" and \"Embrace your true self\". Professional but warm, backed by science but spiritual.",
+  "missionStatement": "Unlock the power of advanced frequency therapy and take control of your well-being with Synthealth's cutting-edge technology. Recharge Your Body with Healing Frequencies to naturally restore balance and well-being.",
+  "brandValues": [
+    "Natural Healing",
+    "Scientific Innovation",
+    "Customer-Centric",
+    "Holistic Wellness",
+    "Earth Connection",
+    "Empowerment",
+    "Quality & Safety",
+    "Accessibility"
+  ],
+  "productLinks": [
+    "https://synthealth.com/products/bio-healing-frequency-generator-v2",
+    "https://synthealth.com/products/schumann-resonance-generator",
+    "https://synthealth.com/products/528hz-tuning-fork",
+    "https://synthealth.com/products/128hz-tuning-fork"
+  ],
+  "pricingInfo": "Bio-Healing Frequency Generator V2: $99.95 (was $199.95), Synt One Wellness Solution: From $69.99 (was $112.99), 528Hz BioHealing Tuning Fork: $45.95 (was $99.95), 128Hz BioHealing Tuning Fork: $49.95 (was $98.95)",
+  "keyBenefits": [
+    "Reduce Pain Naturally - PEMF waves target inflammation at the source",
+    "Boost Energy & Focus - Rebalance natural rhythms for mental clarity",
+    "Enhance Sleep Quality - Soothing frequencies promote deep restorative sleep",
+    "Support Cellular Healing - Stimulates cellular repair and rejuvenation",
+    "Ease Anxiety - Precision-tuned relaxing frequencies",
+    "Natural Stress Relief - No side effects or dependency"
+  ],
+  "usps": [
+    "60-Day Money Back Guarantee",
+    "12,000+ Happy Customers",
+    "Endorsed by Leading Wellness Professionals",
+    "Free Shipping",
+    "Advanced Frequency Technology",
+    "PEMF Technology",
+    "Precision-Tuned Frequencies",
+    "All-in-One Wellness Solution"
+  ],
+  "currentPersonas": "Wellness Seeker: Health-conscious individuals seeking natural alternatives to traditional medicine. Pain points: Chronic stress, poor sleep, anxiety, physical pain. Goals: Improve sleep quality, reduce stress naturally, enhance overall well-being. Alternative Health Enthusiast: People interested in frequency healing and energy work. Pain points: Skeptical of pharmaceuticals, looking for holistic solutions. Goals: Find scientifically-backed natural healing methods. Busy Professional: High-stress individuals needing relaxation and recovery. Pain points: Burnout, insomnia, lack of energy. Goals: Quick stress relief, better sleep, increased energy and focus.",
+  "demographics": "Age Range: 35-65, Gender: 60% Female, 40% Male, Income: $50K-$150K+, Interests: Natural Health, Wellness, Meditation, Holistic Healing, Alternative Medicine, Stress Management. Locations: Global with focus on North America, Europe, Australia. Lifestyle: Health-conscious, environmentally aware, willing to invest in wellness.",
+  "mainCompetitors": [
+    "Healy",
+    "NeuralSync",
+    "Rife Digital",
+    "PEMF HealthMat",
+    "Sota Instruments",
+    "Traditional meditation apps",
+    "Sleep sound machines",
+    "Acupuncture services",
+    "Massage therapy",
+    "Wellness spas"
+  ],
+  "instagramHandle": "@synthealth",
+  "facebookPage": "SynthHealth",
+  "tiktokHandle": "",
+  "contentStyle": "Educational yet engaging. Mix of scientific explanations, customer testimonials, product demonstrations, wellness tips, and inspirational content. Uses calming visuals, nature imagery, and before/after stories. Focuses on transformation and empowerment.",
+  "salesTrends": "Seasonal trends: Higher sales during National Recovery Month, New Year wellness resolutions, and seasonal stress periods. Popular products: Bio-Healing Frequency Generator V2 is the bestseller. Price sensitivity: Customers respond well to bundle deals and limited-time discounts. Customer lifecycle: High retention rate with 60-day guarantee building trust."
+}
