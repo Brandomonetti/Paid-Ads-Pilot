@@ -1872,10 +1872,6 @@ export function CreativeResearchCenter() {
                       <SelectItem value="de">German</SelectItem>
                     </SelectContent>
                   </Select>
-
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{filteredConcepts.length} result{filteredConcepts.length !== 1 ? 's' : ''}</span>
-                  </div>
                 </div>
               </div>
               )}
