@@ -375,7 +375,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const n8nResponse = JSON.parse(responseText);
           
-          // Handle n8n array format: [{ json: { ...data }, pairedItem: {...} }]
+          // Handle n8n format: { status: "success", data: [{ json: {...}, pairedItem: {...} }] }
+          if (n8nResponse.status === 'success' && Array.isArray(n8nResponse.data) && n8nResponse.data.length > 0) {
+            const savedConcepts = [];
+            for (const item of n8nResponse.data) {
+              const data = item.json || item;
+              try {
+                // Extract platform from filters or use default
+                const platform = data.filters?.platform || 'website';
+                
+                const saved = await storage.createConcept({
+                  userId,
+                  conceptType: platform.toLowerCase(),
+                  title: data.title || data.description?.substring(0, 100) || 'Untitled',
+                  description: data.description || '',
+                  thumbnail: data.thumbnail || '',
+                  url: data.url || query,
+                  owner: data.owner || '',
+                  category: data.filters?.language || '',
+                  statistics: data.statistics || {},
+                  status: "pending"
+                });
+                savedConcepts.push(saved);
+              } catch (err) {
+                console.error("Error saving concept from array:", err);
+              }
+            }
+            
+            res.json({ 
+              success: true, 
+              message: n8nResponse.message || "Search completed!",
+              count: savedConcepts.length,
+              concepts: savedConcepts,
+              urlSearchResult: savedConcepts.length === 1 ? savedConcepts[0] : undefined
+            });
+            return;
+          }
+          
+          // Handle direct n8n array format: [{ json: { ...data }, pairedItem: {...} }]
           if (Array.isArray(n8nResponse) && n8nResponse.length > 0) {
             const savedConcepts = [];
             for (const item of n8nResponse) {
@@ -412,8 +449,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Handle URL search response (single data object with status)
-          if (n8nResponse.status === 'success' && n8nResponse.data) {
+          // Handle URL search response (single data object with status - legacy format)
+          if (n8nResponse.status === 'success' && n8nResponse.data && !Array.isArray(n8nResponse.data)) {
             const concept = n8nResponse.data;
             try {
               const saved = await storage.createConcept({
