@@ -1740,7 +1740,8 @@ export function CreativeResearchCenter() {
             </Button>
           </div>
 
-              {/* Advanced Filters */}
+              {/* Advanced Filters - hidden for URL search since it returns single result */}
+              {searchType !== 'url' && (
               <div className="pt-4 border-t">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium flex items-center gap-2">
@@ -1947,6 +1948,7 @@ export function CreativeResearchCenter() {
                   </div>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 
