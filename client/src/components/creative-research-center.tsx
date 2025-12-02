@@ -894,10 +894,20 @@ export function CreativeResearchCenter() {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
-      toast({
-        title: "Search Complete",
-        description: `Found ${data.count || 0} viral creatives`,
-      });
+      
+      // Handle URL search result differently
+      if (data.urlSearchResult) {
+        toast({
+          title: "Page Found!",
+          description: data.message || "Website data retrieved successfully. Check Latest Discoveries.",
+        });
+        setActiveTab('latest');
+      } else {
+        toast({
+          title: "Search Complete",
+          description: `Found ${data.count || 0} viral creatives`,
+        });
+      }
     },
     onError: () => {
       toast({

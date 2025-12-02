@@ -375,7 +375,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const n8nResponse = JSON.parse(responseText);
           
-          // If n8n returns concepts, save them to database
+          // Handle URL search response (single data object)
+          if (n8nResponse.status === 'success' && n8nResponse.data) {
+            const concept = n8nResponse.data;
+            try {
+              const saved = await storage.createConcept({
+                userId,
+                conceptType: concept.platform || 'website',
+                title: concept.title || '',
+                description: concept.description || '',
+                thumbnail: concept.thumbnail || '',
+                url: concept.url || query,
+                owner: concept.owner || '',
+                category: '',
+                statistics: concept.statistics || {},
+                status: "pending"
+              });
+              
+              res.json({ 
+                success: true, 
+                message: n8nResponse.message || "Search completed!",
+                count: 1,
+                concepts: [saved],
+                urlSearchResult: saved
+              });
+              return;
+            } catch (err) {
+              console.error("Error saving URL search concept:", err);
+            }
+          }
+          
+          // If n8n returns concepts array, save them to database
           if (n8nResponse.concepts && Array.isArray(n8nResponse.concepts)) {
             const savedConcepts = [];
             for (const concept of n8nResponse.concepts) {
