@@ -42,6 +42,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { Concept } from "@shared/schema";
 
 interface CreativeConcept {
   id: string;
@@ -72,6 +73,7 @@ export function CreativeResearchCenter() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'keyword'>('url');
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchResults, setSearchResults] = useState<Concept[]>([]);
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
   const [timeFilter, setTimeFilter] = useState('all');
   const [librarySearch, setLibrarySearch] = useState("");
@@ -194,7 +196,7 @@ export function CreativeResearchCenter() {
 
   // Save explored concept to library (creates with approved status)
   const saveToLibraryMutation = useMutation({
-    mutationFn: async (concept: Omit<CreativeConcept, 'id' | 'status'>) => {
+    mutationFn: async (concept: Partial<Concept> | Omit<CreativeConcept, 'id' | 'status'>) => {
       return await apiRequest('POST', '/api/concepts', {
         ...concept,
         status: 'approved',
@@ -217,8 +219,8 @@ export function CreativeResearchCenter() {
     },
   });
 
-  // Handle approve from explore - saves concept to library
-  const handleApproveExplore = (conceptData: Omit<CreativeConcept, 'id' | 'status'>) => {
+  // Handle approve from explore - saves concept to library  
+  const handleApproveExplore = (conceptData: Partial<Concept> | Omit<CreativeConcept, 'id' | 'status'>) => {
     saveToLibraryMutation.mutate(conceptData);
   };
 
@@ -481,8 +483,8 @@ export function CreativeResearchCenter() {
     },
   ];
 
-  // Filter out rejected explore examples
-  const visibleExploreExamples = exploreExamples.filter(e => !rejectedExploreIds.has(e.id));
+  // Filter out rejected search results
+  const visibleSearchResults = searchResults.filter(e => !rejectedExploreIds.has(String(e.id)));
 
   // Mock data for development visualization
   const mockConcepts: CreativeConcept[] = [
@@ -890,21 +892,30 @@ export function CreativeResearchCenter() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/concepts'] });
       
+      // Store search results from webhook
+      if (data.concepts && Array.isArray(data.concepts)) {
+        setSearchResults(data.concepts);
+      } else if (data.urlSearchResult) {
+        setSearchResults([data.urlSearchResult]);
+      } else {
+        setSearchResults([]);
+      }
+      
       // Handle URL search result differently
       if (data.urlSearchResult) {
         toast({
           title: "Page Found!",
-          description: data.message || "Website data retrieved successfully. Check Latest Discoveries.",
+          description: data.message || "Website data retrieved successfully.",
         });
-        setActiveTab('latest');
       } else {
         toast({
           title: "Search Complete",
-          description: `Found ${data.count || 0} viral creatives`,
+          description: `Found ${data.count || 0} creatives`,
         });
       }
     },
     onError: () => {
+      setSearchResults([]);
       toast({
         title: "Search Failed",
         description: "Unable to fetch creative concepts. Please try again.",
@@ -1891,8 +1902,8 @@ export function CreativeResearchCenter() {
               <p className="text-sm text-muted-foreground">
                 {!hasSearched 
                   ? "Use the search above to discover competitor creatives"
-                  : visibleExploreExamples.length > 0 
-                    ? `Showing ${visibleExploreExamples.length} results - approve to save to your Creative Library`
+                  : visibleSearchResults.length > 0 
+                    ? `Showing ${visibleSearchResults.length} results - approve to save to your Creative Library`
                     : "All results hidden. Search again to see more creatives."}
               </p>
             </CardHeader>
@@ -1913,7 +1924,7 @@ export function CreativeResearchCenter() {
                     Finding creatives for you.
                   </p>
                 </div>
-              ) : visibleExploreExamples.length === 0 ? (
+              ) : visibleSearchResults.length === 0 ? (
                 <div className="py-12 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <h3 className="font-medium mb-2">No Results to Show</h3>
@@ -1926,107 +1937,131 @@ export function CreativeResearchCenter() {
                 </div>
               ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visibleExploreExamples.map((example) => (
-                  <Card 
-                    key={example.id}
-                    className="hover-elevate overflow-hidden" 
-                    data-testid={`card-${example.id}`}
-                  >
-                    <div className="relative aspect-video bg-muted">
-                      <img 
-                        src={example.thumbnailUrl} 
-                        alt={example.title}
-                        className="w-full h-full object-cover"
-                      />
-                      {example.format.toLowerCase().includes('video') && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <Play className="h-12 w-12 text-white" />
-                        </div>
-                      )}
-                      <Badge className={`absolute top-2 right-2 ${
-                        example.platform === 'facebook' ? 'bg-blue-500' :
-                        example.platform === 'instagram' ? 'bg-pink-500' :
-                        'bg-black'
-                      } text-white`}>
-                        {example.platform.charAt(0).toUpperCase() + example.platform.slice(1)}
-                      </Badge>
-                    </div>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {example.format}
-                            </Badge>
-                            <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
-                              Active
-                            </Badge>
+                {visibleSearchResults.map((result) => {
+                  const stats = (result.statistics as { views?: number; likes?: number; replies?: number; shares?: number }) || {};
+                  const platform = result.conceptType?.toLowerCase() || 'website';
+                  return (
+                    <Card 
+                      key={result.id}
+                      className="hover-elevate overflow-hidden" 
+                      data-testid={`card-${result.id}`}
+                    >
+                      <div className="relative aspect-video bg-muted">
+                        {result.thumbnail ? (
+                          <img 
+                            src={result.thumbnail} 
+                            alt={result.title || 'Creative'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Search className="h-12 w-12 text-muted-foreground opacity-30" />
                           </div>
-                          <CardTitle className="text-base line-clamp-2">{example.title}</CardTitle>
-                          <p className="text-xs text-muted-foreground mt-1">by {example.brandName}</p>
-                        </div>
+                        )}
+                        <Badge className={`absolute top-2 right-2 ${
+                          platform === 'facebook' ? 'bg-blue-500' :
+                          platform === 'instagram' ? 'bg-pink-500' :
+                          platform === 'tiktok' ? 'bg-black' :
+                          'bg-gray-600'
+                        } text-white`}>
+                          {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                        </Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {example.description}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-3 w-3 text-muted-foreground" />
-                          <span>{formatNumber(example.views || 0)}</span>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs">
+                                {result.category || platform}
+                              </Badge>
+                              <Badge className={`text-xs ${
+                                result.status === 'approved' ? 'bg-green-500/10 text-green-700 border-green-300' :
+                                result.status === 'rejected' ? 'bg-red-500/10 text-red-700 border-red-300' :
+                                'bg-yellow-500/10 text-yellow-700 border-yellow-300'
+                              }`}>
+                                {result.status === 'approved' ? 'Approved' : result.status === 'rejected' ? 'Rejected' : 'Pending'}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-base line-clamp-2">{result.title || 'Untitled'}</CardTitle>
+                            {result.owner && (
+                              <p className="text-xs text-muted-foreground mt-1">by {result.owner}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <span>{formatNumber(example.likes || 0)}</span>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {result.description}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(stats.views || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(stats.likes || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(stats.replies || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Share2 className="h-3 w-3 text-muted-foreground" />
+                            <span>{formatNumber(stats.shares || 0)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                          <span>{formatNumber(example.comments || 0)}</span>
+                        {result.createdAt && (
+                          <div className="pt-2 border-t">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Discovered</span>
+                              <span className="font-medium">{new Date(result.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Approve/Reject Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+                            onClick={() => {
+                              handleApproveExplore({
+                                title: result.title || '',
+                                description: result.description || '',
+                                conceptType: result.conceptType,
+                                owner: result.owner || '',
+                                category: result.category || '',
+                                url: result.url || '',
+                                thumbnail: result.thumbnail || '',
+                                statistics: result.statistics || {}
+                              });
+                              handleRejectExplore(String(result.id));
+                            }}
+                            disabled={saveToLibraryMutation.isPending}
+                            data-testid={`button-approve-${result.id}`}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                            onClick={() => handleRejectExplore(String(result.id))}
+                            data-testid={`button-reject-${result.id}`}
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Reject
+                          </Button>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Share2 className="h-3 w-3 text-muted-foreground" />
-                          <span>{formatNumber(example.shares || 0)}</span>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Running Since</span>
-                          <span className="font-medium">{example.runningSince}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Approve/Reject Actions */}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 gap-1 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
-                          onClick={() => {
-                            const { id, runningSince, status, createdAt, discoveredAt, ...conceptData } = example;
-                            handleApproveExplore(conceptData);
-                            handleRejectExplore(example.id);
-                          }}
-                          disabled={saveToLibraryMutation.isPending}
-                          data-testid={`button-approve-${example.id}`}
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 gap-1 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-                          onClick={() => handleRejectExplore(example.id)}
-                          data-testid={`button-reject-${example.id}`}
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Reject
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
               )}
             </CardContent>
