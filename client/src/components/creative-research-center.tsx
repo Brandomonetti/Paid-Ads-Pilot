@@ -71,6 +71,7 @@ export function CreativeResearchCenter() {
   const [activeTab, setActiveTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<'url' | 'brand' | 'keyword'>('url');
+  const [hasSearched, setHasSearched] = useState(false);
   const [savedConcepts, setSavedConcepts] = useState<Set<string>>(new Set());
   const [timeFilter, setTimeFilter] = useState('all');
   const [librarySearch, setLibrarySearch] = useState("");
@@ -922,6 +923,7 @@ export function CreativeResearchCenter() {
       return;
     }
 
+    setHasSearched(true);
     searchMutation.mutate({
       query: searchQuery,
       type: searchType
@@ -1887,13 +1889,31 @@ export function CreativeResearchCenter() {
                 Search Results
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                {visibleExploreExamples.length > 0 
-                  ? `Showing ${visibleExploreExamples.length} results - approve to save to your Creative Library`
-                  : "All results hidden. Search again to see more creatives."}
+                {!hasSearched 
+                  ? "Use the search above to discover competitor creatives"
+                  : visibleExploreExamples.length > 0 
+                    ? `Showing ${visibleExploreExamples.length} results - approve to save to your Creative Library`
+                    : "All results hidden. Search again to see more creatives."}
               </p>
             </CardHeader>
             <CardContent>
-              {visibleExploreExamples.length === 0 ? (
+              {!hasSearched ? (
+                <div className="py-12 text-center">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="font-medium mb-2">Start Your Search</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enter a URL, brand name, or keyword above to discover competitor creatives.
+                  </p>
+                </div>
+              ) : searchMutation.isPending ? (
+                <div className="py-12 text-center">
+                  <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <h3 className="font-medium mb-2">Searching...</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Finding creatives for you.
+                  </p>
+                </div>
+              ) : visibleExploreExamples.length === 0 ? (
                 <div className="py-12 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <h3 className="font-medium mb-2">No Results to Show</h3>
