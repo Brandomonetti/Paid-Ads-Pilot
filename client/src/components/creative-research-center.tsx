@@ -1747,23 +1747,11 @@ export function CreativeResearchCenter() {
               {/* Advanced Filters - hidden for URL search since it returns single result */}
               {searchType !== 'url' && (
               <div className="pt-4 border-t">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center mb-4">
                   <h3 className="text-sm font-medium flex items-center gap-2">
                     <Filter className="h-4 w-4" />
                     Advanced Filters
                   </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFilters({ 
-                      platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement',
-                      siteType: 'all', gender: 'all', ages: 'all', dailyLikes: 'all', 
-                      mediaType: 'all', createdBetween: 'all', countries: 'all', language: 'all'
-                    })}
-                    data-testid="button-clear-filters"
-                  >
-                    Clear all
-                  </Button>
                 </div>
                 
                 {/* Row 1: Site Type, Gender, Ages, Daily Likes, Media Type */}
@@ -1872,6 +1860,19 @@ export function CreativeResearchCenter() {
                       <SelectItem value="de">German</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilters({ 
+                      platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement',
+                      siteType: 'all', gender: 'all', ages: 'all', dailyLikes: 'all', 
+                      mediaType: 'all', createdBetween: 'all', countries: 'all', language: 'all'
+                    })}
+                    data-testid="button-clear-filters"
+                  >
+                    Clear all
+                  </Button>
                 </div>
               </div>
               )}
