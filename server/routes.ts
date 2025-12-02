@@ -375,7 +375,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const n8nResponse = JSON.parse(responseText);
           
-          // Handle URL search response (single data object)
+          // Handle n8n array format: [{ json: { ...data }, pairedItem: {...} }]
+          if (Array.isArray(n8nResponse) && n8nResponse.length > 0) {
+            const savedConcepts = [];
+            for (const item of n8nResponse) {
+              const data = item.json || item;
+              try {
+                // Extract platform from filters or use default
+                const platform = data.filters?.platform || 'website';
+                
+                const saved = await storage.createConcept({
+                  userId,
+                  conceptType: platform.toLowerCase(),
+                  title: data.title || data.description?.substring(0, 100) || 'Untitled',
+                  description: data.description || '',
+                  thumbnail: data.thumbnail || '',
+                  url: data.url || query,
+                  owner: data.owner || '',
+                  category: data.filters?.language || '',
+                  statistics: data.statistics || {},
+                  status: "pending"
+                });
+                savedConcepts.push(saved);
+              } catch (err) {
+                console.error("Error saving concept from array:", err);
+              }
+            }
+            
+            res.json({ 
+              success: true, 
+              message: "Search completed!",
+              count: savedConcepts.length,
+              concepts: savedConcepts,
+              urlSearchResult: savedConcepts.length === 1 ? savedConcepts[0] : undefined
+            });
+            return;
+          }
+          
+          // Handle URL search response (single data object with status)
           if (n8nResponse.status === 'success' && n8nResponse.data) {
             const concept = n8nResponse.data;
             try {
