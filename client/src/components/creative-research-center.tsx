@@ -1998,11 +1998,11 @@ export function CreativeResearchCenter() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <Badge variant="outline" className="text-xs">
+                              <Badge className="text-xs bg-muted text-muted-foreground border border-border">
                                 {result.category || platform}
                               </Badge>
                               {(stats as { isActive?: boolean | null }).isActive === true && (
-                                <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
+                                <Badge className="text-xs bg-green-500 text-white border-green-600">
                                   Active
                                 </Badge>
                               )}
