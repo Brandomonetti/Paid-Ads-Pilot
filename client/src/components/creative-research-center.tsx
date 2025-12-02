@@ -1980,8 +1980,10 @@ export function CreativeResearchCenter() {
                             <Search className="h-12 w-12 text-muted-foreground opacity-30" />
                           </div>
                         )}
-                        <div className="absolute bottom-2 left-2 bg-black/60 rounded-full p-1.5">
-                          <ExternalLink className="h-4 w-4 text-white" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black/60 rounded-full p-3">
+                            <ExternalLink className="h-8 w-8 text-white" />
+                          </div>
                         </div>
                         <Badge className={`absolute top-2 right-2 ${
                           platform === 'facebook' ? 'bg-blue-500' :
