@@ -362,7 +362,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const data of mockWebhookData) {
           try {
             const platform = data.filters?.platform || 'website';
-            const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
             
             const saved = await storage.createConcept({
               userId,
@@ -375,9 +374,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               category: data.filters?.language || '',
               statistics: {
                 ...data.statistics,
-                originalCreatedAt: data.created_at || null
+                originalCreatedAt: data.created_at || null,
+                isActive: data.filters?.is_active
               },
-              status: derivedStatus
+              status: undefined
             });
             savedConcepts.push(saved);
           } catch (err) {
@@ -437,9 +437,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
-                // Derive status from is_active: only show badge when true
-                const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
-                
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
@@ -451,9 +448,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   category: data.filters?.language || '',
                   statistics: {
                     ...data.statistics,
-                    originalCreatedAt: data.created_at || null
+                    originalCreatedAt: data.created_at || null,
+                    isActive: data.filters?.is_active
                   },
-                  status: derivedStatus
+                  status: undefined
                 });
                 savedConcepts.push(saved);
               } catch (err) {
@@ -480,9 +478,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
-                // Derive status from is_active: only show badge when true
-                const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
-                
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
@@ -494,9 +489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   category: data.filters?.language || '',
                   statistics: {
                     ...data.statistics,
-                    originalCreatedAt: data.created_at || null
+                    originalCreatedAt: data.created_at || null,
+                    isActive: data.filters?.is_active
                   },
-                  status: derivedStatus
+                  status: undefined
                 });
                 savedConcepts.push(saved);
               } catch (err) {

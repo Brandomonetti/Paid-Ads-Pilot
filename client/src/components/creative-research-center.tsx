@@ -2001,13 +2001,9 @@ export function CreativeResearchCenter() {
                               <Badge variant="outline" className="text-xs">
                                 {result.category || platform}
                               </Badge>
-                              {result.status && (
-                                <Badge className={`text-xs ${
-                                  result.status === 'approved' ? 'bg-green-500/10 text-green-700 border-green-300' :
-                                  result.status === 'rejected' ? 'bg-red-500/10 text-red-700 border-red-300' :
-                                  'bg-yellow-500/10 text-yellow-700 border-yellow-300'
-                                }`}>
-                                  {result.status === 'approved' ? 'Active' : result.status === 'rejected' ? 'Inactive' : 'Pending'}
+                              {(stats as { isActive?: boolean | null }).isActive === true && (
+                                <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
+                                  Active
                                 </Badge>
                               )}
                             </div>
