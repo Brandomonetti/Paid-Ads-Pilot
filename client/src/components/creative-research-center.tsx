@@ -86,11 +86,8 @@ export function CreativeResearchCenter() {
     gender: "all",
     ages: "all",
     dailyLikes: "all",
-    totalLikes: "all",
     mediaType: "all",
     createdBetween: "all",
-    seenBetween: "all",
-    networks: "all",
     advertiser: "",
     technologies: "all",
     countries: "all",
@@ -1764,9 +1761,8 @@ export function CreativeResearchCenter() {
                     onClick={() => setFilters({ 
                       platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement',
                       siteType: 'all', gender: 'all', ages: 'all', dailyLikes: 'all', 
-                      totalLikes: 'all', mediaType: 'all', createdBetween: 'all', 
-                      seenBetween: 'all', networks: 'all', advertiser: '', technologies: 'all', 
-                      countries: 'all', language: 'all', buttons: 'all'
+                      mediaType: 'all', createdBetween: 'all', advertiser: '', 
+                      technologies: 'all', countries: 'all', language: 'all', buttons: 'all'
                     })}
                     data-testid="button-clear-filters"
                   >
@@ -1827,18 +1823,6 @@ export function CreativeResearchCenter() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={filters.totalLikes} onValueChange={(value) => setFilters({...filters, totalLikes: value})}>
-                    <SelectTrigger data-testid="select-total-likes">
-                      <SelectValue placeholder="Total likes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any</SelectItem>
-                      <SelectItem value="<1k">&lt;1K</SelectItem>
-                      <SelectItem value="1k-10k">1K-10K</SelectItem>
-                      <SelectItem value="10k-100k">10K-100K</SelectItem>
-                      <SelectItem value=">100k">&gt;100K</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Second row of filters */}
@@ -1865,30 +1849,6 @@ export function CreativeResearchCenter() {
                       <SelectItem value="30days">Last 30 Days</SelectItem>
                       <SelectItem value="90days">Last 90 Days</SelectItem>
                       <SelectItem value="1year">Last Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filters.seenBetween} onValueChange={(value) => setFilters({...filters, seenBetween: value})}>
-                    <SelectTrigger data-testid="select-seen-between">
-                      <SelectValue placeholder="Seen Between" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any Time</SelectItem>
-                      <SelectItem value="7days">Last 7 Days</SelectItem>
-                      <SelectItem value="30days">Last 30 Days</SelectItem>
-                      <SelectItem value="90days">Last 90 Days</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filters.networks} onValueChange={(value) => setFilters({...filters, networks: value})}>
-                    <SelectTrigger data-testid="select-networks">
-                      <SelectValue placeholder="Networks" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Networks</SelectItem>
-                      <SelectItem value="facebook">Facebook</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
-                      <SelectItem value="messenger">Messenger</SelectItem>
                     </SelectContent>
                   </Select>
 
