@@ -1986,11 +1986,11 @@ export function CreativeResearchCenter() {
                           </div>
                         </div>
                         <Badge className={`absolute top-2 right-2 ${
-                          platform === 'facebook' ? 'bg-blue-500' :
-                          platform === 'instagram' ? 'bg-pink-500' :
-                          platform === 'tiktok' ? 'bg-black' :
-                          'bg-gray-600'
-                        } text-white`}>
+                          platform === 'facebook' ? 'bg-blue-600 border-blue-700' :
+                          platform === 'instagram' ? 'bg-pink-600 border-pink-700' :
+                          platform === 'tiktok' ? 'bg-black border-gray-700' :
+                          'bg-gray-700 border-gray-800'
+                        } text-white border`}>
                           {platform.charAt(0).toUpperCase() + platform.slice(1)}
                         </Badge>
                       </div>
@@ -1998,11 +1998,13 @@ export function CreativeResearchCenter() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <Badge className="text-xs bg-muted text-muted-foreground border border-border">
-                                {result.category || platform}
-                              </Badge>
+                              {result.category && (
+                                <Badge className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600">
+                                  {result.category}
+                                </Badge>
+                              )}
                               {(stats as { isActive?: boolean | null }).isActive === true && (
-                                <Badge className="text-xs bg-green-500 text-white border-green-600">
+                                <Badge className="text-xs bg-green-500 text-white border border-green-600">
                                   Active
                                 </Badge>
                               )}
