@@ -369,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const saved = await storage.createConcept({
               userId,
               conceptType: platform.toLowerCase(),
-              title: data.title || data.description?.slice(0, 100) || '',
+              title: data.title || null,
               description: data.description || '',
               thumbnail: data.thumbnail || '',
               url: data.url || query,
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || data.description?.slice(0, 100) || '',
+                  title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   conceptType: platform.toLowerCase(),
-                  title: data.title || data.description?.slice(0, 100) || '',
+                  title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,

@@ -2052,20 +2052,22 @@ export function CreativeResearchCenter() {
                             )}
                           </div>
                         )}
-                        <div className="pt-2 border-t">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Created</span>
-                            <span className="font-medium">
-                              {(() => {
-                                const originalDate = (stats as { originalCreatedAt?: string | null }).originalCreatedAt;
-                                if (originalDate) {
-                                  return new Date(originalDate).toLocaleDateString();
-                                }
-                                return "--/--";
-                              })()}
-                            </span>
-                          </div>
-                        </div>
+                        {(() => {
+                          const originalDate = (stats as { originalCreatedAt?: string | null }).originalCreatedAt;
+                          if (originalDate) {
+                            return (
+                              <div className="pt-2 border-t">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">Created</span>
+                                  <span className="font-medium">
+                                    {new Date(originalDate).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         
                         {/* Approve/Reject Actions */}
                         <div className="flex gap-2 pt-2">
