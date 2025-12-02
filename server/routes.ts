@@ -362,9 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const data of mockWebhookData) {
           try {
             const platform = data.filters?.platform || 'website';
-            const derivedStatus = data.filters?.is_active === true ? "approved" 
-              : data.filters?.is_active === false ? "rejected" 
-              : undefined;
+            const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
             
             const saved = await storage.createConcept({
               userId,
@@ -439,10 +437,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
-                // Derive status from is_active: true="approved", false="rejected", null=undefined
-                const derivedStatus = data.filters?.is_active === true ? "approved" 
-                  : data.filters?.is_active === false ? "rejected" 
-                  : undefined;
+                // Derive status from is_active: only show badge when true
+                const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
                 
                 const saved = await storage.createConcept({
                   userId,
@@ -484,10 +480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Extract platform from filters or use default
                 const platform = data.filters?.platform || 'website';
                 
-                // Derive status from is_active: true="approved", false="rejected", null=undefined
-                const derivedStatus = data.filters?.is_active === true ? "approved" 
-                  : data.filters?.is_active === false ? "rejected" 
-                  : undefined;
+                // Derive status from is_active: only show badge when true
+                const derivedStatus = data.filters?.is_active === true ? "approved" : undefined;
                 
                 const saved = await storage.createConcept({
                   userId,
