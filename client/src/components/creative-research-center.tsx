@@ -88,11 +88,8 @@ export function CreativeResearchCenter() {
     dailyLikes: "all",
     mediaType: "all",
     createdBetween: "all",
-    advertiser: "",
-    technologies: "all",
     countries: "all",
-    language: "all",
-    buttons: "all"
+    language: "all"
   });
 
   // Fetch knowledge base data for discovery
@@ -1761,8 +1758,7 @@ export function CreativeResearchCenter() {
                     onClick={() => setFilters({ 
                       platform: 'all', engagement: 'all', format: 'all', sortBy: 'engagement',
                       siteType: 'all', gender: 'all', ages: 'all', dailyLikes: 'all', 
-                      mediaType: 'all', createdBetween: 'all', advertiser: '', 
-                      technologies: 'all', countries: 'all', language: 'all', buttons: 'all'
+                      mediaType: 'all', createdBetween: 'all', countries: 'all', language: 'all'
                     })}
                     data-testid="button-clear-filters"
                   >
@@ -1852,28 +1848,6 @@ export function CreativeResearchCenter() {
                     </SelectContent>
                   </Select>
 
-                  <Input
-                    placeholder="Advertiser"
-                    value={filters.advertiser}
-                    onChange={(e) => setFilters({...filters, advertiser: e.target.value})}
-                    data-testid="input-advertiser"
-                  />
-                </div>
-
-                {/* Third row of filters */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  <Select value={filters.technologies} onValueChange={(value) => setFilters({...filters, technologies: value})}>
-                    <SelectTrigger data-testid="select-technologies">
-                      <SelectValue placeholder="Technologies" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="shopify">Shopify</SelectItem>
-                      <SelectItem value="wordpress">WordPress</SelectItem>
-                      <SelectItem value="wix">Wix</SelectItem>
-                    </SelectContent>
-                  </Select>
-
                   <Select value={filters.countries} onValueChange={(value) => setFilters({...filters, countries: value})}>
                     <SelectTrigger data-testid="select-countries">
                       <SelectValue placeholder="Countries" />
@@ -1897,19 +1871,6 @@ export function CreativeResearchCenter() {
                       <SelectItem value="es">Spanish</SelectItem>
                       <SelectItem value="fr">French</SelectItem>
                       <SelectItem value="de">German</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filters.buttons} onValueChange={(value) => setFilters({...filters, buttons: value})}>
-                    <SelectTrigger data-testid="select-buttons">
-                      <SelectValue placeholder="Buttons" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="shop-now">Shop Now</SelectItem>
-                      <SelectItem value="learn-more">Learn More</SelectItem>
-                      <SelectItem value="sign-up">Sign Up</SelectItem>
-                      <SelectItem value="download">Download</SelectItem>
                     </SelectContent>
                   </Select>
 
