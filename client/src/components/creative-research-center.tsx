@@ -1995,24 +1995,34 @@ export function CreativeResearchCenter() {
                             {result.description}
                           </p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3 text-muted-foreground" />
-                            <span>{formatNumber(stats.views || 0)}</span>
+                        {(stats.views || stats.likes || stats.replies || stats.shares) && (
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {stats.views != null && stats.views > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(stats.views)}</span>
+                              </div>
+                            )}
+                            {stats.likes != null && stats.likes > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Heart className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(stats.likes)}</span>
+                              </div>
+                            )}
+                            {stats.replies != null && stats.replies > 0 && (
+                              <div className="flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(stats.replies)}</span>
+                              </div>
+                            )}
+                            {stats.shares != null && stats.shares > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Share2 className="h-3 w-3 text-muted-foreground" />
+                                <span>{formatNumber(stats.shares)}</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Heart className="h-3 w-3 text-muted-foreground" />
-                            <span>{formatNumber(stats.likes || 0)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                            <span>{formatNumber(stats.replies || 0)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Share2 className="h-3 w-3 text-muted-foreground" />
-                            <span>{formatNumber(stats.shares || 0)}</span>
-                          </div>
-                        </div>
+                        )}
                         {result.createdAt && (
                           <div className="pt-2 border-t">
                             <div className="flex items-center justify-between text-xs">
