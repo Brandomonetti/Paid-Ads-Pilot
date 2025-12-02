@@ -334,10 +334,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { query, type } = req.body;
+      const { query, type, useMock } = req.body;
       
       if (!query) {
         res.status(400).json({ error: "Search query is required" });
+        return;
+      }
+      
+      // Mock data matching the actual webhook response structure
+      const mockWebhookData = [
+        {
+          title: null,
+          description: "Training intensity / how hard you're pushing yourself is likely the biggest workout variable (aside from progressive overload which is inherently tied to intensity) that will determine how much muscle you grow.",
+          owner: "tylerpath",
+          url: "https://www.tiktok.com/@tylerpath/video/7311742128567389486",
+          thumbnail: "https://p16-common-ipv6-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/23086879dac545b7b58afd01f158da01_1702397641~tplv-tiktokx-dmt-logom:tos-useast5-i-0068-tx/o0yBE4zCABicnwAA1hrBfis3NBJnjIa2IEvGyA.image",
+          statistics: { views: 7948408, likes: 20638, replies: 1654, shares: 1630 },
+          filters: { age: null, gender: null, language: "English", region: "US", platform: "TikTok", is_video: true, is_ad: false, is_active: null },
+          created_at: "2023-12-12T16:14:00.000Z"
+        },
+        {
+          title: "Best workout tips for beginners",
+          description: "Here are my top 5 tips for getting started with fitness. Remember consistency is key!",
+          owner: "fitnessguru",
+          url: "https://www.instagram.com/p/ABC123",
+          thumbnail: null,
+          statistics: { views: 150000, likes: 8500, replies: 320, shares: null },
+          filters: { age: null, gender: null, language: "English", region: "US", platform: "Instagram", is_video: false, is_ad: true, is_active: true },
+          created_at: "2024-01-15T10:30:00.000Z"
+        },
+        {
+          title: null,
+          description: null,
+          owner: "brandpage",
+          url: "https://www.facebook.com/brandpage/posts/123",
+          thumbnail: null,
+          statistics: { views: null, likes: null, replies: null, shares: null },
+          filters: { age: null, gender: null, language: null, region: null, platform: "Facebook", is_video: false, is_ad: false, is_active: false },
+          created_at: null
+        }
+      ];
+      
+      // Use mock data if requested
+      if (useMock) {
+        console.log("Using mock data for search");
+        const savedConcepts = [];
+        for (const data of mockWebhookData) {
+          try {
+            const platform = data.filters?.platform || 'website';
+            const derivedStatus = data.filters?.is_active === true ? "approved" 
+              : data.filters?.is_active === false ? "rejected" 
+              : undefined;
+            
+            const saved = await storage.createConcept({
+              userId,
+              conceptType: platform.toLowerCase(),
+              title: data.title || data.description?.slice(0, 100) || '',
+              description: data.description || '',
+              thumbnail: data.thumbnail || '',
+              url: data.url || query,
+              owner: data.owner || '',
+              category: data.filters?.language || '',
+              statistics: {
+                ...data.statistics,
+                originalCreatedAt: data.created_at || null
+              },
+              status: derivedStatus
+            });
+            savedConcepts.push(saved);
+          } catch (err) {
+            console.error("Error saving mock concept:", err);
+          }
+        }
+        
+        res.json({ 
+          success: true, 
+          message: "Mock search completed!",
+          count: savedConcepts.length,
+          concepts: savedConcepts
+        });
         return;
       }
       

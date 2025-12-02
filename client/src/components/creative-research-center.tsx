@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Sparkles,
   Search,
@@ -883,9 +885,12 @@ export function CreativeResearchCenter() {
   const isMockMode = (concepts as CreativeConcept[]).length === 0;
   const conceptsData = isMockMode ? mockConcepts : (concepts as CreativeConcept[]);
 
+  // Toggle for using mock data (to avoid API calls)
+  const [useMockData, setUseMockData] = useState(true);
+
   // Search for competitor/brand content
   const searchMutation = useMutation({
-    mutationFn: async (params: { query: string; type: string }) => {
+    mutationFn: async (params: { query: string; type: string; useMock?: boolean }) => {
       const response = await apiRequest('POST', '/api/concepts/search', params);
       return response.json();
     },
@@ -937,7 +942,8 @@ export function CreativeResearchCenter() {
     setHasSearched(true);
     searchMutation.mutate({
       query: searchQuery,
-      type: searchType
+      type: searchType,
+      useMock: useMockData
     });
   };
 
@@ -1755,6 +1761,18 @@ export function CreativeResearchCenter() {
                 </>
               )}
             </Button>
+            
+            <div className="flex items-center gap-2">
+              <Switch
+                id="mock-mode"
+                checked={useMockData}
+                onCheckedChange={setUseMockData}
+                data-testid="switch-mock-mode"
+              />
+              <Label htmlFor="mock-mode" className="text-sm text-muted-foreground">
+                Demo Mode
+              </Label>
+            </div>
           </div>
 
               {/* Advanced Filters - hidden for URL search since it returns single result */}
