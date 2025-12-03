@@ -218,7 +218,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const concepts = await storage.getConcepts(userId);
-      res.json(concepts);
+      
+      // Transform database format to UI format
+      const transformedConcepts = concepts.map((concept: any) => {
+        const statistics = concept.statistics || {};
+        const filter = concept.filter || {};
+        
+        return {
+          id: concept.id,
+          title: concept.title,
+          description: concept.description,
+          thumbnailUrl: concept.thumbnail,
+          postUrl: concept.url,
+          brandName: concept.owner,
+          platform: filter.platform || 'facebook',
+          format: filter.format || 'Video',
+          industry: filter.industry || '',
+          likes: statistics.likes || 0,
+          views: statistics.views || 0,
+          shares: statistics.shares || 0,
+          comments: statistics.replies || 0,
+          engagementRate: statistics.views ? 
+            ((statistics.likes || 0) + (statistics.replies || 0) + (statistics.shares || 0)) / statistics.views : 0,
+          engagementScore: Math.min(100, Math.round(
+            ((statistics.likes || 0) / 10000) + 
+            ((statistics.views || 0) / 100000) + 
+            ((statistics.shares || 0) / 1000)
+          )),
+          status: concept.status,
+          createdAt: concept.createdAt,
+          hooks: []
+        };
+      });
+      
+      res.json(transformedConcepts);
     } catch (error) {
       console.error("Error fetching concepts:", error);
       res.status(500).json({ error: "Failed to fetch concepts" });
