@@ -1831,8 +1831,9 @@ export function CreativeResearchCenter() {
                         replies?: number;
                         shares?: number;
                       }) || {};
+                    const filterData = (result.filter as { platform?: string }) || {};
                     const platform =
-                      result.conceptType?.toLowerCase() || "website";
+                      filterData.platform?.toLowerCase() || "website";
                     return (
                       <Card
                         key={result.id}
@@ -1881,11 +1882,6 @@ export function CreativeResearchCenter() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                {result.category && (
-                                  <Badge className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600">
-                                    {result.category}
-                                  </Badge>
-                                )}
                                 {(stats as { isActive?: boolean | null })
                                   .isActive === true && (
                                   <Badge className="text-xs bg-green-500 text-white border border-green-600">
@@ -1976,12 +1972,11 @@ export function CreativeResearchCenter() {
                                 handleApproveExplore({
                                   title: result.title || "",
                                   description: result.description || "",
-                                  conceptType: result.conceptType,
                                   owner: result.owner || "",
-                                  category: result.category || "",
                                   url: result.url || "",
                                   thumbnail: result.thumbnail || "",
                                   statistics: result.statistics || {},
+                                  filter: result.filter || {},
                                 });
                                 handleRejectExplore(String(result.id));
                               }}

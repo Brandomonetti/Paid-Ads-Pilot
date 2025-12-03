@@ -197,22 +197,16 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const concept: Concept = {
       id,
-      ...insertConcept,
-      thumbnailUrl: insertConcept.thumbnailUrl ?? null,
-      videoUrl: insertConcept.videoUrl ?? null,
-      postUrl: insertConcept.postUrl ?? null,
-      brandName: insertConcept.brandName ?? null,
-      industry: insertConcept.industry ?? null,
-      hooks: insertConcept.hooks ?? [],
-      engagementScore: insertConcept.engagementScore ?? 0,
-      likes: insertConcept.likes ?? null,
-      comments: insertConcept.comments ?? null,
-      shares: insertConcept.shares ?? null,
-      views: insertConcept.views ?? null,
-      engagementRate: insertConcept.engagementRate ?? null,
-      status: insertConcept.status ?? "discovered",
-      createdAt: new Date(),
-      discoveredAt: new Date()
+      userId: insertConcept.userId,
+      title: insertConcept.title ?? null,
+      description: insertConcept.description ?? null,
+      owner: insertConcept.owner ?? null,
+      url: insertConcept.url ?? null,
+      thumbnail: insertConcept.thumbnail ?? null,
+      statistics: insertConcept.statistics ?? {},
+      status: insertConcept.status ?? "pending",
+      filter: insertConcept.filter ?? {},
+      createdAt: new Date()
     };
     this.conceptsMap.set(id, concept);
     return concept;
@@ -380,8 +374,7 @@ export class DatabaseStorage implements IStorage {
       .insert(concepts)
       .values({
         ...insertConcept,
-        createdAt: new Date(),
-        discoveredAt: new Date()
+        createdAt: new Date()
       })
       .returning();
     return result[0];

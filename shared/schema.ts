@@ -152,9 +152,7 @@ export const concepts = pgTable("concepts", {
   // Core Content
   title: text("title"),
   description: text("description"),
-  conceptType: text("concept_type").notNull(), // Facebook, Instagram, TikTok, etc.
   owner: text("owner"), // Brand/business name
-  category: text("category"), // Business category (e.g., "Local business")
   
   // Media & Links
   url: text("url"), // Link to original ad/post
@@ -165,6 +163,9 @@ export const concepts = pgTable("concepts", {
   
   // Status
   status: text("status").notNull().default("pending"), // pending, approved, rejected
+  
+  // Filter data (JSONB: platform, engagement, format, etc.)
+  filter: jsonb("filter").notNull().default(sql`'{}'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow()
 });
@@ -177,9 +178,7 @@ export const insertConceptSchema = createInsertSchema(concepts).omit({
 export const updateConceptSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  conceptType: z.string().optional(),
   owner: z.string().optional(),
-  category: z.string().optional(),
   url: z.string().optional(),
   thumbnail: z.string().optional(),
   statistics: z.object({
@@ -188,7 +187,8 @@ export const updateConceptSchema = z.object({
     replies: z.number().nullable().optional(),
     shares: z.number().nullable().optional()
   }).optional(),
-  status: z.enum(["pending", "approved", "rejected"]).optional()
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  filter: z.record(z.any()).optional()
 });
 
 export type InsertConcept = z.infer<typeof insertConceptSchema>;
