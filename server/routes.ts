@@ -222,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Transform database format to UI format
       const transformedConcepts = concepts.map((concept: any) => {
         const statistics = concept.statistics || {};
-        const filter = concept.filter || {};
+        const filter = concept.filters || {};
         
         return {
           id: concept.id,
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     originalCreatedAt: data.created_at || null,
                     isActive: data.filters?.is_active ?? null
                   },
-                  filter: {
+                  filters: {
                     platform: platform.toLowerCase(),
                     format: data.filters?.format || null,
                     industry: data.filters?.industry || null,
@@ -476,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     originalCreatedAt: data.created_at || null,
                     isActive: data.filters?.is_active ?? null
                   },
-                  filter: {
+                  filters: {
                     platform: platform.toLowerCase(),
                     format: data.filters?.format || null,
                     industry: data.filters?.industry || null,
@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 url: concept.url || query,
                 owner: concept.owner || null,
                 statistics: concept.statistics || null,
-                filter: {
+                filters: {
                   platform: platform.toLowerCase(),
                   format: concept.filters?.format || null,
                   industry: concept.filters?.industry || null,
@@ -559,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     shares: concept.shares ?? null,
                     engagementScore: concept.engagementScore || concept.engagement_score || null
                   },
-                  filter: {
+                  filters: {
                     platform: platform.toLowerCase(),
                     format: concept.filters?.format || concept.format || null,
                     industry: concept.filters?.industry || concept.industry || null,

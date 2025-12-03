@@ -165,7 +165,7 @@ export const concepts = pgTable("concepts", {
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   
   // Filter data (JSONB: platform, engagement, format, etc.)
-  filter: jsonb("filter").notNull().default(sql`'{}'::jsonb`),
+  filters: jsonb("filters").notNull().default(sql`'{}'::jsonb`),
   
   createdAt: timestamp("created_at").defaultNow()
 });
@@ -188,7 +188,7 @@ export const updateConceptSchema = z.object({
     shares: z.number().nullable().optional()
   }).optional(),
   status: z.enum(["pending", "approved", "rejected"]).optional(),
-  filter: z.record(z.any()).optional()
+  filters: z.record(z.any()).optional()
 });
 
 export type InsertConcept = z.infer<typeof insertConceptSchema>;

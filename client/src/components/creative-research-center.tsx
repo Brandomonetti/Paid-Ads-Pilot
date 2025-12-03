@@ -1392,7 +1392,7 @@ export function CreativeResearchCenter() {
                         replies?: number;
                         shares?: number;
                       }) || {};
-                    const filterData = (result.filter as { platform?: string }) || {};
+                    const filterData = (result.filters as { platform?: string }) || {};
                     const platform =
                       filterData.platform?.toLowerCase() || "website";
                     return (
@@ -1537,7 +1537,7 @@ export function CreativeResearchCenter() {
                                   url: result.url || "",
                                   thumbnail: result.thumbnail || "",
                                   statistics: result.statistics || {},
-                                  filter: result.filter || {},
+                                  filters: result.filters || {},
                                 });
                                 handleRejectExplore(String(result.id));
                               }}
