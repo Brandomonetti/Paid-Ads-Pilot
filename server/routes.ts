@@ -446,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         });
         
-        const webhookResponse = await fetch(`https://brandluxmedia.app.n8n.cloud/webhook/search?${params.toString()}`, {
+        const webhookResponse = await fetch(`https://brandluxmedia.app.n8n.cloud/webhook-test/search?${params.toString()}`, {
           method: "GET",
           headers: { 
             "Authorization": `Bearer ${process.env.N8N_API_KEY}`
