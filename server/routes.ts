@@ -367,63 +367,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/concepts/search", isAuthenticated, setupCSRFToken, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { query, type, useMock } = req.body;
+      const { query, type } = req.body;
       
       if (!query) {
         res.status(400).json({ error: "Search query is required" });
-        return;
-      }
-      
-      // Mock data - exact copy of the previous webhook response
-      const mockWebhookData = [
-        {
-          title: null,
-          description: "Training intensity / how hard you're pushing yourself is likely the biggest workout variable (aside from progressive overload which is inherently tied to intensity) that will determine how much muscle you grow. Ideally, you should be training very close to failure if not to failure in some cases. And then if recovery is an issue, modify your workout schedule / # of sets and exercises based on how recovery goes #fyp #Fitness #gym #bodybuilding ",
-          owner: "tylerpath",
-          url: "https://www.tiktok.com/@tylerpath/video/7311742128567389486",
-          thumbnail: "https://p16-common-ipv6-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/23086879dac545b7b58afd01f158da01_1702397641~tplv-tiktokx-dmt-logom:tos-useast5-i-0068-tx/o0yBE4zCABicnwAA1hrBfis3NBJnjIa2IEvGyA.image?dr=8605&refresh_token=f417679c&x-expires=1764781200&x-signature=NwiljuLVPCpi6rzx8EnrTeb8Juo%3D&t=bacd0480&ps=4f5296ae&shp=d05b14bd&shcp=1d1a97fc&idc=useast8&biz_tag=tt_video&s=AWEME_DETAIL&sc=dynamic_cover",
-          statistics: { views: 7948408, likes: 20638, replies: 1654, shares: 1630 },
-          filters: { age: null, gender: null, language: "English", region: "US", platform: "TikTok", is_video: false, is_ad: false, is_active: null },
-          created_at: "2023-12-12T16:14:00.000Z"
-        }
-      ];
-      
-      // Use mock data if requested
-      if (useMock) {
-        console.log("Using mock data for search");
-        const savedConcepts = [];
-        for (const data of mockWebhookData) {
-          try {
-            const platform = data.filters?.platform || 'website';
-            
-            const saved = await storage.createConcept({
-              userId,
-              conceptType: platform.toLowerCase(),
-              title: data.title || null,
-              description: data.description || '',
-              thumbnail: data.thumbnail || '',
-              url: data.url || query,
-              owner: data.owner || '',
-              category: data.filters?.language || '',
-              statistics: {
-                ...data.statistics,
-                originalCreatedAt: data.created_at || null,
-                isActive: data.filters?.is_active
-              },
-              status: undefined
-            });
-            savedConcepts.push(saved);
-          } catch (err) {
-            console.error("Error saving mock concept:", err);
-          }
-        }
-        
-        res.json({ 
-          success: true, 
-          message: "Mock search completed!",
-          count: savedConcepts.length,
-          concepts: savedConcepts
-        });
         return;
       }
       
@@ -472,19 +419,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 const saved = await storage.createConcept({
                   userId,
-                  conceptType: platform.toLowerCase(),
                   title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
                   owner: data.owner || '',
-                  category: data.filters?.language || '',
                   statistics: {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null,
                     isActive: data.filters?.is_active
                   },
-                  status: undefined
+                  filter: {
+                    platform: platform.toLowerCase(),
+                    format: data.filters?.format || 'Video',
+                    industry: data.filters?.industry || '',
+                    language: data.filters?.language || '',
+                    isVideo: data.filters?.is_video || false,
+                    isAd: data.filters?.is_ad || false
+                  },
+                  status: 'pending'
                 });
                 savedConcepts.push(saved);
               } catch (err) {
@@ -513,19 +466,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 const saved = await storage.createConcept({
                   userId,
-                  conceptType: platform.toLowerCase(),
                   title: data.title || null,
                   description: data.description || '',
                   thumbnail: data.thumbnail || '',
                   url: data.url || query,
                   owner: data.owner || '',
-                  category: data.filters?.language || '',
                   statistics: {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null,
                     isActive: data.filters?.is_active
                   },
-                  status: undefined
+                  filter: {
+                    platform: platform.toLowerCase(),
+                    format: data.filters?.format || 'Video',
+                    industry: data.filters?.industry || '',
+                    language: data.filters?.language || '',
+                    isVideo: data.filters?.is_video || false,
+                    isAd: data.filters?.is_ad || false
+                  },
+                  status: 'pending'
                 });
                 savedConcepts.push(saved);
               } catch (err) {
@@ -546,17 +505,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Handle URL search response (single data object with status - legacy format)
           if (n8nResponse.status === 'success' && n8nResponse.data && !Array.isArray(n8nResponse.data)) {
             const concept = n8nResponse.data;
+            const platform = concept.filters?.platform || concept.platform || 'website';
             try {
               const saved = await storage.createConcept({
                 userId,
-                conceptType: concept.platform || 'website',
                 title: concept.title || '',
                 description: concept.description || '',
                 thumbnail: concept.thumbnail || '',
                 url: concept.url || query,
                 owner: concept.owner || '',
-                category: '',
                 statistics: concept.statistics || {},
+                filter: {
+                  platform: platform.toLowerCase(),
+                  format: concept.filters?.format || 'Video',
+                  industry: concept.filters?.industry || '',
+                  language: concept.filters?.language || '',
+                  isVideo: concept.filters?.is_video || false,
+                  isAd: concept.filters?.is_ad || false
+                },
                 status: "pending"
               });
               
@@ -577,22 +543,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (n8nResponse.concepts && Array.isArray(n8nResponse.concepts)) {
             const savedConcepts = [];
             for (const concept of n8nResponse.concepts) {
+              const platform = concept.filters?.platform || concept.platform || concept.conceptType || 'unknown';
               try {
                 const saved = await storage.createConcept({
                   userId,
-                  conceptType: concept.platform || concept.conceptType || 'unknown',
                   title: concept.title || '',
                   description: concept.description || '',
                   thumbnail: concept.thumbnailUrl || concept.thumbnail_url || concept.thumbnail || '',
                   url: concept.postUrl || concept.post_url || concept.url || '',
                   owner: concept.owner || concept.brandName || '',
-                  category: concept.category || '',
                   statistics: {
                     views: concept.views || 0,
                     likes: concept.likes || 0,
                     comments: concept.comments || 0,
                     shares: concept.shares || 0,
                     engagementScore: concept.engagementScore || concept.engagement_score || 0
+                  },
+                  filter: {
+                    platform: platform.toLowerCase(),
+                    format: concept.filters?.format || concept.format || 'Video',
+                    industry: concept.filters?.industry || concept.industry || '',
+                    language: concept.filters?.language || '',
+                    isVideo: concept.filters?.is_video || false,
+                    isAd: concept.filters?.is_ad || false
                   },
                   status: "pending"
                 });
