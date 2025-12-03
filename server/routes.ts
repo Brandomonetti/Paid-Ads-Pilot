@@ -226,27 +226,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           id: concept.id,
-          title: concept.title,
-          description: concept.description,
-          thumbnailUrl: concept.thumbnail,
-          postUrl: concept.url,
-          brandName: concept.owner,
-          platform: filter.platform || 'facebook',
-          format: filter.format || 'Video',
-          industry: filter.industry || '',
-          likes: statistics.likes || 0,
-          views: statistics.views || 0,
-          shares: statistics.shares || 0,
-          comments: statistics.replies || 0,
+          title: concept.title ?? null,
+          description: concept.description ?? null,
+          thumbnailUrl: concept.thumbnail ?? null,
+          postUrl: concept.url ?? null,
+          brandName: concept.owner ?? null,
+          platform: filter.platform ?? null,
+          format: filter.format ?? null,
+          industry: filter.industry ?? null,
+          likes: statistics.likes ?? null,
+          views: statistics.views ?? null,
+          shares: statistics.shares ?? null,
+          comments: statistics.replies ?? null,
           engagementRate: statistics.views ? 
-            ((statistics.likes || 0) + (statistics.replies || 0) + (statistics.shares || 0)) / statistics.views : 0,
-          engagementScore: Math.min(100, Math.round(
+            ((statistics.likes || 0) + (statistics.replies || 0) + (statistics.shares || 0)) / statistics.views : null,
+          engagementScore: statistics.views || statistics.likes ? Math.min(100, Math.round(
             ((statistics.likes || 0) / 10000) + 
             ((statistics.views || 0) / 100000) + 
             ((statistics.shares || 0) / 1000)
-          )),
-          status: concept.status,
-          createdAt: concept.createdAt,
+          )) : null,
+          status: concept.status ?? null,
+          createdAt: concept.createdAt ?? null,
           hooks: []
         };
       });
@@ -420,22 +420,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   title: data.title || null,
-                  description: data.description || '',
-                  thumbnail: data.thumbnail || '',
+                  description: data.description || null,
+                  thumbnail: data.thumbnail || null,
                   url: data.url || query,
-                  owner: data.owner || '',
+                  owner: data.owner || null,
                   statistics: {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null,
-                    isActive: data.filters?.is_active
+                    isActive: data.filters?.is_active ?? null
                   },
                   filter: {
                     platform: platform.toLowerCase(),
-                    format: data.filters?.format || 'Video',
-                    industry: data.filters?.industry || '',
-                    language: data.filters?.language || '',
-                    isVideo: data.filters?.is_video || false,
-                    isAd: data.filters?.is_ad || false
+                    format: data.filters?.format || null,
+                    industry: data.filters?.industry || null,
+                    language: data.filters?.language || null,
+                    isVideo: data.filters?.is_video ?? null,
+                    isAd: data.filters?.is_ad ?? null
                   },
                   status: 'pending'
                 });
@@ -467,22 +467,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const saved = await storage.createConcept({
                   userId,
                   title: data.title || null,
-                  description: data.description || '',
-                  thumbnail: data.thumbnail || '',
+                  description: data.description || null,
+                  thumbnail: data.thumbnail || null,
                   url: data.url || query,
-                  owner: data.owner || '',
+                  owner: data.owner || null,
                   statistics: {
                     ...data.statistics,
                     originalCreatedAt: data.created_at || null,
-                    isActive: data.filters?.is_active
+                    isActive: data.filters?.is_active ?? null
                   },
                   filter: {
                     platform: platform.toLowerCase(),
-                    format: data.filters?.format || 'Video',
-                    industry: data.filters?.industry || '',
-                    language: data.filters?.language || '',
-                    isVideo: data.filters?.is_video || false,
-                    isAd: data.filters?.is_ad || false
+                    format: data.filters?.format || null,
+                    industry: data.filters?.industry || null,
+                    language: data.filters?.language || null,
+                    isVideo: data.filters?.is_video ?? null,
+                    isAd: data.filters?.is_ad ?? null
                   },
                   status: 'pending'
                 });
@@ -509,19 +509,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const saved = await storage.createConcept({
                 userId,
-                title: concept.title || '',
-                description: concept.description || '',
-                thumbnail: concept.thumbnail || '',
+                title: concept.title || null,
+                description: concept.description || null,
+                thumbnail: concept.thumbnail || null,
                 url: concept.url || query,
-                owner: concept.owner || '',
-                statistics: concept.statistics || {},
+                owner: concept.owner || null,
+                statistics: concept.statistics || null,
                 filter: {
                   platform: platform.toLowerCase(),
-                  format: concept.filters?.format || 'Video',
-                  industry: concept.filters?.industry || '',
-                  language: concept.filters?.language || '',
-                  isVideo: concept.filters?.is_video || false,
-                  isAd: concept.filters?.is_ad || false
+                  format: concept.filters?.format || null,
+                  industry: concept.filters?.industry || null,
+                  language: concept.filters?.language || null,
+                  isVideo: concept.filters?.is_video ?? null,
+                  isAd: concept.filters?.is_ad ?? null
                 },
                 status: "pending"
               });
@@ -547,25 +547,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               try {
                 const saved = await storage.createConcept({
                   userId,
-                  title: concept.title || '',
-                  description: concept.description || '',
-                  thumbnail: concept.thumbnailUrl || concept.thumbnail_url || concept.thumbnail || '',
-                  url: concept.postUrl || concept.post_url || concept.url || '',
-                  owner: concept.owner || concept.brandName || '',
+                  title: concept.title || null,
+                  description: concept.description || null,
+                  thumbnail: concept.thumbnailUrl || concept.thumbnail_url || concept.thumbnail || null,
+                  url: concept.postUrl || concept.post_url || concept.url || null,
+                  owner: concept.owner || concept.brandName || null,
                   statistics: {
-                    views: concept.views || 0,
-                    likes: concept.likes || 0,
-                    comments: concept.comments || 0,
-                    shares: concept.shares || 0,
-                    engagementScore: concept.engagementScore || concept.engagement_score || 0
+                    views: concept.views ?? null,
+                    likes: concept.likes ?? null,
+                    comments: concept.comments ?? null,
+                    shares: concept.shares ?? null,
+                    engagementScore: concept.engagementScore || concept.engagement_score || null
                   },
                   filter: {
                     platform: platform.toLowerCase(),
-                    format: concept.filters?.format || concept.format || 'Video',
-                    industry: concept.filters?.industry || concept.industry || '',
-                    language: concept.filters?.language || '',
-                    isVideo: concept.filters?.is_video || false,
-                    isAd: concept.filters?.is_ad || false
+                    format: concept.filters?.format || concept.format || null,
+                    industry: concept.filters?.industry || concept.industry || null,
+                    language: concept.filters?.language || null,
+                    isVideo: concept.filters?.is_video ?? null,
+                    isAd: concept.filters?.is_ad ?? null
                   },
                   status: "pending"
                 });
