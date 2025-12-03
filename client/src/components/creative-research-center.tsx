@@ -33,7 +33,6 @@ import {
   XCircle,
   Clock,
   Database,
-  Info,
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -144,10 +143,6 @@ export function CreativeResearchCenter() {
   // Approve concept mutation
   const approveConceptMutation = useMutation({
     mutationFn: async (conceptId: string) => {
-      // Guard: Prevent backend calls for mock concepts
-      if (isMockMode) {
-        throw new Error("MOCK_MODE");
-      }
       return await apiRequest(
         "PATCH",
         `/api/concepts/${conceptId}/approve`,
@@ -162,16 +157,6 @@ export function CreativeResearchCenter() {
       queryClient.invalidateQueries({ queryKey: ["/api/concepts"] });
     },
     onError: (error: any) => {
-      // Gracefully handle mock mode errors
-      if (error.message === "MOCK_MODE") {
-        toast({
-          title: "Demo Mode",
-          description:
-            "Run Discovery to enable approval workflow for real concepts.",
-          variant: "default",
-        });
-        return;
-      }
       const message =
         error.response?.data?.message || "Failed to approve creative";
       toast({
@@ -185,10 +170,6 @@ export function CreativeResearchCenter() {
   // Reject concept mutation
   const rejectConceptMutation = useMutation({
     mutationFn: async (conceptId: string) => {
-      // Guard: Prevent backend calls for mock concepts
-      if (isMockMode) {
-        throw new Error("MOCK_MODE");
-      }
       return await apiRequest("PATCH", `/api/concepts/${conceptId}/reject`, {});
     },
     onSuccess: () => {
@@ -199,16 +180,6 @@ export function CreativeResearchCenter() {
       queryClient.invalidateQueries({ queryKey: ["/api/concepts"] });
     },
     onError: (error: any) => {
-      // Gracefully handle mock mode errors
-      if (error.message === "MOCK_MODE") {
-        toast({
-          title: "Demo Mode",
-          description:
-            "Run Discovery to enable approval workflow for real concepts.",
-          variant: "default",
-        });
-        return;
-      }
       const message =
         error.response?.data?.message || "Failed to reject creative";
       toast({
@@ -565,449 +536,13 @@ export function CreativeResearchCenter() {
     (e) => !rejectedExploreIds.has(String(e.id)),
   );
 
-  // Mock data for development visualization
-  const mockConcepts: CreativeConcept[] = [
-    // LATEST DISCOVERIES (Last 24 hours) - PENDING
-    {
-      id: "c-latest-1",
-      platform: "tiktok",
-      title: 'Viral Hook: "Nobody told me this about..."',
-      description:
-        'Short-form UGC using the "nobody told me" hook format. Creator shares surprising benefit discovered after 2 weeks. Raw, authentic delivery with trending sound overlay. Comments full of people tagging friends.',
-      format: "Raw UGC Video",
-      hooks: [
-        "Nobody told me this would happen after 2 weeks",
-        "Why didn't anyone tell me about this sooner??",
-        "The thing they don't show you in before/after pics",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1611432579699-484f7990b127?w=400",
-      postUrl: "https://tiktok.com/@realtalktiktok/video/latest1",
-      brandName: "HonestWellness",
-      industry: "Health & Wellness",
-      engagementScore: 98,
-      likes: 1200000,
-      comments: 18500,
-      shares: 45000,
-      views: 6800000,
-      engagementRate: 0.19,
-      status: "pending",
-      createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), // 3 hours ago
-      discoveredAt: new Date(Date.now() - 3 * 3600000).toISOString(),
-    },
-    {
-      id: "c-latest-2",
-      platform: "instagram",
-      title: "Trending Reel: Side-by-Side Comparison",
-      description:
-        'Split-screen format showing "me using cheap products" vs "me using this". Funny, relatable, and visually striking. Audio is trending sound that amplifies the contrast. Massive saves and shares.',
-      format: "Before/After",
-      hooks: [
-        "The upgrade I didn't know I needed",
-        "Why did I wait so long to switch??",
-        "Left side: broke. Right side: woke.",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400",
-      postUrl: "https://instagram.com/reel/comparison-viral",
-      brandName: "UpgradeYourLife",
-      industry: "Lifestyle",
-      engagementScore: 95,
-      likes: 892000,
-      comments: 12300,
-      shares: 34100,
-      views: 4500000,
-      engagementRate: 0.21,
-      status: "pending",
-      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(), // 6 hours ago
-      discoveredAt: new Date(Date.now() - 6 * 3600000).toISOString(),
-    },
-    {
-      id: "c-latest-3",
-      platform: "facebook",
-      title: 'Emotional Story: "I almost gave up..."',
-      description:
-        "Longer-form testimonial video (2 min) with genuine emotion. Person shares their lowest point, the moment they decided to try one more thing, and the transformation. Comments are extremely supportive and engaged.",
-      format: "Testimonial",
-      hooks: [
-        "I was ready to give up until...",
-        "This is the story I never thought I'd tell",
-        "Rock bottom became my foundation",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1552581234-26160f608093?w=400",
-      postUrl: "https://facebook.com/watch/transformation-story-real",
-      brandName: "SecondChance",
-      industry: "Health & Wellness",
-      engagementScore: 96,
-      likes: 145000,
-      comments: 23400,
-      shares: 67800,
-      views: 1200000,
-      engagementRate: 0.2,
-      status: "pending",
-      createdAt: new Date(Date.now() - 10 * 3600000).toISOString(), // 10 hours ago
-      discoveredAt: new Date(Date.now() - 10 * 3600000).toISOString(),
-    },
-    // APPROVED - Shows in Creative Library
-    {
-      id: "c-approved-1",
-      platform: "tiktok",
-      title: 'Jump-Cut Energy: "Day in My Life" Montage',
-      description:
-        'Fast-paced day-in-life showing person crushing tasks with visible energy. Quick cuts, upbeat music, timestamps showing packed schedule. Caption: "This used to be impossible for me". Aspirational yet achievable.',
-      format: "POV Storytelling",
-      hooks: [
-        "POV: You finally have the energy to do it all",
-        "6am to 10pm and still not tired - here's how",
-        "This is what consistent energy looks like in real life",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1522441815192-d9f04eb0615c?w=400",
-      postUrl: "https://tiktok.com/@energizedlife/video/latest2",
-      brandName: "AllDayEnergy",
-      industry: "Productivity",
-      engagementScore: 94,
-      likes: 756000,
-      comments: 9200,
-      shares: 28300,
-      views: 3900000,
-      engagementRate: 0.2,
-      status: "approved",
-      createdAt: new Date(Date.now() - 15 * 3600000).toISOString(), // 15 hours ago
-      discoveredAt: new Date(Date.now() - 30 * 3600000).toISOString(), // Discovered 30 hours ago
-    },
-    {
-      id: "c-latest-5",
-      platform: "instagram",
-      title: 'Carousel: "Here\'s what actually worked"',
-      description:
-        "Multi-slide educational carousel breaking down exactly what changed in their routine. Slide 1: The problem. Slides 2-7: What they tried that didn't work. Slide 8: What finally worked. Slide 9: Results. Slide 10: Product reveal. Very high save rate.",
-      format: "Educational Content",
-      hooks: [
-        "I tried 12 things - only 1 actually worked",
-        "Here's what I wish I knew from day 1",
-        "Save this - you'll want to come back to it",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400",
-      postUrl: "https://instagram.com/p/what-worked-guide",
-      brandName: "RealResults",
-      industry: "Health & Wellness",
-      engagementScore: 97,
-      likes: 234000,
-      comments: 5600,
-      shares: 8900,
-      views: 890000,
-      engagementRate: 0.28,
-      status: "pending",
-      createdAt: new Date(Date.now() - 20 * 3600000).toISOString(), // 20 hours ago
-      discoveredAt: new Date(Date.now() - 20 * 3600000).toISOString(),
-    },
-    {
-      id: "c-latest-6",
-      platform: "tiktok",
-      title: 'Trend: "If you know, you know" Format',
-      description:
-        'Uses trending "iykyk" format where creator subtly shows product in background while doing relatable activity. Doesn\'t explicitly sell - just shows it as part of their lifestyle. Comments full of "what is that??" driving engagement.',
-      format: "Raw UGC Video",
-      hooks: [
-        "If you know you know 👀",
-        "Don't tell everyone about this lol",
-        "The ones who know are winning rn",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400",
-      postUrl: "https://tiktok.com/@subtleinfluence/video/latest3",
-      brandName: "InThoseWhoKnow",
-      industry: "Lifestyle",
-      engagementScore: 93,
-      likes: 567000,
-      comments: 34500,
-      shares: 19200,
-      views: 2800000,
-      engagementRate: 0.22,
-      status: "pending",
-      createdAt: new Date(Date.now() - 22 * 3600000).toISOString(), // 22 hours ago
-      discoveredAt: new Date(Date.now() - 22 * 3600000).toISOString(),
-    },
-
-    // OLDER CONCEPTS (7+ days ago for Curated tab)
-    {
-      id: "c1",
-      platform: "tiktok",
-      title: "Raw UGC: Morning Routine Energy Transformation",
-      description:
-        'Authentic "get ready with me" style video showing before/after energy levels. Creator starts groggy, takes supplement mid-routine, shows visible energy shift by end. Very relatable, no heavy production.',
-      format: "Raw UGC Video",
-      hooks: [
-        "POV: You finally found something that actually works",
-        "This is what 30 days of consistent energy looks like",
-        "Watch my energy levels go from 0 to 100",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400",
-      postUrl: "https://tiktok.com/@fitlifestyle/video/example1",
-      brandName: "VitalityBoost",
-      industry: "Health & Wellness",
-      engagementScore: 96,
-      likes: 847000,
-      comments: 12400,
-      shares: 23100,
-      views: 4200000,
-      engagementRate: 0.21,
-      status: "approved",
-      createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    },
-    {
-      id: "c2",
-      platform: "instagram",
-      title: "Before/After Body Transformation Carousel",
-      description:
-        'Multi-slide carousel showing 90-day transformation with weekly progress photos. Each slide has timestamp and weight/measurements. Final slide reveals the "secret" (product + consistency). High engagement from fitness community.',
-      format: "Before/After",
-      hooks: [
-        "90 days ago I couldn't even look at myself",
-        "The difference consistency makes (swipe to see)",
-        "Here's exactly what I did - no BS",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400",
-      postUrl: "https://instagram.com/p/transformation90",
-      brandName: "FitFuel Pro",
-      industry: "Fitness Supplements",
-      engagementScore: 93,
-      likes: 156000,
-      comments: 8900,
-      shares: 4200,
-      views: 890000,
-      engagementRate: 0.19,
-      status: "approved",
-      createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
-    },
-    {
-      id: "c3",
-      platform: "facebook",
-      title: "Emotional Testimonial: Mom Gets Her Energy Back",
-      description:
-        'Heartfelt video testimonial from busy mom who struggled with afternoon crashes. Shows her playing with kids at end of day now. Genuine emotion, relatable pain points. Comments full of "this is me" responses.',
-      format: "Testimonial",
-      hooks: [
-        "I was too tired to play with my kids after work",
-        "This mom of 3 found her energy again",
-        "You don't have to choose between career and being present",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400",
-      postUrl: "https://facebook.com/watch/momlife-energy",
-      brandName: "MamaVitality",
-      industry: "Health & Wellness",
-      engagementScore: 91,
-      likes: 42000,
-      comments: 6700,
-      shares: 18900,
-      views: 620000,
-      engagementRate: 0.11,
-      status: "approved",
-      createdAt: new Date(Date.now() - 21 * 86400000).toISOString(),
-    },
-    {
-      id: "c4",
-      platform: "tiktok",
-      title: "POV Storytelling: The Day Everything Changed",
-      description:
-        'First-person perspective narrative showing "rock bottom" moment, then daily progress clips. Emotional arc with triumphant ending. Uses trending audio. Massive shareability factor.',
-      format: "POV Storytelling",
-      hooks: [
-        "POV: The day you stopped making excuses",
-        "This is what happens when you actually commit",
-        "Week 1 vs Week 12 - the difference is insane",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400",
-      postUrl: "https://tiktok.com/@transformstories/video/example2",
-      brandName: "CoreStrength",
-      industry: "Fitness",
-      engagementScore: 94,
-      likes: 923000,
-      comments: 15200,
-      shares: 31400,
-      views: 5100000,
-      engagementRate: 0.19,
-      status: "approved",
-      createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-    },
-    {
-      id: "c5",
-      platform: "instagram",
-      title: 'DIML: "I Didn\'t Believe It Until..."',
-      description:
-        "Didn't-I-Make-It-Look storytelling format. Creator addresses camera skeptically at start, fast-forwards through journey with voiceover, ends with proof and admission they were wrong. Converts skeptics.",
-      format: "DIML Storytelling",
-      hooks: [
-        "I thought this was another scam until...",
-        "Here's why I was wrong (and I'm glad I was)",
-        "The skeptic becomes a believer - my story",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400",
-      postUrl: "https://instagram.com/reel/skeptic-to-believer",
-      brandName: "TrustFit",
-      industry: "Health & Wellness",
-      engagementScore: 89,
-      likes: 78000,
-      comments: 5400,
-      shares: 3100,
-      views: 450000,
-      engagementRate: 0.19,
-      status: "approved",
-      createdAt: new Date(Date.now() - 18 * 86400000).toISOString(),
-    },
-    {
-      id: "c6",
-      platform: "tiktok",
-      title: "Sped-Up Process: 30-Day Timelapse Journey",
-      description:
-        "Fast-motion compilation of daily workout/supplement routine with date stamps. Set to upbeat music. Shows consistency and gradual visible changes. Viewers can see themselves in the journey.",
-      format: "Sped-up Process Video",
-      hooks: [
-        "What 30 days of consistency actually looks like",
-        "Day 1 to Day 30 - watch the transformation",
-        "This is what happens when you don't give up",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=400",
-      postUrl: "https://tiktok.com/@30daychallenge/video/example3",
-      brandName: "ConsistentFit",
-      industry: "Fitness",
-      engagementScore: 92,
-      likes: 645000,
-      comments: 9800,
-      shares: 19200,
-      views: 3200000,
-      engagementRate: 0.21,
-      status: "approved",
-      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-    },
-    {
-      id: "c7",
-      platform: "facebook",
-      title: "Educational: Science Behind Recovery",
-      description:
-        "Professional-looking educational content explaining muscle recovery science in simple terms. Includes graphics, before/after muscle scans. Positions product as scientifically-backed solution.",
-      format: "Educational Content",
-      hooks: [
-        "Here's what actually happens during muscle recovery",
-        "The science of getting stronger (explained simply)",
-        "Why your muscles need this to grow",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400",
-      postUrl: "https://facebook.com/watch/recovery-science",
-      brandName: "ScienceFit Pro",
-      industry: "Fitness Supplements",
-      engagementScore: 87,
-      likes: 34000,
-      comments: 4100,
-      shares: 8600,
-      views: 380000,
-      engagementRate: 0.12,
-      status: "approved",
-      createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
-    },
-    {
-      id: "c8",
-      platform: "instagram",
-      title: "Community Compilation: Real Customer Results",
-      description:
-        'Montage of customer-submitted transformation videos. Shows diversity of ages, body types, backgrounds. Creates "if they can, I can" response. Massive social proof.',
-      format: "UGC Compilation",
-      hooks: [
-        "These are all real customers - not actors",
-        "500+ transformations and counting",
-        "Your results could be next",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400",
-      postUrl: "https://instagram.com/reel/community-results",
-      brandName: "TogetherFit",
-      industry: "Fitness Community",
-      engagementScore: 95,
-      likes: 234000,
-      comments: 11200,
-      shares: 15800,
-      views: 1100000,
-      engagementRate: 0.24,
-      status: "approved",
-      createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
-    },
-    {
-      id: "c9",
-      platform: "tiktok",
-      title: 'Controversial Take: "You Don\'t Need More Motivation"',
-      description:
-        "Provocative hook challenges common beliefs. Creator argues systems beat motivation. Shows their simple daily system. Comments debating, huge engagement. Algorithm loves controversy.",
-      format: "Opinion/Hot Take",
-      hooks: [
-        "Stop waiting for motivation - it's a trap",
-        "Unpopular opinion: motivation is overrated",
-        "Here's what actually works (and it's not what you think)",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=400",
-      postUrl: "https://tiktok.com/@honesttakes/video/example4",
-      brandName: "RealTalk Fitness",
-      industry: "Fitness Coaching",
-      engagementScore: 88,
-      likes: 512000,
-      comments: 28900,
-      shares: 12100,
-      views: 2800000,
-      engagementRate: 0.2,
-      status: "approved",
-      createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-    },
-    {
-      id: "c10",
-      platform: "instagram",
-      title: "Day in the Life: Busy Professional's Routine",
-      description:
-        "Follow along day showing how real person fits fitness into packed schedule. Shows supplement timing, quick workouts, meal prep. Extremely relatable for target audience.",
-      format: "Lifestyle/DITL",
-      hooks: [
-        "How I stay fit with a 60-hour work week",
-        "You don't need hours - you need a system",
-        "Fit life as a busy professional (realistic edition)",
-      ],
-      thumbnailUrl:
-        "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400",
-      postUrl: "https://instagram.com/reel/busy-life-fitness",
-      brandName: "BusyFit",
-      industry: "Health & Wellness",
-      engagementScore: 90,
-      likes: 189000,
-      comments: 7600,
-      shares: 9400,
-      views: 820000,
-      engagementRate: 0.25,
-      status: "approved",
-      createdAt: new Date(Date.now() - 16 * 86400000).toISOString(),
-    },
-  ];
-
-  // Fetch all creative concepts - use mock data if empty
+  // Fetch all creative concepts
   const { data: concepts = [], isLoading } = useQuery<CreativeConcept[]>({
     queryKey: ["/api/concepts"],
   });
 
-  // Detect if we're using mock data (no real concepts from API yet)
-  const isMockMode = (concepts as CreativeConcept[]).length === 0;
-  const conceptsData = isMockMode
-    ? mockConcepts
-    : (concepts as CreativeConcept[]);
-
-  // Toggle for using mock data (to avoid API calls)
-  const [useMockData, setUseMockData] = useState(true);
+  // Use concepts from API directly
+  const conceptsData = concepts as CreativeConcept[];
 
   // Search for competitor/brand content
   const searchMutation = useMutation({
@@ -1068,7 +603,6 @@ export function CreativeResearchCenter() {
     searchMutation.mutate({
       query: searchQuery,
       type: searchType,
-      useMock: useMockData,
     });
   };
 
@@ -1247,26 +781,6 @@ export function CreativeResearchCenter() {
 
         {/* Latest Discoveries Tab */}
         <TabsContent value="latest" className="space-y-4">
-          {/* Demo Mode Banner */}
-          {isMockMode && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    Demo Mode Active
-                  </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    You're viewing sample concepts for demonstration. Click the{" "}
-                    <strong>Discover</strong> button below to fetch real viral
-                    creatives based on your knowledge base and enable the
-                    approval workflow.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Header Section with Time Filter and Discover Button */}
           <Card>
             <CardHeader className="border-b">
@@ -2071,21 +1585,6 @@ export function CreativeResearchCenter() {
                     </>
                   )}
                 </Button>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="mock-mode"
-                    checked={useMockData}
-                    onCheckedChange={setUseMockData}
-                    data-testid="switch-mock-mode"
-                  />
-                  <Label
-                    htmlFor="mock-mode"
-                    className="text-sm text-muted-foreground"
-                  >
-                    Demo Mode
-                  </Label>
-                </div>
               </div>
 
               {/* Advanced Filters - hidden for URL search since it returns single result */}
