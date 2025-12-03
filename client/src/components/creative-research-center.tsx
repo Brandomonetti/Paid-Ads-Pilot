@@ -1376,17 +1376,10 @@ export function CreativeResearchCenter() {
               ) : visibleSearchResults.length === 0 ? (
                 <div className="py-12 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <h3 className="font-medium mb-2">No Results to Show</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    You've hidden all current results. Search again to discover
-                    more creatives.
+                  <h3 className="font-medium mb-2">No Results Found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Try a different search term or URL to discover creatives.
                   </p>
-                  <Button
-                    onClick={() => setRejectedExploreIds(new Set())}
-                    variant="outline"
-                  >
-                    Show Hidden Results
-                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
