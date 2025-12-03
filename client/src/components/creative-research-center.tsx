@@ -1520,7 +1520,7 @@ export function CreativeResearchCenter() {
                                   </Badge>
                                 </div>
                                 <CardTitle className="text-base line-clamp-2">
-                                  {concept.title}
+                                  {concept.title || (concept.description ? concept.description.slice(0, 60) + (concept.description.length > 60 ? '...' : '') : 'Untitled')}
                                 </CardTitle>
                                 {concept.brandName && (
                                   <p className="text-xs text-muted-foreground mt-1">
@@ -1807,7 +1807,7 @@ export function CreativeResearchCenter() {
                         <div className="relative aspect-video bg-muted">
                           <img
                             src={concept.thumbnailUrl}
-                            alt={concept.title}
+                            alt={concept.title || 'Creative concept'}
                             className="w-full h-full object-cover"
                           />
                           {concept.videoUrl && (
@@ -1835,7 +1835,7 @@ export function CreativeResearchCenter() {
                               )}
                             </div>
                             <CardTitle className="text-base line-clamp-2">
-                              {concept.title}
+                              {concept.title || (concept.description ? concept.description.slice(0, 60) + (concept.description.length > 60 ? '...' : '') : 'Untitled')}
                             </CardTitle>
                             {concept.brandName && (
                               <p className="text-xs text-muted-foreground mt-1">
@@ -1940,13 +1940,13 @@ export function CreativeResearchCenter() {
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl">
                               <DialogHeader>
-                                <DialogTitle>{concept.title}</DialogTitle>
+                                <DialogTitle>{concept.title || (concept.description ? concept.description.slice(0, 60) + (concept.description.length > 60 ? '...' : '') : 'Untitled')}</DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4">
                                 {concept.thumbnailUrl && (
                                   <img
                                     src={concept.thumbnailUrl}
-                                    alt={concept.title}
+                                    alt={concept.title || 'Creative concept'}
                                     className="w-full rounded-lg"
                                   />
                                 )}
