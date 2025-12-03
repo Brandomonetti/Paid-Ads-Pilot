@@ -47,31 +47,39 @@ import type { Concept } from "@shared/schema";
 
 interface CreativeConcept {
   id: string;
-  platform: "facebook" | "instagram" | "tiktok";
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-  videoUrl?: string;
-  postUrl?: string;
-  brandName?: string;
-  industry?: string;
-  format: string;
+  platform: string | null;
+  title: string | null;
+  description: string | null;
+  thumbnailUrl?: string | null;
+  videoUrl?: string | null;
+  postUrl?: string | null;
+  brandName?: string | null;
+  // New filter fields
+  age?: string | null;
+  gender?: string | null;
+  language?: string | null;
+  region?: string | null;
+  is_video?: boolean | null;
+  is_ad?: boolean | null;
+  is_active?: boolean | null;
+  // Statistics
   hooks: string[];
-  engagementScore: number;
-  likes?: number;
-  comments?: number;
-  shares?: number;
-  views?: number;
-  engagementRate?: number;
+  engagementScore: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  views?: number | null;
+  engagementRate?: number | null;
   status?:
     | "pending"
     | "approved"
     | "rejected"
     | "discovered"
     | "tested"
-    | "proven";
-  createdAt?: string;
-  discoveredAt?: string;
+    | "proven"
+    | null;
+  createdAt?: string | null;
+  discoveredAt?: string | null;
 }
 
 export function CreativeResearchCenter() {
@@ -91,18 +99,25 @@ export function CreativeResearchCenter() {
   );
 
   const [filters, setFilters] = useState({
+    // New filter fields for Latest Discoveries and Creative Library
     platform: "all",
-    engagement: "all",
-    format: "all",
-    sortBy: "engagement",
-    siteType: "all",
+    language: "all",
+    region: "all",
     gender: "all",
+    age: "all",
+    is_video: "all",
+    is_ad: "all",
+    is_active: "all",
+    sortBy: "engagement",
+    // Legacy filter fields for Explore Creatives tab (do not change)
+    siteType: "all",
     ages: "all",
     dailyLikes: "all",
     mediaType: "all",
     createdBetween: "all",
     countries: "all",
-    language: "all",
+    engagement: "all",
+    format: "all",
   });
 
   // Fetch knowledge base data for discovery
@@ -324,18 +339,26 @@ export function CreativeResearchCenter() {
     .filter((concept) => {
       if (filters.platform !== "all" && concept.platform !== filters.platform)
         return false;
-
-      if (filters.engagement !== "all") {
-        const rate = Number(concept.engagementRate) || 0;
-        if (filters.engagement === "high" && rate <= 10) return false;
-        if (filters.engagement === "medium" && (rate <= 5 || rate > 10))
-          return false;
-        if (filters.engagement === "low" && rate > 5) return false;
-      }
-
-      if (filters.format !== "all" && concept.format !== filters.format)
+      if (filters.language !== "all" && concept.language !== filters.language)
         return false;
-
+      if (filters.region !== "all" && concept.region !== filters.region)
+        return false;
+      if (filters.gender !== "all" && concept.gender !== filters.gender)
+        return false;
+      if (filters.age !== "all" && concept.age !== filters.age)
+        return false;
+      if (filters.is_video !== "all") {
+        const isVideo = filters.is_video === "true";
+        if (concept.is_video !== isVideo) return false;
+      }
+      if (filters.is_ad !== "all") {
+        const isAd = filters.is_ad === "true";
+        if (concept.is_ad !== isAd) return false;
+      }
+      if (filters.is_active !== "all") {
+        const isActive = filters.is_active === "true";
+        if (concept.is_active !== isActive) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -392,15 +415,26 @@ export function CreativeResearchCenter() {
       .filter((concept) => {
         if (filters.platform !== "all" && concept.platform !== filters.platform)
           return false;
-        if (filters.engagement !== "all") {
-          const rate = Number(concept.engagementRate) || 0;
-          if (filters.engagement === "high" && rate <= 10) return false;
-          if (filters.engagement === "medium" && (rate <= 5 || rate > 10))
-            return false;
-          if (filters.engagement === "low" && rate > 5) return false;
-        }
-        if (filters.format !== "all" && concept.format !== filters.format)
+        if (filters.language !== "all" && concept.language !== filters.language)
           return false;
+        if (filters.region !== "all" && concept.region !== filters.region)
+          return false;
+        if (filters.gender !== "all" && concept.gender !== filters.gender)
+          return false;
+        if (filters.age !== "all" && concept.age !== filters.age)
+          return false;
+        if (filters.is_video !== "all") {
+          const isVideo = filters.is_video === "true";
+          if (concept.is_video !== isVideo) return false;
+        }
+        if (filters.is_ad !== "all") {
+          const isAd = filters.is_ad === "true";
+          if (concept.is_ad !== isAd) return false;
+        }
+        if (filters.is_active !== "all") {
+          const isActive = filters.is_active === "true";
+          if (concept.is_active !== isActive) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -578,7 +612,7 @@ export function CreativeResearchCenter() {
                             <div className="relative aspect-video bg-muted">
                               <img
                                 src={concept.thumbnailUrl}
-                                alt={concept.title}
+                                alt={concept.title || 'Creative concept'}
                                 className="w-full h-full object-cover"
                               />
                               {concept.videoUrl && (
@@ -597,11 +631,18 @@ export function CreativeResearchCenter() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                                   <span className="text-lg">
-                                    {getPlatformIcon(concept.platform)}
+                                    {getPlatformIcon(concept.platform || '')}
                                   </span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {concept.format}
-                                  </Badge>
+                                  {concept.is_video !== null && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {concept.is_video ? 'Video' : 'Image'}
+                                    </Badge>
+                                  )}
+                                  {concept.is_ad !== null && (
+                                    <Badge variant={concept.is_ad ? "default" : "secondary"} className="text-xs">
+                                      {concept.is_ad ? 'Ad' : 'Organic'}
+                                    </Badge>
+                                  )}
                                   <Badge className="text-xs bg-orange-500/10 text-orange-700 border-orange-300">
                                     {new Date(
                                       concept.createdAt || 0,
@@ -747,46 +788,62 @@ export function CreativeResearchCenter() {
                 </Select>
 
                 <Select
-                  value={filters.engagement}
+                  value={filters.language}
                   onValueChange={(value) =>
-                    setFilters({ ...filters, engagement: value })
+                    setFilters({ ...filters, language: value })
                   }
                 >
                   <SelectTrigger
                     className="w-[150px]"
-                    data-testid="select-curated-engagement"
+                    data-testid="select-curated-language"
                   >
-                    <SelectValue placeholder="Engagement" />
+                    <SelectValue placeholder="Language" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Engagement</SelectItem>
-                    <SelectItem value="high">High (&gt;10%)</SelectItem>
-                    <SelectItem value="medium">Medium (5-10%)</SelectItem>
-                    <SelectItem value="low">Low (&lt;5%)</SelectItem>
+                    <SelectItem value="all">All Languages</SelectItem>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Spanish">Spanish</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
+                    <SelectItem value="Chinese">Chinese</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select
-                  value={filters.format}
+                  value={filters.is_video}
                   onValueChange={(value) =>
-                    setFilters({ ...filters, format: value })
+                    setFilters({ ...filters, is_video: value })
                   }
                 >
                   <SelectTrigger
-                    className="w-[180px]"
-                    data-testid="select-curated-format"
+                    className="w-[150px]"
+                    data-testid="select-curated-is-video"
                   >
-                    <SelectValue placeholder="Format" />
+                    <SelectValue placeholder="Media Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Formats</SelectItem>
-                    <SelectItem value="Raw UGC Video">Raw UGC</SelectItem>
-                    <SelectItem value="POV Storytelling">
-                      POV Storytelling
-                    </SelectItem>
-                    <SelectItem value="Before/After">Before/After</SelectItem>
-                    <SelectItem value="Testimonial">Testimonial</SelectItem>
-                    <SelectItem value="DIML Storytelling">DIML</SelectItem>
+                    <SelectItem value="all">All Media</SelectItem>
+                    <SelectItem value="true">Video</SelectItem>
+                    <SelectItem value="false">Image/Other</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={filters.is_ad}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, is_ad: value })
+                  }
+                >
+                  <SelectTrigger
+                    className="w-[150px]"
+                    data-testid="select-curated-is-ad"
+                  >
+                    <SelectValue placeholder="Content Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Content</SelectItem>
+                    <SelectItem value="true">Ads Only</SelectItem>
+                    <SelectItem value="false">Organic Only</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -816,8 +873,9 @@ export function CreativeResearchCenter() {
                     setFilters({
                       ...filters,
                       platform: "all",
-                      engagement: "all",
-                      format: "all",
+                      language: "all",
+                      is_video: "all",
+                      is_ad: "all",
                       sortBy: "engagement",
                     })
                   }
@@ -915,11 +973,18 @@ export function CreativeResearchCenter() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="text-lg">
-                                {getPlatformIcon(concept.platform)}
+                                {getPlatformIcon(concept.platform || '')}
                               </span>
-                              <Badge variant="outline" className="text-xs">
-                                {concept.format}
-                              </Badge>
+                              {concept.is_video !== null && (
+                                <Badge variant="outline" className="text-xs">
+                                  {concept.is_video ? 'Video' : 'Image'}
+                                </Badge>
+                              )}
+                              {concept.is_ad !== null && (
+                                <Badge variant={concept.is_ad ? "default" : "secondary"} className="text-xs">
+                                  {concept.is_ad ? 'Ad' : 'Organic'}
+                                </Badge>
+                              )}
                               {(Number(concept.engagementRate) || 0) >= 10 && (
                                 <Badge className="text-xs bg-green-500/10 text-green-700 border-green-300">
                                   Viral
@@ -1317,18 +1382,25 @@ export function CreativeResearchCenter() {
                       size="sm"
                       onClick={() =>
                         setFilters({
+                          // New filter fields
                           platform: "all",
-                          engagement: "all",
-                          format: "all",
-                          sortBy: "engagement",
-                          siteType: "all",
+                          language: "all",
+                          region: "all",
                           gender: "all",
+                          age: "all",
+                          is_video: "all",
+                          is_ad: "all",
+                          is_active: "all",
+                          sortBy: "engagement",
+                          // Legacy filter fields
+                          siteType: "all",
                           ages: "all",
                           dailyLikes: "all",
                           mediaType: "all",
                           createdBetween: "all",
                           countries: "all",
-                          language: "all",
+                          engagement: "all",
+                          format: "all",
                         })
                       }
                       data-testid="button-clear-filters"
