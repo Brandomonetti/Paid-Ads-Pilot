@@ -756,6 +756,7 @@ export function CreativeResearchCenter() {
       shares: 23100,
       views: 4200000,
       engagementRate: 0.21,
+      status: "approved",
       createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
     },
     {
@@ -781,6 +782,7 @@ export function CreativeResearchCenter() {
       shares: 4200,
       views: 890000,
       engagementRate: 0.19,
+      status: "approved",
       createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
     },
     {
@@ -806,6 +808,7 @@ export function CreativeResearchCenter() {
       shares: 18900,
       views: 620000,
       engagementRate: 0.11,
+      status: "approved",
       createdAt: new Date(Date.now() - 21 * 86400000).toISOString(),
     },
     {
@@ -831,6 +834,7 @@ export function CreativeResearchCenter() {
       shares: 31400,
       views: 5100000,
       engagementRate: 0.19,
+      status: "approved",
       createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
     },
     {
@@ -856,6 +860,7 @@ export function CreativeResearchCenter() {
       shares: 3100,
       views: 450000,
       engagementRate: 0.19,
+      status: "approved",
       createdAt: new Date(Date.now() - 18 * 86400000).toISOString(),
     },
     {
@@ -881,6 +886,7 @@ export function CreativeResearchCenter() {
       shares: 19200,
       views: 3200000,
       engagementRate: 0.21,
+      status: "approved",
       createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     },
     {
@@ -906,6 +912,7 @@ export function CreativeResearchCenter() {
       shares: 8600,
       views: 380000,
       engagementRate: 0.12,
+      status: "approved",
       createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
     },
     {
@@ -931,6 +938,7 @@ export function CreativeResearchCenter() {
       shares: 15800,
       views: 1100000,
       engagementRate: 0.24,
+      status: "approved",
       createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
     },
     {
@@ -956,6 +964,7 @@ export function CreativeResearchCenter() {
       shares: 12100,
       views: 2800000,
       engagementRate: 0.2,
+      status: "approved",
       createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
     },
     {
@@ -981,6 +990,7 @@ export function CreativeResearchCenter() {
       shares: 9400,
       views: 820000,
       engagementRate: 0.25,
+      status: "approved",
       createdAt: new Date(Date.now() - 16 * 86400000).toISOString(),
     },
   ];
