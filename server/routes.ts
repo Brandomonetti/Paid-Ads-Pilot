@@ -222,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Transform database format to UI format
       const transformedConcepts = concepts.map((concept: any) => {
         const statistics = concept.statistics || {};
-        const filter = concept.filters || {};
+        const filters = concept.filters || {};
         
         return {
           id: concept.id,
@@ -231,9 +231,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           thumbnailUrl: concept.thumbnail ?? null,
           postUrl: concept.url ?? null,
           brandName: concept.owner ?? null,
-          platform: filter.platform ?? null,
-          format: filter.format ?? null,
-          industry: filter.industry ?? null,
+          // New filter structure
+          platform: filters.platform ?? null,
+          age: filters.age ?? null,
+          gender: filters.gender ?? null,
+          language: filters.language ?? null,
+          region: filters.region ?? null,
+          is_video: filters.is_video ?? null,
+          is_ad: filters.is_ad ?? null,
+          is_active: filters.is_active ?? null,
+          // Statistics
           likes: statistics.likes ?? null,
           views: statistics.views ?? null,
           shares: statistics.shares ?? null,
@@ -431,11 +438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   },
                   filters: {
                     platform: platform.toLowerCase(),
-                    format: data.filters?.format || null,
-                    industry: data.filters?.industry || null,
-                    language: data.filters?.language || null,
-                    isVideo: data.filters?.is_video ?? null,
-                    isAd: data.filters?.is_ad ?? null
+                    age: data.filters?.age ?? null,
+                    gender: data.filters?.gender ?? null,
+                    language: data.filters?.language ?? null,
+                    region: data.filters?.region ?? null,
+                    is_video: data.filters?.is_video ?? null,
+                    is_ad: data.filters?.is_ad ?? null,
+                    is_active: data.filters?.is_active ?? null
                   },
                   status: 'pending'
                 });
@@ -478,11 +487,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   },
                   filters: {
                     platform: platform.toLowerCase(),
-                    format: data.filters?.format || null,
-                    industry: data.filters?.industry || null,
-                    language: data.filters?.language || null,
-                    isVideo: data.filters?.is_video ?? null,
-                    isAd: data.filters?.is_ad ?? null
+                    age: data.filters?.age ?? null,
+                    gender: data.filters?.gender ?? null,
+                    language: data.filters?.language ?? null,
+                    region: data.filters?.region ?? null,
+                    is_video: data.filters?.is_video ?? null,
+                    is_ad: data.filters?.is_ad ?? null,
+                    is_active: data.filters?.is_active ?? null
                   },
                   status: 'pending'
                 });
@@ -517,11 +528,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 statistics: concept.statistics || null,
                 filters: {
                   platform: platform.toLowerCase(),
-                  format: concept.filters?.format || null,
-                  industry: concept.filters?.industry || null,
-                  language: concept.filters?.language || null,
-                  isVideo: concept.filters?.is_video ?? null,
-                  isAd: concept.filters?.is_ad ?? null
+                  age: concept.filters?.age ?? null,
+                  gender: concept.filters?.gender ?? null,
+                  language: concept.filters?.language ?? null,
+                  region: concept.filters?.region ?? null,
+                  is_video: concept.filters?.is_video ?? null,
+                  is_ad: concept.filters?.is_ad ?? null,
+                  is_active: concept.filters?.is_active ?? null
                 },
                 status: "pending"
               });
@@ -561,11 +574,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   },
                   filters: {
                     platform: platform.toLowerCase(),
-                    format: concept.filters?.format || concept.format || null,
-                    industry: concept.filters?.industry || concept.industry || null,
-                    language: concept.filters?.language || null,
-                    isVideo: concept.filters?.is_video ?? null,
-                    isAd: concept.filters?.is_ad ?? null
+                    age: concept.filters?.age ?? null,
+                    gender: concept.filters?.gender ?? null,
+                    language: concept.filters?.language ?? null,
+                    region: concept.filters?.region ?? null,
+                    is_video: concept.filters?.is_video ?? null,
+                    is_ad: concept.filters?.is_ad ?? null,
+                    is_active: concept.filters?.is_active ?? null
                   },
                   status: "pending"
                 });
