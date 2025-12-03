@@ -1,0 +1,38 @@
+creative-research-center.tsx:449 Uncaught TypeError: Cannot read properties of null (reading 'toString')
+    at formatNumber (creative-research-center.tsx:449:16)
+    at creative-research-center.tsx:971:38
+    at Array.map (<anonymous>)
+    at CreativeResearchCenter (creative-research-center.tsx:890:49)
+
+creative-research-center.tsx:449 Uncaught TypeError: Cannot read properties of null (reading 'toString')
+    at formatNumber (creative-research-center.tsx:449:16)
+    at creative-research-center.tsx:971:38
+    at Array.map (<anonymous>)
+    at CreativeResearchCenter (creative-research-center.tsx:890:49)
+chunk-UPELNCPK.js?v=e867c7e8:14032 The above error occurred in the <CreativeResearchCenter> component:
+
+    at CreativeResearchCenter (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.dev/src/components/creative-research-center.tsx:61:21)
+    at Route (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e867c7e8:323:16)
+    at Switch (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e867c7e8:379:17)
+    at Router
+    at main
+    at div
+    at div
+    at div
+    at Provider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…unner/workspace/node_modules/.vite/deps/chunk-7CHUOEIG.js?v=e867c7e8:38:15)
+    at TooltipProvider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=e867c7e8:62:5)
+    at SidebarProvider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.dev/src/components/ui/sidebar.tsx:59:3)
+    at AppContent (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.dev/src/App.tsx?v=xUvKxjnQ3oaYiQC2smxwr:89:42)
+    at Provider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…unner/workspace/node_modules/.vite/deps/chunk-7CHUOEIG.js?v=e867c7e8:38:15)
+    at TooltipProvider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=e867c7e8:62:5)
+    at ThemeProvider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.dev/src/components/theme-provider.tsx:25:3)
+    at QueryClientProvider (https://869ea926-66b9-46cc-92af-ac22badbcebc-00-27nkz1js4apd4.kirk.replit.d…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=e867c7e8:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UPELNCPK.js?v=e867c7e8:9129 Uncaught TypeError: Cannot read properties of null (reading 'toString')
+    at formatNumber (creative-research-center.tsx:449:16)
+    at creative-research-center.tsx:971:38
+    at Array.map (<anonymous>)
+    at CreativeResearchCenter (creative-research-center.tsx:890:49)
